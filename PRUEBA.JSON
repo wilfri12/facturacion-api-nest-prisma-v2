@@ -1,0 +1,86 @@
+[
+    {
+        "nombre": "Jugo",
+        "precio": "27.8",
+        "estado": "INSTOCK",
+        "categoriaId": 1,
+        "empresaId": 1
+    },
+    {
+        "cliente": "Malfry Perez",
+        "empresaId": 1,
+        "detalle": [
+            {
+                "facturaId": 1,
+                "productoId": 2,
+                "cantidad": 10
+            },
+            {
+                "facturaId": 1,
+                "productoId": 3,
+                "cantidad": 10
+            },
+            {
+                "facturaId": 1,
+                "productoId": 4,
+                "cantidad": 10
+            },
+            {
+                "facturaId": 1,
+                "productoId": 5,
+                "cantidad": 10
+            },
+            {
+                "facturaId": 1,
+                "productoId": 6,
+                "cantidad": 10
+            },
+            {
+                "facturaId": 1,
+                "productoId": 7,
+                "cantidad": 10
+            }
+        ]
+    },
+
+    
+{
+    "id": 11,
+    "cliente": "Milaurys",
+    "empresaId": 1,
+    "createdAt": "2024-06-12T18:46:03.309Z",
+    "updatedAt": "2024-06-12T18:46:03.309Z",
+    "detalles": [
+        {
+            "productoId": 2,
+            "cantidad": 10
+        },
+        {
+            
+            "productoId": 3,
+            "cantidad": 10
+        },
+        {
+            
+            "productoId": 7,
+            "cantidad": 10
+        },
+        {
+            
+            "productoId": 4,
+            "cantidad": 10
+        },
+        {
+            
+            "productoId": 6,
+            "cantidad": 10
+        },
+        {
+            
+            "productoId": 5,
+            "cantidad": 10
+        }
+    ]
+}
+]
+
