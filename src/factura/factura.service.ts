@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Detalle_factura, Factura } from '@prisma/client';
 import { DetalleFacturaService } from 'src/detalle-factura/detalle-factura.service';
 import { PrismaService } from 'src/prisma.service';
-import { CreateFacturaDto } from './DTO/create-factura.dto';
-import { DetalleFacturaDto } from 'src/detalle-factura/DTO/create-detalle-factura.dto';
+import { ApiResponse } from 'src/interface';
+import { FacturaDto } from './DTO/factura.dto';
+import { Factura } from '@prisma/client';
+import { DetalleFacturaDto } from 'src/detalle-factura/DTO/detalle-factura.dto';
 
 @Injectable()
 export class FacturaService {
@@ -12,63 +13,55 @@ export class FacturaService {
         private readonly detalleFactura: DetalleFacturaService
     ) { }
 
-    async createFatura(data: CreateFacturaDto): Promise<{ success: boolean; factura?: Factura; error?: string }> {
+    async createFactura(data: FacturaDto & { detalle: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
         try {
-            const { cliente, empresaId, detalle } = data;
-
-            const facturaData = {
-                cliente,
-                empresaId,
-            } as CreateFacturaDto;
-
-            const factura = await this.prisma.$transaction(async (prisma) => {
-                const createdFactura = await this.prisma.factura.create({
-                    data: facturaData,
-                });
-
-                if (createdFactura) {
-
-                    const detallePromises = detalle.map((detalle) => {
-                        const detalleFacturaData = {
-                            facturaId: createdFactura.id,
-                            productoId: detalle.productoId,
-                            empresaId,
-                            cantidad: detalle.cantidad,
-                        } as DetalleFacturaDto;
-
-                        return this.detalleFactura.createDetalleFactura(detalleFacturaData);
-                    });
-
-                    await Promise.all(detallePromises);
-                }
-
-                return createdFactura;
+          const { clienteNombre, empresaId, usuarioId, clienteId, total, detalle } = data;
+    
+          const facturaData = {
+            clienteNombre,
+            empresaId,
+            usuarioId,
+            clienteId,
+            total,
+          };
+    
+          const factura = await this.prisma.$transaction(async (prisma) => {
+            const createdFactura = await prisma.factura.create({
+              data: facturaData,
             });
-
-            return { success: true, factura };
+    
+            if (createdFactura) {
+              const detallePromises = detalle.map((detalle) => {
+                const detalleFacturaData = {
+                  facturaId: createdFactura.id,
+                  productoId: detalle.productoId,
+                  empresaId,
+                  cantidad: detalle.cantidad,
+                  precioUnitario: detalle.precioUnitario,
+                  subtotal: detalle.subtotal,
+                };
+    
+                return this.detalleFactura.createDetalleFactura(detalleFacturaData);
+              });
+    
+              await Promise.all(detallePromises);
+            }
+    
+            return createdFactura;
+          });
+    
+          return { success: true, data: factura };
         } catch (error: any) {
-            console.error('Error al crear la factura:', error);
-            return { success: false, error: error.message };
+          return { success: false, error: error.message };
         }
-    }
+      }
 
 
-    async findAllFactura(): Promise<any[]> {
+    async findAllFactura(): Promise<ApiResponse<Factura[]>> {
         try {
             const facturas = await this.prisma.factura.findMany({
                 include: {
-                    empresa: {
-                        select: {
-                            id: true,
-                            nombre: true,
-                            telefono: true,
-                            whatsapp: true,
-                            instagram: true,
-                            descripcion: true,
-                            direccion: true,
-                        }
-
-                    },
+                    empresa: true,
                     detalles: {
                         select: {
                             producto: {
@@ -84,7 +77,7 @@ export class FacturaService {
                 },
             });
 
-            return facturas;
+            return { success: true, data: facturas };
         } catch (error: any) {
             throw new Error(`${error.message}`);
         }

@@ -1,48 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { Empresa } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
+import { ApiResponse } from 'src/interface';
+import { EmpresaDto } from './DTO/empresa.dto';
+import { Empresa } from '@prisma/client';
 
 @Injectable()
 export class EmpresaService {
     constructor(
-        private pisma: PrismaService 
-    ){}
+        private pisma: PrismaService
+    ) { }
 
-    async createEmpresa(data: any): Promise<any>{
+    async createEmpresa(data: EmpresaDto): Promise<ApiResponse<Empresa>> {
         try {
-            return await this.pisma.empresa.create({data})
-            
+            const empresa = await this.pisma.empresa.create({ data })
+            return { success: false, data: empresa }
         } catch (error: any) {
-            return {success: false, error: error.message}
+            return { success: false, error: error.message }
         }
-        
     }
 
-    async findAllEmpresa(): Promise<Empresa[]>
-    {
+    async findAllEmpresa(): Promise<ApiResponse<Empresa[]>> {
         try {
-
-            
-            
-            
             const empresas = await this.pisma.empresa.findMany({
-                include:{
+                include: {
                     categorias: true,
                     usuarios: true,
                     facturas: true,
                     detalles_facturas: true,
                     productos: true,
-                    
                 }
             });
-            return empresas;
+            return { success: false, data: empresas }
         } catch (error: any) {
             throw new Error(`${error.message}`)
         }
     }
-
-
-    
 }
 
 //generar codigos de 10 caracteres
