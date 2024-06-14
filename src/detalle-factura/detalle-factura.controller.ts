@@ -16,7 +16,7 @@ export class DetalleFacturaController {
       return detalle;
 
     } catch (error) {
-      throw error;
+      return {success: false, error: error.message}
     }
   }
 
@@ -26,7 +26,7 @@ export class DetalleFacturaController {
       const detalles = this.detalleFacturaService.findAllDetalleFactura();
       return detalles;
     } catch (error) {
-      throw error;
+      return {success: false, error: error.message}
     }
   }
 }

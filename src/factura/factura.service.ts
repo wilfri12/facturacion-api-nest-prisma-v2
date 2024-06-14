@@ -52,7 +52,7 @@ export class FacturaService {
     
           return { success: true, data: factura };
         } catch (error: any) {
-          return { success: false, error: error.message };
+          throw error;
         }
       }
 
@@ -79,7 +79,7 @@ export class FacturaService {
 
             return { success: true, data: facturas };
         } catch (error: any) {
-            throw new Error(`${error.message}`);
+            throw error;
         }
     }
 }

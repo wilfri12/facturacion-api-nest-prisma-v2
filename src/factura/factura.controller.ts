@@ -16,7 +16,7 @@ export class FacturaController {
 
       return factura;
     } catch (error) {
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
@@ -26,7 +26,7 @@ export class FacturaController {
       const facturas = this.facturaService.findAllFactura();
       return facturas;
     } catch (error) {
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 }

@@ -6,14 +6,14 @@ import { EmpresaDto } from './DTO/empresa.dto';
 
 @Controller('api/v1/empresa')
 export class EmpresaController {
-  constructor(private readonly empresaService: EmpresaService) {}
+  constructor(private readonly empresaService: EmpresaService) { }
   @Post()
   async create(@Body() data: EmpresaDto): Promise<ApiResponse<Empresa>> {
     try {
-      
+
       const empresa = await this.empresaService.createEmpresa(data);
 
-      return empresa; 
+      return empresa;
 
     } catch (error) {
       return { success: false, error: error.message }
@@ -21,9 +21,12 @@ export class EmpresaController {
   }
 
   @Get()
-  async find(): Promise<ApiResponse<Empresa[]>>
-  {
-    const empresas = this.empresaService.findAllEmpresa();
-    return empresas;
+  async find(): Promise<ApiResponse<Empresa[]>> {
+    try {
+      const empresas = this.empresaService.findAllEmpresa();
+      return empresas;
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
   }
 }

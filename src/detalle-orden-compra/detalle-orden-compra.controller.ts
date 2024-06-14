@@ -4,7 +4,7 @@ import { ApiResponse } from '../interface';
 import { DetalleOrdenCompra } from '@prisma/client';
 import { DetalleOrdenCompraDto } from './DTO/detalle-orden-compra.dto';
 
-@Controller('detalle-orden-compra')
+@Controller('api/v1/detalle-orden-compra')
 export class DetalleOrdenCompraController {
   constructor(private readonly detalleOrdenCompraService: DetalleOrdenCompraService) { }
 
@@ -14,7 +14,7 @@ export class DetalleOrdenCompraController {
       const detalle = await this.detalleOrdenCompraService.createDetalleOrdenCompra(data);
       return detalle;
     } catch (error) {
-      throw error;
+      return { success: false, error: error.message }
     }
   }
 
@@ -24,7 +24,7 @@ export class DetalleOrdenCompraController {
       const detalles = this.detalleOrdenCompraService.findAllDetalleOrdenCompra();
       return detalles;
     } catch (error) {
-      throw error;
+      return { success: false, error: error.message }
     }
   }
 }

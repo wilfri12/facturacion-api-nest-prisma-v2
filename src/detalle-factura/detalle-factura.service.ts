@@ -15,7 +15,7 @@ export class DetalleFacturaService {
             const detalle = await this.pisma.detalleFactura.create({ data })
             return { success: false, data: detalle }
         } catch (error: any) {
-            return { success: false, error: error.message }
+            throw error;
         }
 
     }
@@ -25,7 +25,7 @@ export class DetalleFacturaService {
             const detalles = await this.pisma.detalleFactura.findMany();
             return { success: false, data: detalles }
         } catch (error: any) {
-            return { success: false, error: error.message }
+            throw error;
         }
     }
 }

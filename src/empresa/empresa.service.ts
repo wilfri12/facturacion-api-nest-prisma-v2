@@ -15,7 +15,7 @@ export class EmpresaService {
             const empresa = await this.pisma.empresa.create({ data })
             return { success: false, data: empresa }
         } catch (error: any) {
-            return { success: false, error: error.message }
+            throw error;
         }
     }
 
@@ -32,7 +32,7 @@ export class EmpresaService {
             });
             return { success: false, data: empresas }
         } catch (error: any) {
-            throw new Error(`${error.message}`)
+            throw error;
         }
     }
 }

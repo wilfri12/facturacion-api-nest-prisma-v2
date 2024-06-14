@@ -15,7 +15,7 @@ export class DetalleOrdenCompraService {
             const detalleOrden = await this.pisma.detalleOrdenCompra.create({ data })
             return { success: false, data: detalleOrden }
         } catch (error: any) {
-            return { success: false, error: error.message }
+            throw error;
         }
 
     }
@@ -25,7 +25,7 @@ export class DetalleOrdenCompraService {
             const detalleOrdens = await this.pisma.detalleOrdenCompra.findMany();
             return { success: false, data: detalleOrdens }
         } catch (error: any) {
-            return { success: false, error: error.message }
+            throw error;
         }
     }
 }

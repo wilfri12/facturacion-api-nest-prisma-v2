@@ -4,7 +4,7 @@ import { Contacto } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { ContactoDto } from './DTO/contacto.dto';
 
-@Controller('contacto')
+@Controller('api/v1/contacto')
 export class ContactoController {
   constructor(private readonly contactoService: ContactoService) {}
 

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Usuario } from '@prisma/client';
+import { UsuarioDto } from './DTO/usuario.dto';
+import { ApiResponse } from 'src/interface';
 
 @Injectable()
 export class UsuarioService {
@@ -8,23 +10,26 @@ export class UsuarioService {
         private pisma: PrismaService
     ){}
 
-    async createUsuario(data: any): Promise<any>{
+    async createUsuario(data: UsuarioDto): Promise<ApiResponse<Usuario>>{
         try {
-            return await this.pisma.usuario.create({data})
+            const usuario = await this.pisma.usuario.create({data})
+
+            return {success: true, data: usuario}
             
         } catch (error: any) {
-            return {success: false, error: error.message}
+            throw error;
         }
         
     }
 
-    async findAllUsuario(): Promise<Usuario[]>
+    async findAllUsuario(): Promise<ApiResponse<Usuario[]>>
     {
         try {
             const usuarios = await this.pisma.usuario.findMany();
-            return usuarios;
+            return {success: true, data: usuarios}
+
         } catch (error: any) {
-            throw new Error(`${error.message}`)
+            throw error;
         }
     }
 }
