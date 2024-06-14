@@ -74,6 +74,7 @@ model Producto {
   stock                Int?
   categoriaId          Int
   empresaId            Int
+  produccionId Int?
   proveedorId          Int?
   precio               Decimal              @default(0.0) @db.Decimal(10, 2)
   nombre               String               @db.VarChar(50)
@@ -83,10 +84,10 @@ model Producto {
   estado               EstadoProducto       @default(INSTOCK)
   detalles_facturas    DetalleFactura[]
   detalleOrdenesCompra DetalleOrdenCompra[]
-  produccion           Produccion[]
   empresa              Empresa              @relation(fields: [empresaId], references: [id])
   proveedor            Proveedor?           @relation(fields: [proveedorId], references: [id])
   categoria            Categoria            @relation(fields: [categoriaId], references: [id])
+  produccion     Produccion?       @relation(fields: [produccionId], references: [id])
 
   @@index([nombre], map: "producto_nombre_idx")
 }
@@ -95,7 +96,7 @@ model Usuario {
   id          Int           @id @default(autoincrement())
   empresaId   Int
   contactoId  Int?          @unique
-  nombre      String        @db.VarChar(50)
+    nombre      String        @db.VarChar(50)
   password    String        @db.VarChar(20)
   createdAt   DateTime?     @default(now())
   updatedAt   DateTime?     @default(now()) @updatedAt
@@ -188,14 +189,13 @@ model OrdenCompra {
 
 model Produccion {
   id                Int       @id @default(autoincrement())
-  productoId        Int?
   cantidadProducida Int
   empresaId         Int
   costoTotal        Decimal   @db.Decimal(10, 2)
   createdAt         DateTime? @default(now())
   updatedAt         DateTime? @default(now()) @updatedAt
-  producto          Producto? @relation(fields: [productoId], references: [id])
   empresa           Empresa   @relation(fields: [empresaId], references: [id])
+  producto Producto[]
 }
 
 enum Role {

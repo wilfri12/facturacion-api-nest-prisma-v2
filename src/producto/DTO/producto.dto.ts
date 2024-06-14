@@ -31,4 +31,7 @@ export class ProductoDto {
     @IsNotEmpty()
     @IsNumber()
     categoriaId: number;
+
+    @IsNumber()
+    produccionId: number;
 }
