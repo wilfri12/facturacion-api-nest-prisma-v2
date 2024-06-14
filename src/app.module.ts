@@ -11,9 +11,11 @@ import { DetalleOrdenCompraModule } from './detalle-orden-compra/detalle-orden-c
 import { OrdenCompraModule } from './orden-compra/orden-compra.module';
 import { ProduccionModule } from './produccion/produccion.module';
 import { ProductoModule } from './producto/producto.module';
+import { MateriaPrimaModule } from './materia-prima/materia-prima.module';
+import { DetalleProduccionModule } from './detalle-produccion/detalle-produccion.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, OrdenCompraModule, ProduccionModule],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, OrdenCompraModule, ProduccionModule, MateriaPrimaModule, DetalleProduccionModule],
   controllers: [],
   providers: [],
 })

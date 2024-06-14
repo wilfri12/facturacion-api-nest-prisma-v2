@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { TipoCliente } from "@prisma/client";
+import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class ClienteDto {
     @IsNotEmpty()
@@ -11,9 +12,13 @@ export class ClienteDto {
 
     @IsNotEmpty()
     @IsNumber()
-    empresaId: number;  
-    
+    empresaId: number;
+
     @IsNotEmpty()
     @IsNumber()
     contactoId: number;
+
+    @IsNotEmpty()
+    @IsEnum(TipoCliente)
+    tipoCliente: TipoCliente
 }

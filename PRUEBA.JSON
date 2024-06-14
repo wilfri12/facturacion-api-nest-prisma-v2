@@ -74,5 +74,111 @@
                 "cantidad": 10
             }
         ]
+    },
+    [
+        {
+            "nombre": "Jugo de Naranja",
+            "descripcion": "Jugo de Naranja fresco y natural.",
+            "precio": 2.50,
+            "estado": "INSTOCK",
+            "stock": 100,
+            "empresaId": 1,
+            "categoriaId": 1
+        },
+        {
+            "nombre": "Jugo de Limón",
+            "descripcion": "Jugo de Limón fresco y natural.",
+            "precio": 2.00,
+            "estado": "INSTOCK",
+            "stock": 80,
+            "empresaId": 1,
+            "categoriaId": 2
+        },
+        {
+            "nombre": "Jugo de Fresa",
+            "descripcion": "Jugo de Fresa fresco y natural.",
+            "precio": 3.00,
+            "estado": "INSTOCK",
+            "stock": 50,
+            "empresaId": 1,
+            "categoriaId": 3
+        },
+        {
+            "nombre": "Jugo de Piña Colada",
+            "descripcion": "Jugo de Piña Colada fresco y natural.",
+            "precio": 3.50,
+            "estado": "INSTOCK",
+            "stock": 70,
+            "empresaId": 1,
+            "categoriaId": 4
+        },
+        {
+            "nombre": "Jugo de Zanahoria",
+            "descripcion": "Jugo de Zanahoria fresco y natural.",
+            "precio": 2.80,
+            "estado": "INSTOCK",
+            "stock": 60,
+            "empresaId": 1,
+            "categoriaId": 5
+        },
+        {
+            "nombre": "Jugo de Naranja y Zanahoria",
+            "descripcion": "Jugo de Naranja y Zanahoria fresco y natural.",
+            "precio": 3.20,
+            "estado": "INSTOCK",
+            "stock": 90,
+            "empresaId": 1,
+            "categoriaId": 6
+        },
+        {
+            "nombre": "Jugo Verde Detox",
+            "descripcion": "Jugo Verde Detox fresco y natural.",
+            "precio": 4.00,
+            "estado": "INSTOCK",
+            "stock": 40,
+            "empresaId": 1,
+            "categoriaId": 7
+        },
+        {
+            "nombre": "Jugo de Naranja Orgánico",
+            "descripcion": "Jugo de Naranja Orgánico fresco y natural.",
+            "precio": 3.80,
+            "estado": "INSTOCK",
+            "stock": 30,
+            "empresaId": 1,
+            "categoriaId": 8
+        },
+        {
+            "nombre": "Jugo con Vitamina C",
+            "descripcion": "Jugo con Vitamina C fresco y natural.",
+            "precio": 3.50,
+            "estado": "INSTOCK",
+            "stock": 60,
+            "empresaId": 1,
+            "categoriaId": 9
+        },
+        {
+            "nombre": "Jugo de Manzana para Niños",
+            "descripcion": "Jugo de Manzana fresco y natural para niños.",
+            "precio": 2.20,
+            "estado": "INSTOCK",
+            "stock": 100,
+            "empresaId": 1,
+            "categoriaId": 10
+        }
+    ],
+
+    {
+        "empresaId": 1,
+        "cantidadProducida": 200,
+        "costoTotal": 20000,
+        "detalle": [
+            {
+                "materiaPrimaId": 1,
+                "productoId": 1,
+                "cantidadProducto": 28,
+                "cantidadMateria": 80
+            }
+        ]
     }
 ]

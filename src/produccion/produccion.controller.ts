@@ -1,14 +1,16 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ProduccionService } from './produccion.service';
 import { ProduccionDto } from './DTO/produccion.dto';
 import { ApiResponse } from 'src/interface';
 import { Produccion } from '@prisma/client';
+import { DetalleProduccionDto } from 'src/detalle-produccion/DTO/detalle-produccion.dto';
 
 @Controller('api/v1/produccion')
 export class ProduccionController {
   constructor(private readonly produccionService: ProduccionService) { }
-
-  async createProduccion(data: ProduccionDto): Promise<ApiResponse<Produccion>> {
+  
+  @Post()
+  async createProduccion(@Body() data: ProduccionDto & { detalle: DetalleProduccionDto[] }): Promise<ApiResponse<Produccion>> {
     try {
       const produccion = await this.produccionService.createProduccion(data);
       return produccion;
@@ -16,7 +18,8 @@ export class ProduccionController {
       return { success: false, error: error.message };
     }
   }
-
+  
+@Get()
   async findAllProduccion(): Promise<ApiResponse<Produccion[]>> {
     try {
       const producciones = await this.produccionService.findAllProduccion();

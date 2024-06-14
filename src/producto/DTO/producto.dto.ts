@@ -24,9 +24,6 @@ export class ProductoDto {
     @IsNotEmpty()
     @IsNumber()
     empresaId: number;
-
-    @IsNumber()
-    proveedorId: number;
     
     @IsNotEmpty()
     @IsNumber()

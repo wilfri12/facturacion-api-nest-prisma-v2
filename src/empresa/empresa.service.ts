@@ -30,7 +30,7 @@ export class EmpresaService {
                     productos: true,
                 }
             });
-            return { success: false, data: empresas }
+            return { success: true, data: empresas }
         } catch (error: any) {
             throw error;
         }
