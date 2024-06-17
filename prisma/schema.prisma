@@ -76,17 +76,16 @@ model Producto {
   stock                Int?
   categoriaId          Int
   empresaId            Int
-  produccionId         Int?
   precio               Decimal              @default(0.0) @db.Decimal(10, 2)
   nombre               String               @db.VarChar(50)
   descripcion          String?              @db.VarChar(70)
   createdAt            DateTime?            @default(now())
   updatedAt            DateTime?            @default(now()) @updatedAt
   estado               EstadoProducto       @default(INSTOCK)
-  detalles_facturas    DetalleFactura[]
-  detalleOrdenesCompra DetalleOrdenCompra[]
   empresa              Empresa              @relation(fields: [empresaId], references: [id])
   categoria            Categoria            @relation(fields: [categoriaId], references: [id])
+  detalles_facturas    DetalleFactura[]
+  detalleOrdenesCompra DetalleOrdenCompra[]
   detalleProduccion    DetalleProduccion[]
 
   @@index([nombre], map: "producto_nombre_idx")
@@ -192,6 +191,7 @@ model MateriaPrima {
   id                Int                 @id @default(autoincrement())
   empresaId         Int
   proveedorId       Int
+  stock             Int?
   nombre            String              @db.VarChar(50)
   descripcion       String?             @db.VarChar(50)
   createdAt         DateTime?           @default(now())
@@ -202,18 +202,20 @@ model MateriaPrima {
 }
 
 model Produccion {
-  id                Int       @id @default(autoincrement())
+  id                Int                 @id @default(autoincrement())
   cantidadProducida Int
   empresaId         Int
-  costoTotal        Decimal   @db.Decimal(10, 2)
-  createdAt         DateTime? @default(now())
-  updatedAt         DateTime? @default(now()) @updatedAt
-  empresa           Empresa   @relation(fields: [empresaId], references: [id])
+  costoTotal        Decimal             @db.Decimal(10, 2)
+  createdAt         DateTime?           @default(now())
+  updatedAt         DateTime?           @default(now()) @updatedAt
+  empresa           Empresa             @relation(fields: [empresaId], references: [id])
+  detalleProduccion DetalleProduccion[]
 }
 
 model DetalleProduccion {
   id               Int          @id @default(autoincrement())
   materiaPrimaId   Int
+  produccionId     Int?
   empresaId        Int
   productoId       Int
   cantidadProducto Int
@@ -223,6 +225,7 @@ model DetalleProduccion {
   empresa          Empresa      @relation(fields: [empresaId], references: [id])
   producto         Producto     @relation(fields: [productoId], references: [id])
   materiaPrima     MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+  produccion       Produccion?  @relation(fields: [produccionId], references: [id])
 }
 
 enum Role {

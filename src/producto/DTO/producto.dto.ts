@@ -1,7 +1,7 @@
 import { EstadoProducto } from "@prisma/client";
 import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsString,  isEnum } from "class-validator";
 
-export class ProductoDto {
+export class CreateProductoDto {
     @IsNotEmpty()
     @IsString()
     nombre: string;
@@ -26,6 +26,32 @@ export class ProductoDto {
     empresaId: number;
     
     @IsNotEmpty()
+    @IsNumber()
+    categoriaId: number;
+
+    @IsNumber()
+    produccionId: number;
+}
+
+export class UpdateProductoDto {
+    @IsString()
+    nombre: string;
+
+    @IsString()
+    descripcion: string;
+
+    @IsDecimal()
+    precio: number;
+
+    @IsEnum(EstadoProducto)
+    estado: EstadoProducto;
+
+    @IsNumber()
+    stock: number;
+
+    @IsNumber()
+    empresaId: number;
+    
     @IsNumber()
     categoriaId: number;
 

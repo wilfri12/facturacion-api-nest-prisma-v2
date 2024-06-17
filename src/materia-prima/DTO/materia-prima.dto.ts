@@ -7,6 +7,10 @@ export class MateriaPrimaDto {
 
     @IsNotEmpty()
     @IsString()
+    stock: number;
+
+    @IsNotEmpty()
+    @IsString()
     descripcion: string;
 
     @IsNotEmpty()

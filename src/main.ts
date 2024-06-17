@@ -5,6 +5,8 @@ import { ErrorMiddleware } from '../middleware/error.middleware';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors();
+
   // Usar el middleware global
    new ErrorMiddleware()
 

@@ -15,6 +15,10 @@ export class DetalleProduccionDto {
 
     @IsNotEmpty()
     @IsNumber()
+    produccionId: number;
+
+    @IsNotEmpty()
+    @IsNumber()
     cantidadProducto: number;
 
     @IsNotEmpty()
