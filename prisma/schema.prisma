@@ -73,7 +73,7 @@ model Proveedor {
 
 model Producto {
   id                   Int                  @id @default(autoincrement())
-  stock                Int?
+  stock                Int?                 @default(0)
   categoriaId          Int
   empresaId            Int
   precio               Decimal              @default(0.0) @db.Decimal(10, 2)
@@ -238,8 +238,7 @@ enum Role {
 enum EstadoProducto {
   INSTOCK
   OUTOFSTOCK
-  DISCONTINUED
-  BACKORDER
+  LOWSTOCK
 }
 
 enum GeneroPersona {
