@@ -28,9 +28,6 @@ export class CreateProductoDto {
     @IsNotEmpty()
     @IsNumber()
     categoriaId: number;
-
-    @IsNumber()
-    produccionId: number;
 }
 
 export class UpdateProductoDto {
@@ -54,7 +51,4 @@ export class UpdateProductoDto {
     
     @IsNumber()
     categoriaId: number;
-
-    @IsNumber()
-    produccionId: number;
 }

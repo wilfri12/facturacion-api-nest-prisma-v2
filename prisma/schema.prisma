@@ -81,7 +81,7 @@ model Producto {
   descripcion          String?              @db.VarChar(70)
   createdAt            DateTime?            @default(now())
   updatedAt            DateTime?            @default(now()) @updatedAt
-  estado               EstadoProducto       @default(INSTOCK)
+  estado               EstadoProducto       @default(OUTOFSTOCK)
   empresa              Empresa              @relation(fields: [empresaId], references: [id])
   categoria            Categoria            @relation(fields: [categoriaId], references: [id])
   detalles_facturas    DetalleFactura[]
