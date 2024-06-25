@@ -1,10 +1,8 @@
-import {  IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import {  IsNotEmpty, IsNumber,  ValidateNested } from "class-validator";
+import { DetalleMateriaPrimaDTO } from "src/detalle-materia-prima/DTO/detalle-materia-prima.dto";
 
-export class DetalleProduccionDto {
-    @IsNotEmpty()
-    @IsNumber()
-    materiaPrimaId: number;
-
+export class DetalleProduccionDTO {
     @IsNotEmpty()
     @IsNumber()
     empresaId: number;
@@ -15,13 +13,9 @@ export class DetalleProduccionDto {
 
     @IsNotEmpty()
     @IsNumber()
-    produccionId: number;
-
-    @IsNotEmpty()
-    @IsNumber()
     cantidadProducto: number;
 
-    @IsNotEmpty()
-    @IsNumber()
-    cantidadMateria: number;
-}
+    @ValidateNested({ each: true })
+    @Type(() => DetalleMateriaPrimaDTO)
+    detalleMateriaPrima: DetalleMateriaPrimaDTO[]; // Se puede hacer opcional con ?
+  }

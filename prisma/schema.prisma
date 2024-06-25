@@ -191,16 +191,15 @@ model MateriaPrima {
   id                Int                 @id @default(autoincrement())
   empresaId         Int
   proveedorId       Int
-  stock             Int?
+  stock             Int?                @default(0)
   nombre            String              @db.VarChar(50)
   descripcion       String?             @db.VarChar(50)
   createdAt         DateTime?           @default(now())
   updatedAt         DateTime?           @default(now()) @updatedAt
   empresa           Empresa             @relation(fields: [empresaId], references: [id])
   proveedor         Proveedor           @relation(fields: [proveedorId], references: [id])
-  detalleProduccion DetalleProduccion[]
+  detalleMateriaPrima DetalleMateriaPrima[]
 }
-
 model Produccion {
   id                Int                 @id @default(autoincrement())
   cantidadProducida Int
@@ -212,21 +211,32 @@ model Produccion {
   detalleProduccion DetalleProduccion[]
 }
 
+
 model DetalleProduccion {
-  id               Int          @id @default(autoincrement())
-  materiaPrimaId   Int
-  produccionId     Int?
+  id               Int                  @id @default(autoincrement())
+  produccionId     Int
   empresaId        Int
   productoId       Int
   cantidadProducto Int
-  cantidadMateria  Int
-  createdAt        DateTime?    @default(now())
-  updatedAt        DateTime?    @default(now()) @updatedAt
-  empresa          Empresa      @relation(fields: [empresaId], references: [id])
-  producto         Producto     @relation(fields: [productoId], references: [id])
-  materiaPrima     MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
-  produccion       Produccion?  @relation(fields: [produccionId], references: [id])
+  createdAt        DateTime?            @default(now())
+  updatedAt        DateTime?            @default(now()) @updatedAt
+  empresa          Empresa              @relation(fields: [empresaId], references: [id])
+  producto         Producto             @relation(fields: [productoId], references: [id])
+  produccion       Produccion           @relation(fields: [produccionId], references: [id])
+  detalleMateriaPrima DetalleMateriaPrima[]
 }
+
+model DetalleMateriaPrima {
+  id                Int               @id @default(autoincrement())
+  detalleProduccionId Int
+  materiaPrimaId    Int
+  cantidadMateria   Int
+  createdAt         DateTime?         @default(now())
+  updatedAt         DateTime?         @default(now()) @updatedAt
+  detalleProduccion DetalleProduccion @relation(fields: [detalleProduccionId], references: [id])
+  materiaPrima      MateriaPrima      @relation(fields: [materiaPrimaId], references: [id])
+}
+
 
 enum Role {
   ADMIN
