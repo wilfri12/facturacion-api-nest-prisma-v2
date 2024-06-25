@@ -1,6 +1,4 @@
-import { Type } from "class-transformer";
-import { IsDecimal, IsNotEmpty, IsNumber, ValidateNested } from "class-validator";
-import { DetalleProduccionDTO } from "src/detalle-produccion/DTO/detalle-produccion.dto";
+import { IsDecimal, IsNotEmpty, IsNumber } from "class-validator";
 
 export class ProduccionDTO {
     @IsNotEmpty()
@@ -14,8 +12,4 @@ export class ProduccionDTO {
     @IsNotEmpty()
     @IsDecimal()
     costoTotal: number;
-  
-    @ValidateNested({ each: true })
-    @Type(() => DetalleProduccionDTO)
-    detalleProduccion: DetalleProduccionDTO[];
   }

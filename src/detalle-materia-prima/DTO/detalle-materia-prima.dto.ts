@@ -8,4 +8,9 @@ export class DetalleMateriaPrimaDTO {
     @IsNotEmpty()
     @IsNumber()
     cantidadMateria: number;
+
+    @IsNotEmpty()
+    @IsNumber()
+    detalleProduccionId: number
   }
+ 
