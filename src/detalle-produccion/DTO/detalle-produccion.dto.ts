@@ -20,3 +20,26 @@ export class DetalleProduccionDTO {
     cantidadProducto: number;
 
   }
+
+
+  export class DetalleProduccionConMateriaPrimaDTO {
+    @IsNotEmpty()
+    @IsNumber()
+    produccionId: number;
+
+    @IsNotEmpty()
+    @IsNumber()
+    empresaId: number;
+
+
+    @IsNotEmpty()
+    @IsNumber()
+    productoId: number;
+
+    @IsNotEmpty()
+    @IsNumber()
+    cantidadProducto: number;
+
+    detalleMateriaPrima?: DetalleMateriaPrimaDTO[];
+
+  }

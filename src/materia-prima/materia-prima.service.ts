@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ApiResponse } from 'src/interface';
 import { PrismaService } from 'src/prisma.service';
-import { MateriaPrimaDto } from './DTO/materia-prima.dto';
+import { MateriaPrimaDto, UpdateMateriaPrimaDto } from './DTO/materia-prima.dto';
 import { MateriaPrima } from '@prisma/client';
 
 @Injectable()
@@ -26,5 +26,13 @@ export class MateriaPrimaService {
         }
     }
 
+    async updateMateriaPrimaStock(Data: UpdateMateriaPrimaDto, id: number): Promise<void> {
+
+        const materiaPrima = await this.prisma.materiaPrima.findUnique({ where: { id } });
+        let oldStock: number = parseInt(materiaPrima.stock.toString());
+        let newStock: number = oldStock - Data.stock;
+        const data = { stock: newStock } as UpdateMateriaPrimaDto;
+        await this.prisma.materiaPrima.update({ data, where: { id } });
+    }
 
 }

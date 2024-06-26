@@ -207,3 +207,47 @@
         ]
     }
 ]
+
+
+
+
+
+{
+    "empresaId": 1, // representa el id de la empresa 
+    "cantidadProducida": 200, //representa la cantidad total de productos que se produjo en esa produccion
+    "costoTotal": 20000, //representa el costo de la produccion
+    "detalle": [ //un arreglo con los detalles de la producion
+        {
+            "productoId": 1, //producto
+            "cantidadProducto": 50, //cantidad creada de ese producto
+            "detalleMateriaPrima": [
+                {
+                    "materiaPrimaId": 1,
+                    "cantidadMateria": 80
+                },
+                {
+                    "materiaPrimaId": 2,
+                    "cantidadMateria": 10
+                }
+            ], //las materias primas usadas para crear esta cantidad  producto
+        },
+        {
+            "productoId": 12, //producto
+            "cantidadProducto": 150, //cantidad creada de ese producto
+            "detalleMateriaPrima": [
+                {
+                    "materiaPrimaId": 3,
+                    "cantidadMateria": 5
+                },
+                {
+                    "materiaPrimaId": 1,
+                    "cantidadMateria": 20
+                },
+                {
+                    "materiaPrimaId": 1,
+                    "cantidadMateria": 70
+                }
+            ], //las materias primas usadas para crear esta cantidad de ese producto
+        }
+    ]
+}

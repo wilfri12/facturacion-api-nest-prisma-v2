@@ -5,19 +5,26 @@ import { PrismaService } from 'src/prisma.service';
 import { DetalleProduccionService } from 'src/detalle-produccion/detalle-produccion.service';
 import { ProductoService } from 'src/producto/producto.service';
 import { UpdateProductoDto } from 'src/producto/DTO/producto.dto';
-import { DetalleProduccionDTO } from 'src/detalle-produccion/DTO/detalle-produccion.dto';
+import { DetalleProduccionConMateriaPrimaDTO, DetalleProduccionDTO } from 'src/detalle-produccion/DTO/detalle-produccion.dto';
 import { ProduccionDTO } from './DTO/produccion.dto';
+import { MateriaPrimaService } from 'src/materia-prima/materia-prima.service';
+import { UpdateMateriaPrimaDto } from 'src/materia-prima/DTO/materia-prima.dto';
+
+interface ProduccionConDetalleDTO extends ProduccionDTO {
+    detalle: DetalleProduccionConMateriaPrimaDTO[];
+}
 
 @Injectable()
 export class ProduccionService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly DetalleProduccionService: DetalleProduccionService,
-        private readonly productoService: ProductoService
+        private readonly productoService: ProductoService, 
+        private readonly materiaPrimaService: MateriaPrimaService, 
 
     ) { }
 
-    async createProduccion(data: ProduccionDTO & { detalle: DetalleProduccionDTO[] }): Promise<ApiResponse<Produccion>> {
+    async createProduccion(data: ProduccionConDetalleDTO): Promise<ApiResponse<Produccion>> {
         try {
             const { empresaId, cantidadProducida, costoTotal, detalle } = data;
             const produccionData: ProduccionDTO = {
@@ -25,57 +32,72 @@ export class ProduccionService {
                 cantidadProducida,
                 costoTotal,
             };
-    
+
             const produccion = await this.prisma.$transaction(async (prisma) => {
-                const createdProduccion = await prisma.produccion.create({ data: produccionData });
-    
-                if (createdProduccion) {
+                const createdProduccion = await this.CreateProduccion(produccionData);
+
+                if (createdProduccion.data && createdProduccion.success) {
                     const detallePromises = detalle.map(async (detalle) => {
                         const detalleProduccionData = {
                             empresaId,
                             productoId: detalle.productoId,
                             cantidadProducto: detalle.cantidadProducto,
+                            produccionId: createdProduccion.data.id,
                         } as DetalleProduccionDTO;
-    
-                        // Update producto stock
+
                         const productoStock = {
                             stock: detalle.cantidadProducto,
                         } as UpdateProductoDto;
                         await this.productoService.updateProductoStock(productoStock, detalle.productoId);
-    
-                        // Create detalleProduccion
+
                         const createdDetalleProduccion = await this.DetalleProduccionService.createDetalleProduccion(detalleProduccionData);
-    
+
                         if (createdDetalleProduccion) {
+
+
                             const detalleMateriaPrimaPromises = detalle.detalleMateriaPrima.map(async (materiaPrima) => {
+                               const MateriaPrimaStock ={
+                                stock: materiaPrima.cantidadMateria,
+                               } as UpdateMateriaPrimaDto;
+
+                              await  this.materiaPrimaService.updateMateriaPrimaStock(MateriaPrimaStock, materiaPrima.materiaPrimaId );
+                               
                                 const detalleMateriaPrimaData = {
                                     detalleProduccionId: createdDetalleProduccion.data.id,
                                     materiaPrimaId: materiaPrima.materiaPrimaId,
                                     cantidadMateria: materiaPrima.cantidadMateria,
                                 };
-    
-                                // Create detalleMateriaPrima
+
                                 return prisma.detalleMateriaPrima.create({ data: detalleMateriaPrimaData });
                             });
-    
-                            // Wait for all detalleMateriaPrima to be created
+
                             await Promise.all(detalleMateriaPrimaPromises);
                         }
                     });
-    
-                    // Wait for all detalle to be processed
+
                     await Promise.all(detallePromises);
                 }
-    
+
                 return createdProduccion;
             });
-    
-            return { success: true, data: produccion };
+
+            return produccion;
         } catch (error) {
             throw error;
         }
     }
-    
+
+    async CreateProduccion(data: ProduccionDTO): Promise<ApiResponse<Produccion>> {
+        try {
+
+            const ProduccionCreatd = await this.prisma.produccion.create({ data });
+            return { success: true, data: ProduccionCreatd }
+
+        } catch (error) {
+            throw error
+        }
+    }
+
 
     async findAllProduccion(): Promise<ApiResponse<Produccion[]>> {
         try {
@@ -88,103 +110,63 @@ export class ProduccionService {
                         }
                     },
                     detalleProduccion: {
-                        select: {
-                            id: true,
+                        include: {
                             producto: {
                                 select: {
                                     id: true,
                                     nombre: true,
+                                    precio: true,
                                     descripcion: true,
+                                    stock: true,
+                                    estado: true,
                                     categoria: {
                                         select: {
+                                            id: true,
                                             nombre: true,
                                         }
                                     },
                                 }
                             },
-                            cantidadProducto: true,
-
+                            detalleMateriaPrima: {
+                                include: {
+                                    materiaPrima: {
+                                        select: {
+                                            id: true,
+                                            nombre: true,
+                                            descripcion: true,
+                                            stock: true,
+                                            proveedor: {
+                                                select: {
+                                                    id: true,
+                                                    nombre: true,
+                                                    contacto: {
+                                                        select: {
+                                                            id: true,
+                                                            email: true,
+                                                            telefono: true,
+                                                            whatsapp: true,
+                                                            direccion: true,
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                }
+                            },
                         }
-
-                    }
-
-
+                    },
                 }
             });
+    
             return { success: true, data: producciones };
         } catch (error) {
-            throw error;
+            console.error('Error al buscar producciones:', error);
+            throw error; 
         }
     }
+    
 }
 
 
 
-
-/*
-     // Función para crear producción
-    async createProduccion(data: ProduccionDTO & { detalle: DetalleProduccionDTO[] }): Promise<ApiResponse<ProduccionDTO>> {
-        try {
-            const { empresaId, cantidadProducida, costoTotal, detalle, detalleMateriaPrima } = data;
-
-            // Crear objeto de datos para la producción
-            const produccionData = {
-                empresaId,
-                cantidadProducida,
-                costoTotal,
-            };
-
-            // Iniciar transacción con Prisma
-            const produccion = await prisma.$transaction(async (prisma) => {
-                // Crear la producción principal
-                const createdProduccion = await prisma.produccion.create({ data: produccionData });
-
-                if (createdProduccion) {
-                    // Array para almacenar promesas de creación de detalles de producción
-                    const detallePromises = detalle.map(async (detalle) => {
-                        // Crear objeto de datos para el detalle de producción
-                        const detalleProduccionData = {
-                            empresaId,
-                            productoId: detalle.productoId,
-                            cantidadProducto: detalle.cantidadProducto,
-                            produccionId: createdProduccion.id, // Asociar al ID de la producción creada
-                        };
-
-                        // Crear detalle de producción
-                        const createdDetalleProduccion = await DetalleProduccionService.({ data: detalleProduccionData });
-
-                        // Procesar detalle de materias primas si el detalle de producción se creó correctamente
-                        if (createdDetalleProduccion) {
-                            // Iterar sobre las materias primas del detalle actual
-                            const detalleMateriaPrimaPromises = detalle.detalleMateriaPrima.map(async (materiaPrima) => {
-                                // Crear objeto de datos para el detalle de materia prima
-                                const detalleMateriaPrimaData = {
-                                    detalleProduccionId: createdDetalleProduccion.id,
-                                    materiaPrimaId: materiaPrima.materiaPrimaId,
-                                    cantidadMateria: materiaPrima.cantidadMateria,
-                                };
-
-                                // Crear detalle de materia prima
-                                return prisma.detalleMateriaPrima.create({ data: detalleMateriaPrimaData });
-                            });
-
-                            // Esperar a que se completen todas las promesas de detalle de materia prima
-                            await Promise.all(detalleMateriaPrimaPromises);
-                        }
-                    });
-
-                    // Esperar a que se completen todas las promesas de detalle de producción
-                    await Promise.all(detallePromises);
-                }
-
-                return createdProduccion;
-            });
-
-            // Devolver respuesta exitosa con los datos de la producción creada
-            return { success: true, data: produccion };
-        } catch (error) {
-            // Manejar errores
-            throw error;
-        }
-    }
- */

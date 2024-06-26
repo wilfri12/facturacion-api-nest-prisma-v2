@@ -21,3 +21,21 @@ export class MateriaPrimaDto {
     @IsNumber()
     proveedorId: number;
 }
+
+
+export class UpdateMateriaPrimaDto {
+    @IsString()
+    nombre?: string;
+
+    @IsString()
+    stock?: number;
+
+    @IsString()
+    descripcion?: string;
+
+    @IsNumber()
+    empresaId?: number;
+
+    @IsNumber()
+    proveedorId?: number;
+}
