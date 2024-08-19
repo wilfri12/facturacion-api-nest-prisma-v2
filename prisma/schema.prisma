@@ -9,7 +9,7 @@ generator client {
 
 model Contacto {
   id        Int        @id @default(autoincrement())
-  direccion String?    @db.VarChar(50)
+  direccion String     @db.VarChar(50)
   telefono  String?    @db.VarChar(15)
   email     String?    @unique @db.VarChar(50)
   instagram String?    @db.VarChar(30)
@@ -23,120 +23,145 @@ model Contacto {
 }
 
 model Empresa {
-  id                   Int                  @id @default(autoincrement())
-  contactoId           Int?                 @unique
-  nombre               String               @db.VarChar(50)
-  descripcion          String?              @db.VarChar(100)
-  createdAt            DateTime?            @default(now())
-  updatedAt            DateTime?            @default(now()) @updatedAt
-  contacto             Contacto?            @relation(fields: [contactoId], references: [id])
-  usuarios             Usuario[]
-  categorias           Categoria[]
-  productos            Producto[]
-  facturas             Factura[]
-  detalles_facturas    DetalleFactura[]
-  proveedores          Proveedor[]
-  clientes             Cliente[]
-  detalleOrdenesCompra DetalleOrdenCompra[]
-  ordenesCompra        OrdenCompra[]
-  produccion           Produccion[]
-  materiaPrima         MateriaPrima[]
-  detalleProduccion    DetalleProduccion[]
+  id               Int              @id @default(autoincrement())
+  contactoId       Int?             @unique
+  nombre           String           @db.VarChar(50)
+  descripcion      String?          @db.VarChar(100)
+  createdAt        DateTime?        @default(now())
+  updatedAt        DateTime?        @default(now()) @updatedAt
+  contacto         Contacto?        @relation(fields: [contactoId], references: [id])
+  usuarios         Usuario[]
+  categorias       Categoria[]
+  productos        Producto[]
+  facturas         Factura[]
+  detallesFacturas DetalleFactura[]
+  proveedores      Proveedor[]
+  clientes         Cliente[]
+  detallesCompras  DetalleCompra[]
+  Compras          Compra[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
 
 model Categoria {
-  id        Int        @id @default(autoincrement())
-  empresaId Int
-  nombre    String     @unique @db.VarChar(20)
-  createdAt DateTime?  @default(now())
-  updatedAt DateTime?  @default(now()) @updatedAt
-  empresa   Empresa    @relation(fields: [empresaId], references: [id])
-  productos Producto[]
+  id           Int            @id @default(autoincrement())
+  empresaId    Int
+  nombre       String         @unique @db.VarChar(20)
+  createdAt    DateTime?      @default(now())
+  updatedAt    DateTime?      @default(now()) @updatedAt
+  empresa      Empresa        @relation(fields: [empresaId], references: [id])
+  productos    Producto[]
+  SubCategoria SubCategoria[]
 
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
 }
 
+model SubCategoria {
+  id          Int        @id @default(autoincrement())
+  categoriaId Int
+  nombre      String     @db.VarChar(20)
+  createdAt   DateTime?  @default(now())
+  updatedAt   DateTime?  @default(now()) @updatedAt
+  categoria   Categoria  @relation(fields: [categoriaId], references: [id])
+  productos   Producto[]
+
+  @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
+}
+
 model Proveedor {
-  id            Int            @id @default(autoincrement())
-  contactoId    Int?           @unique
-  empresaId     Int
-  nombre        String         @db.VarChar(50)
-  createdAt     DateTime?      @default(now())
-  updatedAt     DateTime?      @default(now()) @updatedAt
-  empresa       Empresa        @relation(fields: [empresaId], references: [id])
-  contacto      Contacto?      @relation(fields: [contactoId], references: [id])
-  ordenesCompra OrdenCompra[]
-  materiaPrima  MateriaPrima[]
+  id         Int        @id @default(autoincrement())
+  contactoId Int?       @unique
+  empresaId  Int
+  nombre     String     @db.VarChar(50)
+  createdAt  DateTime?  @default(now())
+  updatedAt  DateTime?  @default(now()) @updatedAt
+  empresa    Empresa    @relation(fields: [empresaId], references: [id])
+  contacto   Contacto?  @relation(fields: [contactoId], references: [id])
+  Producto   Producto[]
 }
 
 model Producto {
-  id                   Int                  @id @default(autoincrement())
-  stock                Int?                 @default(0)
-  categoriaId          Int
-  empresaId            Int
-  precio               Decimal              @default(0.0) @db.Decimal(10, 2)
-  nombre               String               @db.VarChar(50)
-  descripcion          String?              @db.VarChar(70)
-  createdAt            DateTime?            @default(now())
-  updatedAt            DateTime?            @default(now()) @updatedAt
-  estado               EstadoProducto       @default(OUTOFSTOCK)
-  empresa              Empresa              @relation(fields: [empresaId], references: [id])
-  categoria            Categoria            @relation(fields: [categoriaId], references: [id])
-  detalles_facturas    DetalleFactura[]
-  detalleOrdenesCompra DetalleOrdenCompra[]
-  detalleProduccion    DetalleProduccion[]
+  id               Int              @id @default(autoincrement())
+  stock            Int?             @default(0)
+  categoriaId      Int
+  subCategoriaId   Int? 
+  empresaId        Int
+  proveedorId      Int?
+  precioCompra     Decimal?         @default(0.0) @db.Decimal(10, 2)
+  precioVenta      Decimal          @default(0.0) @db.Decimal(10, 2)
+  codigo           String?          @db.VarChar(50)
+  codigoBarras     String?          @unique @db.VarChar(50) // Código de barras
+  nombre           String           @db.VarChar(50)
+  talla            String?          @db.VarChar(10) // Talla para ropa
+  volumen          String?          @db.VarChar(10) // Volumen para cosméticos
+  peso             String?          @db.VarChar(10) // Peso para productos que lo necesiten
+  edadRecomendada  String?          @db.VarChar(10) // Edad recomendada para juguetes
+  color            String?          @db.VarChar(25)
+  marca            String?          @db.VarChar(25)
+  descripcion      String?          @db.VarChar(70)
+  ubicacion        String?          @db.VarChar(40)
+  createdAt        DateTime?        @default(now())
+  updatedAt        DateTime?        @default(now()) @updatedAt
+  genero           GeneroProducto   @default(UNISEX)
+  estado           EstadoProducto   @default(INSTOCK)
+  detallesFacturas DetalleFactura[]
+  detallesCompras  DetalleCompra[]
+  empresa          Empresa          @relation(fields: [empresaId], references: [id])
+  categoria        Categoria        @relation(fields: [categoriaId], references: [id])
+  subCategoria     SubCategoria?    @relation(fields: [subCategoriaId], references: [id])
+  proveedor        Proveedor?       @relation(fields: [proveedorId], references: [id])
 
   @@index([nombre], map: "producto_nombre_idx")
 }
 
 model Usuario {
-  id          Int           @id @default(autoincrement())
-  empresaId   Int
-  contactoId  Int?          @unique
-  nombre      String        @db.VarChar(50)
-  password    String        @db.VarChar(20)
-  createdAt   DateTime?     @default(now())
-  updatedAt   DateTime?     @default(now()) @updatedAt
-  genero      GeneroPersona
-  role        Role          @default(EMPLEADO)
-  estado      EstadoUsuario @default(PENDIENTE)
-  contacto    Contacto?     @relation(fields: [contactoId], references: [id])
-  empresa     Empresa       @relation(fields: [empresaId], references: [id])
-  factura     Factura[]
-  ordenCompra OrdenCompra[]
+  id         Int           @id @default(autoincrement())
+  empresaId  Int
+  contactoId Int           @unique
+  nombre     String        @db.VarChar(50)
+  password   String        @db.VarChar(100)
+  createdAt  DateTime?     @default(now())
+  updatedAt  DateTime?     @default(now()) @updatedAt
+  genero     GeneroPersona
+  role       Role          @default(EMPLEADO)
+  estado     EstadoUsuario @default(PENDIENTE)
+  contacto   Contacto?     @relation(fields: [contactoId], references: [id])
+  empresa    Empresa       @relation(fields: [empresaId], references: [id])
+  facturas   Factura[]
+  Compras    Compra[]
 
   @@unique([empresaId, nombre], map: "empresa_usuario_unique")
 }
 
 model Cliente {
   id             Int         @id @default(autoincrement())
-  contactoId     Int?        @unique
-  tipoCliente    TipoCliente @default(FISICO)
+  contactoId     Int         @unique
   empresaId      Int
   nombre         String      @db.VarChar(50)
   identificacion String      @unique @db.VarChar(50)
   createdAt      DateTime?   @default(now())
   updatedAt      DateTime?   @default(now()) @updatedAt
+  tipoCliente    TipoCliente @default(FISICO)
   contacto       Contacto?   @relation(fields: [contactoId], references: [id])
   empresa        Empresa     @relation(fields: [empresaId], references: [id])
-  factura        Factura[]
+  facturas       Factura[]
 }
 
 model Factura {
-  id            Int              @id @default(autoincrement())
-  empresaId     Int
-  usuarioId     Int?
-  clienteId     Int?
-  total         Decimal          @db.Decimal(10, 2)
-  clienteNombre String?          @db.VarChar(50)
-  createdAt     DateTime?        @default(now())
-  updatedAt     DateTime?        @default(now()) @updatedAt
-  empresa       Empresa          @relation(fields: [empresaId], references: [id])
-  usuario       Usuario?         @relation(fields: [usuarioId], references: [id])
-  cliente       Cliente?         @relation(fields: [clienteId], references: [id])
-  detalles      DetalleFactura[]
+  id               Int              @id @default(autoincrement())
+  empresaId        Int
+  usuarioId        Int
+  clienteId        Int?
+  itebisTotal      Decimal          @db.Decimal(10, 2)
+  total            Decimal          @db.Decimal(10, 2)
+  clienteNombre    String?          @db.VarChar(50)
+  createdAt        DateTime?        @default(now())
+  updatedAt        DateTime?        @default(now()) @updatedAt
+  metodoPago       MetodoPago       @default(EFECTIVO)
+  empresa          Empresa          @relation(fields: [empresaId], references: [id])
+  usuario          Usuario          @relation(fields: [usuarioId], references: [id])
+  cliente          Cliente?         @relation(fields: [clienteId], references: [id])
+  detallesFacturas DetalleFactura[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
 }
@@ -148,6 +173,8 @@ model DetalleFactura {
   productoId     Int
   cantidad       Int
   precioUnitario Decimal   @db.Decimal(10, 2)
+  descuento      Decimal   @default(0.00) @db.Decimal(10, 2) // Descuento aplicado
+  itebis         Decimal   @default(0.00) @db.Decimal(10, 2)
   subtotal       Decimal   @db.Decimal(10, 2)
   createdAt      DateTime? @default(now())
   updatedAt      DateTime? @default(now()) @updatedAt
@@ -158,85 +185,36 @@ model DetalleFactura {
   @@index([facturaId, productoId], map: "detalle_factura_idx")
 }
 
-model DetalleOrdenCompra {
-  id             Int          @id @default(autoincrement())
-  ordenId        Int?
+model Compra {
+  id              Int             @id @default(autoincrement())
+  usuarioId       Int
+  empresaId       Int
+  total           Decimal         @default(0.00) @db.Decimal(10, 2)
+  createdAt       DateTime?       @default(now())
+  updatedAt       DateTime?       @default(now()) @updatedAt
+  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
+  empresa         Empresa         @relation(fields: [empresaId], references: [id])
+  detallesCompras DetalleCompra[]
+
+  @@map("Compra")
+}
+
+model DetalleCompra {
+  id             Int       @id @default(autoincrement())
+  compraId       Int?
   productoId     Int?
   cantidad       Int
   empresaId      Int
-  precioUnitario Decimal      @db.Decimal(10, 2)
-  subtotal       Decimal      @db.Decimal(10, 2)
-  createdAt      DateTime?    @default(now())
-  updatedAt      DateTime?    @default(now()) @updatedAt
-  ordenesCompra  OrdenCompra? @relation(fields: [ordenId], references: [id])
-  producto       Producto?    @relation(fields: [productoId], references: [id])
-  empresa        Empresa      @relation(fields: [empresaId], references: [id])
-}
+  precioUnitario Decimal   @db.Decimal(10, 2)
+  subtotal       Decimal   @db.Decimal(10, 2)
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now()) @updatedAt
+  Compra         Compra?   @relation(fields: [compraId], references: [id])
+  producto       Producto? @relation(fields: [productoId], references: [id])
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
 
-model OrdenCompra {
-  id                   Int                  @id @default(autoincrement())
-  proveedorId          Int?
-  usuarioId            Int
-  empresaId            Int
-  total                Decimal              @default(0.00) @db.Decimal(10, 2)
-  createdAt            DateTime?            @default(now())
-  updatedAt            DateTime?            @default(now()) @updatedAt
-  proveedor            Proveedor?           @relation(fields: [proveedorId], references: [id])
-  usuario              Usuario              @relation(fields: [usuarioId], references: [id])
-  empresa              Empresa              @relation(fields: [empresaId], references: [id])
-  detalleOrdenesCompra DetalleOrdenCompra[]
+  @@map("DetalleCompra")
 }
-
-model MateriaPrima {
-  id                Int                 @id @default(autoincrement())
-  empresaId         Int
-  proveedorId       Int
-  stock             Int?                @default(0)
-  nombre            String              @db.VarChar(50)
-  descripcion       String?             @db.VarChar(50)
-  createdAt         DateTime?           @default(now())
-  updatedAt         DateTime?           @default(now()) @updatedAt
-  empresa           Empresa             @relation(fields: [empresaId], references: [id])
-  proveedor         Proveedor           @relation(fields: [proveedorId], references: [id])
-  detalleMateriaPrima DetalleMateriaPrima[]
-}
-model Produccion {
-  id                Int                 @id @default(autoincrement())
-  cantidadProducida Int
-  empresaId         Int
-  costoTotal        Decimal             @db.Decimal(10, 2)
-  createdAt         DateTime?           @default(now())
-  updatedAt         DateTime?           @default(now()) @updatedAt
-  empresa           Empresa             @relation(fields: [empresaId], references: [id])
-  detalleProduccion DetalleProduccion[]
-}
-
-
-model DetalleProduccion {
-  id               Int                  @id @default(autoincrement())
-  produccionId     Int?
-  empresaId        Int
-  productoId       Int
-  cantidadProducto Int
-  createdAt        DateTime?            @default(now())
-  updatedAt        DateTime?            @default(now()) @updatedAt
-  empresa          Empresa              @relation(fields: [empresaId], references: [id])
-  producto         Producto             @relation(fields: [productoId], references: [id])
-  produccion       Produccion?           @relation(fields: [produccionId], references: [id])
-  detalleMateriaPrima DetalleMateriaPrima[]
-}
-
-model DetalleMateriaPrima {
-  id                Int               @id @default(autoincrement())
-  detalleProduccionId Int
-  materiaPrimaId    Int
-  cantidadMateria   Int
-  createdAt         DateTime?         @default(now())
-  updatedAt         DateTime?         @default(now()) @updatedAt
-  detalleProduccion DetalleProduccion @relation(fields: [detalleProduccionId], references: [id])
-  materiaPrima      MateriaPrima      @relation(fields: [materiaPrimaId], references: [id])
-}
-
 
 enum Role {
   ADMIN
@@ -256,6 +234,12 @@ enum GeneroPersona {
   FEMENINO
 }
 
+enum GeneroProducto {
+  HOMBRE
+  MUJER
+  UNISEX
+}
+
 enum EstadoUsuario {
   HABILITADO
   INHABILITADO
@@ -265,4 +249,10 @@ enum EstadoUsuario {
 enum TipoCliente {
   FISCAL
   FISICO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
 }

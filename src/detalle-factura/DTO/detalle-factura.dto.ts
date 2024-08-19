@@ -25,5 +25,7 @@ export class DetalleFacturaDto {
     @IsNotEmpty()
     @IsDecimal()
     subtotal: number;
-    
+
+    @IsDecimal()
+    itebis: number;
 }

@@ -10,7 +10,7 @@ export class FacturaController {
   constructor(private readonly facturaService: FacturaService) { }
 
   @Post()
-  async create(@Body() data: FacturaDto & { detalle: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
+  async create(@Body() data: FacturaDto & { detalles: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
     try {
       const factura = await this.facturaService.createFactura(data);
 

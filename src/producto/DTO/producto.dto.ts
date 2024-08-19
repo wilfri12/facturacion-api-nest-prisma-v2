@@ -1,21 +1,67 @@
-import { EstadoProducto } from "@prisma/client";
-import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsString,  isEnum } from "class-validator";
+import { EstadoProducto, GeneroProducto } from "@prisma/client";
+import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateProductoDto {
     @IsNotEmpty()
     @IsString()
     nombre: string;
 
+    @IsOptional()
     @IsString()
-    descripcion: string;
+    descripcion?: string;
 
     @IsNotEmpty()
     @IsDecimal()
-    precio: number;
+    precioCompra: number;
+
+    @IsNotEmpty()
+    @IsDecimal()
+    precioVenta: number;
+
+    @IsOptional()
+    @IsString()
+    codigo?: string;
+
+    @IsOptional()
+    @IsString()
+    codigoBarras?: string;
+
+    @IsOptional()
+    @IsString()
+    talla?: string;
+
+    @IsOptional()
+    @IsString()
+    volumen?: string;
+
+    @IsOptional()
+    @IsString()
+    peso?: string;
+
+    @IsOptional()
+    @IsString()
+    edadRecomendada?: string;
+
+    @IsOptional()
+    @IsString()
+    color?: string;
+
+    @IsOptional()
+    @IsString()
+    marca?: string;
+
+    @IsOptional()
+    @IsString()
+    ubicacion?: string;
 
     @IsNotEmpty()
     @IsEnum(EstadoProducto)
     estado: EstadoProducto;
+    
+    @IsNotEmpty()
+    @IsEnum(GeneroProducto)
+    genero: GeneroProducto;
+        
 
     @IsNotEmpty()
     @IsNumber()
@@ -24,31 +70,101 @@ export class CreateProductoDto {
     @IsNotEmpty()
     @IsNumber()
     empresaId: number;
-    
+
+    @IsOptional()
+    @IsNumber()
+    subCategoriaId?: number;
+
     @IsNotEmpty()
     @IsNumber()
     categoriaId: number;
+
+    @IsOptional()
+    @IsNumber()
+    proveedorId?: number;
 }
 
 export class UpdateProductoDto {
+    @IsOptional()
     @IsString()
-    nombre: string;
+    nombre?: string;
 
+    @IsOptional()
     @IsString()
-    descripcion: string;
+    descripcion?: string;
 
+    @IsOptional()
     @IsDecimal()
-    precio: number;
+    precioCompra?: number;
 
+    @IsOptional()
+    @IsDecimal()
+    precioVenta?: number;
+
+    @IsOptional()
+    @IsString()
+    codigo?: string;
+
+    @IsOptional()
+    @IsString()
+    codigoBarras?: string;
+
+    @IsOptional()
+    @IsString()
+    talla?: string;
+
+    @IsOptional()
+    @IsString()
+    volumen?: string;
+
+    @IsOptional()
+    @IsString()
+    peso?: string;
+
+    @IsOptional()
+    @IsString()
+    edadRecomendada?: string;
+
+    @IsOptional()
+    @IsString()
+    color?: string;
+
+    @IsOptional()
+    @IsString()
+    marca?: string;
+
+    @IsOptional()
+    @IsString()
+    ubicacion?: string;
+
+    @IsOptional()
     @IsEnum(EstadoProducto)
     estado: EstadoProducto;
-
-    @IsNumber()
-    stock: number;
-
-    @IsNumber()
-    empresaId: number;
     
+    @IsOptional()
+    @IsEnum(GeneroProducto)
+    genero?: GeneroProducto;
+        
+
+    @IsOptional()
     @IsNumber()
-    categoriaId: number;
+    stock?: number;
+
+    @IsOptional()
+    @IsNumber()
+    empresaId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    subCategoriaId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    categoriaId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    proveedorId?: number;
+
+    
 }

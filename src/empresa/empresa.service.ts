@@ -3,17 +3,26 @@ import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { EmpresaDto } from './DTO/empresa.dto';
 import { Empresa } from '@prisma/client';
+import { GetLocalDate } from 'src/utility/getLocalDate';
 
 @Injectable()
 export class EmpresaService {
-    constructor(
-        private pisma: PrismaService
-    ) { }
+    constructor(private pisma: PrismaService) { }
 
     async createEmpresa(data: EmpresaDto): Promise<ApiResponse<Empresa>> {
+        const { contactoId, descripcion, nombre } = data;
+
+        const empresaData = {
+            contactoId,
+            descripcion,
+            nombre,
+            createdAt: GetLocalDate(),
+            updatedAt: GetLocalDate(),
+        };
+
         try {
-            const empresa = await this.pisma.empresa.create({ data })
-            return { success: false, data: empresa }
+            const empresa = await this.pisma.empresa.create({ data: empresaData });
+            return { success: true, data: empresa };
         } catch (error: any) {
             throw error;
         }
@@ -26,11 +35,11 @@ export class EmpresaService {
                     categorias: true,
                     usuarios: true,
                     facturas: true,
-                    detalles_facturas: true,
+                    detallesFacturas: true,
                     productos: true,
-                }
+                },
             });
-            return { success: true, data: empresas }
+            return { success: true, data: empresas };
         } catch (error: any) {
             throw error;
         }

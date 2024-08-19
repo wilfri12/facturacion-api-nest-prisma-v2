@@ -7,16 +7,13 @@ import { DetalleFacturaModule } from './detalle-factura/detalle-factura.module';
 import { ContactoModule } from './contacto/contacto.module';
 import { ProveedorModule } from './proveedor/proveedor.module';
 import { ClienteModule } from './cliente/cliente.module';
-import { DetalleOrdenCompraModule } from './detalle-orden-compra/detalle-orden-compra.module';
-import { OrdenCompraModule } from './orden-compra/orden-compra.module';
-import { ProduccionModule } from './produccion/produccion.module';
 import { ProductoModule } from './producto/producto.module';
-import { MateriaPrimaModule } from './materia-prima/materia-prima.module';
-import { DetalleProduccionModule } from './detalle-produccion/detalle-produccion.module';
-import { DetalleMateriaPrimaModule } from './detalle-materia-prima/detalle-materia-prima.module';
+import { DetalleOrdenCompraModule } from './detalle-compra/detalle-compra.module';
+import { OrdenCompraModule } from './compra/compra.module';
+import { SubcategoriaModule } from './subcategoria/subcategoria.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, OrdenCompraModule, ProduccionModule, MateriaPrimaModule, DetalleProduccionModule, DetalleMateriaPrimaModule],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, OrdenCompraModule, SubcategoriaModule],
   controllers: [],
   providers: [],
 })

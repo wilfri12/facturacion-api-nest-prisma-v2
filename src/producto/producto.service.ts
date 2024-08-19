@@ -3,21 +3,68 @@ import { Producto } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { CreateProductoDto, UpdateProductoDto } from './DTO/producto.dto';
 import { ApiResponse } from 'src/interface';
+import { GetLocalDate } from 'src/utility/getLocalDate';
 
 @Injectable()
 export class ProductoService {
-    constructor(
-        private pisma: PrismaService
-    ) { }
+    constructor(private pisma: PrismaService) { }
 
-    async createProducto(data: CreateProductoDto): Promise<ApiResponse<Producto>> {
+    async createProducto(
+        data: CreateProductoDto,
+    ): Promise<ApiResponse<Producto>> {
+        const {
+            categoriaId,
+            empresaId,
+            estado,
+            genero,
+            nombre,
+            precioCompra,
+            precioVenta,
+            stock,
+            codigo,
+            codigoBarras,
+            color,
+            descripcion,
+            edadRecomendada,
+            marca,
+            peso,
+            proveedorId,
+            subCategoriaId,
+            talla,
+            ubicacion,
+            volumen,
+        } = data;
+
+        const productoData = {
+            categoriaId,
+            empresaId,
+            estado,
+            genero,
+            nombre,
+            precioCompra,
+            precioVenta,
+            stock,
+            codigo,
+            codigoBarras,
+            color,
+            descripcion,
+            edadRecomendada,
+            marca,
+            peso,
+            proveedorId,
+            subCategoriaId,
+            talla,
+            ubicacion,
+            volumen,
+            createdAt: GetLocalDate(),
+            updatedAt: GetLocalDate(),
+        };
         try {
-            const producto = await this.pisma.producto.create({ data })
-            return { success: true, data: producto }
+            const producto = await this.pisma.producto.create({ data: productoData });
+            return { success: true, data: producto };
         } catch (error: any) {
             throw error;
         }
-
     }
 
     async findAllProducto(): Promise<ApiResponse<Producto[]>> {
@@ -27,15 +74,19 @@ export class ProductoService {
                     empresa: {
                         select: {
                             nombre: true,
-                        }
+                        },
                     },
                     categoria: {
                         select: {
                             nombre: true,
-                        }
+                        },
                     },
-                    
-                }
+                    subCategoria: {
+                        select: {
+                            nombre: true,
+                        },
+                    },
+                },
             });
             return { success: true, data: productos };
         } catch (error: any) {
@@ -43,8 +94,10 @@ export class ProductoService {
         }
     }
 
-    async updateProductoStock(Data: UpdateProductoDto, id: number): Promise<void> {
-
+    async updateProductoStock(
+        Data: UpdateProductoDto,
+        id: number,
+    ): Promise<void> {
         const producto = await this.pisma.producto.findUnique({ where: { id } });
         let oldStock: number = parseInt(producto.stock.toString());
         let newStock: number = oldStock + Data.stock;

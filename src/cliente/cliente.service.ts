@@ -19,7 +19,51 @@ export class ClienteService {
 
   async findAllCliente(): Promise<ApiResponse<Cliente[]>> {
     try {
-      const clientes = await this.prisma.cliente.findMany();
+      const clientes = await this.prisma.cliente.findMany({
+        include:{
+          contacto:{
+            select:{
+              telefono: true,
+              whatsapp: true,
+              instagram: true,
+              email: true,
+              direccion: true,
+            }
+          },
+          facturas:{
+            select:{
+              id: true,
+              total: true,
+              createdAt: true,
+              updatedAt: true,
+              detallesFacturas:{
+                select:{
+                  producto:{
+                    select:{
+                      id: true,
+                      nombre: true,
+                      precioVenta: true,
+                      subCategoria:
+                      {
+                        select:{
+                          nombre: true,
+                        }
+                      }
+                    }
+                  },
+                }
+              },
+              usuario: {
+                select:{
+                  id: true,
+                  nombre: true,
+                }
+              }
+            }
+          }
+        }
+      });
+
       return { success: true, data: clientes };
     } catch (error: any) {
       throw error;
