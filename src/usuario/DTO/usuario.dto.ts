@@ -4,7 +4,7 @@ import { IsEnum, IsNotEmpty, IsNumber, IsString} from "class-validator";
 export class UsuarioDto {
     @IsNotEmpty()
     @IsString()
-    nombre: string;
+    nombreUsuario: string;
 
     @IsNotEmpty()
     @IsEnum(GeneroPersona)

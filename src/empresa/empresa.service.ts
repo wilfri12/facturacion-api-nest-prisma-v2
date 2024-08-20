@@ -31,13 +31,7 @@ export class EmpresaService {
     async findAllEmpresa(): Promise<ApiResponse<Empresa[]>> {
         try {
             const empresas = await this.pisma.empresa.findMany({
-                include: {
-                    categorias: true,
-                    usuarios: true,
-                    facturas: true,
-                    detallesFacturas: true,
-                    productos: true,
-                },
+                
             });
             return { success: true, data: empresas };
         } catch (error: any) {

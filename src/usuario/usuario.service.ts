@@ -15,7 +15,7 @@ export class UsuarioService {
     ) { }
 
     async createUsuario(data: UsuarioDto): Promise<ApiResponse<Usuario>> {
-        const { contactoId, empresaId, estado, genero, nombre, password, role } = data;
+        const { contactoId, empresaId, estado, genero, nombreUsuario, password, role } = data;
 
         const encryptedPassword = await this.encryptionService.encryptPassword(password);
 
@@ -24,7 +24,7 @@ export class UsuarioService {
             empresaId,
             estado,
             genero,
-            nombre,
+            nombreUsuario,
             password: encryptedPassword,
             role,
             createdAt: GetLocalDate(),

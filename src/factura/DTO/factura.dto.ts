@@ -1,20 +1,14 @@
-import { MetodoPago } from "@prisma/client";
-import { IsDecimal, IsEnum, isEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { Estado, MetodoPago, TipoMoneda } from "@prisma/client";
+import { IsDecimal, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class FacturaDto {
+    @IsNotEmpty()
     @IsString()
-    clienteNombre?: string;
+    codigo: string;
 
     @IsNotEmpty()
-    @IsNumber()
-    empresaId: number;
-
-    @IsNotEmpty()
-    @IsNumber()
-    usuarioId: number;
-
-    @IsNumber()
-    clienteId?: number;
+    @IsDecimal()
+    subtotal: number;
 
     @IsNotEmpty()
     @IsDecimal()
@@ -26,7 +20,28 @@ export class FacturaDto {
 
     @IsNotEmpty()
     @IsEnum(MetodoPago)
-    metodoPago: MetodoPago
+    metodoPago: MetodoPago;
+    
+    @IsNotEmpty()
+    @IsInt()
+    usuarioId: number;
+
+    @IsOptional()
+    @IsInt()
+    clienteId?: number;
+
+    @IsOptional()
+    @IsString()
+    clienteNombre?: string;
+    @IsNotEmpty()
+    @IsInt()
+    empresaId: number;
+
+    @IsEnum(Estado)
+    estado: Estado;
+
+    @IsEnum(TipoMoneda)
+    moneda: TipoMoneda;
 
 }
 

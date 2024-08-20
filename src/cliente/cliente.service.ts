@@ -42,7 +42,7 @@ export class ClienteService {
                     select:{
                       id: true,
                       nombre: true,
-                      precioVenta: true,
+                      precio: true,
                       subCategoria:
                       {
                         select:{
@@ -56,7 +56,7 @@ export class ClienteService {
               usuario: {
                 select:{
                   id: true,
-                  nombre: true,
+                  nombreUsuario: true,
                 }
               }
             }

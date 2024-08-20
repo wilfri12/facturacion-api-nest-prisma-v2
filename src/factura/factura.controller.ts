@@ -3,7 +3,7 @@ import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
 import { Factura } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
-import { DetalleFacturaDto } from 'src/detalle-factura/DTO/detalle-factura.dto';
+import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 
 @Controller('api/v1/factura')
 export class FacturaController {

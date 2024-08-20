@@ -9,159 +9,191 @@ generator client {
 
 model Contacto {
   id        Int        @id @default(autoincrement())
-  direccion String     @db.VarChar(50)
-  telefono  String?    @db.VarChar(15)
   email     String?    @unique @db.VarChar(50)
-  instagram String?    @db.VarChar(30)
+  telefono  String?    @db.VarChar(15)
   whatsapp  String?    @db.VarChar(15)
-  createdAt DateTime?  @default(now())
-  updatedAt DateTime?  @default(now()) @updatedAt
+  instagram String?    @db.VarChar(30)
+  direccion String     @db.VarChar(50)
   empresa   Empresa?
   usuario   Usuario?
   cliente   Cliente?
   proveedor Proveedor?
+  createdAt DateTime?  @default(now())
+  updatedAt DateTime?  @default(now()) @updatedAt
 }
 
 model Empresa {
-  id               Int              @id @default(autoincrement())
-  contactoId       Int?             @unique
-  nombre           String           @db.VarChar(50)
-  descripcion      String?          @db.VarChar(100)
-  createdAt        DateTime?        @default(now())
-  updatedAt        DateTime?        @default(now()) @updatedAt
-  contacto         Contacto?        @relation(fields: [contactoId], references: [id])
-  usuarios         Usuario[]
-  categorias       Categoria[]
-  productos        Producto[]
-  facturas         Factura[]
-  detallesFacturas DetalleFactura[]
-  proveedores      Proveedor[]
-  clientes         Cliente[]
-  detallesCompras  DetalleCompra[]
-  Compras          Compra[]
+  id                     Int                      @id @default(autoincrement())
+  nombre                 String                   @db.VarChar(50)
+  descripcion            String?                  @db.VarChar(100)
+  contactoId             Int?                     @unique
+  contacto               Contacto?                @relation(fields: [contactoId], references: [id])
+  usuarios               Usuario[]
+  categorias             Categoria[]
+  productos              Producto[]
+  facturas               Factura[]
+  detallesFacturas       DetalleFactura[]
+  proveedores            Proveedor[]
+  clientes               Cliente[]
+  detallesCompras        DetalleCompra[]
+  Compras                Compra[]
+  Descuento              Descuento[]
+  DescuentoProducto     DescuentoProducto[]
+  DescuentoSubcategoria DescuentoSubcategoria[]
+  DescuentoCliente      DescuentoCliente[]
+  HistorialDescuentos   HistorialDescuentos[]
+  Promocion              Promocion[]
+  PromocionDetalle      PromocionDetalle[]
+  HistorialPrecio        HistorialPrecio[]
+  MovimientoInventario   MovimientoInventario[]
+  Notificacion           Notificacion[]
+  DevolucionCliente      DevolucionCliente[]
+  DevolucionProveedor    DevolucionProveedor[]
+  Reporte                Reporte[]
+  createdAt              DateTime?                @default(now())
+  updatedAt              DateTime?                @default(now()) @updatedAt
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
 
 model Categoria {
   id           Int            @id @default(autoincrement())
-  empresaId    Int
   nombre       String         @unique @db.VarChar(20)
-  createdAt    DateTime?      @default(now())
-  updatedAt    DateTime?      @default(now()) @updatedAt
+  empresaId    Int
   empresa      Empresa        @relation(fields: [empresaId], references: [id])
   productos    Producto[]
   SubCategoria SubCategoria[]
+  createdAt    DateTime?      @default(now())
+  updatedAt    DateTime?      @default(now()) @updatedAt
 
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
 }
 
 model SubCategoria {
-  id          Int        @id @default(autoincrement())
-  categoriaId Int
-  nombre      String     @db.VarChar(20)
-  createdAt   DateTime?  @default(now())
-  updatedAt   DateTime?  @default(now()) @updatedAt
-  categoria   Categoria  @relation(fields: [categoriaId], references: [id])
-  productos   Producto[]
+  id                     Int                      @id @default(autoincrement())
+  nombre                 String                   @db.VarChar(20)
+  categoriaId            Int
+  categoria              Categoria                @relation(fields: [categoriaId], references: [id])
+  productos              Producto[]
+  DescuentoSubcategoria DescuentoSubcategoria[]
+  createdAt              DateTime?                @default(now())
+  updatedAt              DateTime?                @default(now()) @updatedAt
 
   @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
 }
 
 model Proveedor {
   id         Int        @id @default(autoincrement())
+  nombre     String     @db.VarChar(50)
   contactoId Int?       @unique
   empresaId  Int
-  nombre     String     @db.VarChar(50)
-  createdAt  DateTime?  @default(now())
-  updatedAt  DateTime?  @default(now()) @updatedAt
   empresa    Empresa    @relation(fields: [empresaId], references: [id])
   contacto   Contacto?  @relation(fields: [contactoId], references: [id])
   Producto   Producto[]
+  createdAt  DateTime?  @default(now())
+  updatedAt  DateTime?  @default(now()) @updatedAt
 }
 
 model Producto {
-  id               Int              @id @default(autoincrement())
-  stock            Int?             @default(0)
-  categoriaId      Int
-  subCategoriaId   Int? 
-  empresaId        Int
-  proveedorId      Int?
-  precioCompra     Decimal?         @default(0.0) @db.Decimal(10, 2)
-  precioVenta      Decimal          @default(0.0) @db.Decimal(10, 2)
-  codigo           String?          @db.VarChar(50)
-  codigoBarras     String?          @unique @db.VarChar(50) // Código de barras
-  nombre           String           @db.VarChar(50)
-  talla            String?          @db.VarChar(10) // Talla para ropa
-  volumen          String?          @db.VarChar(10) // Volumen para cosméticos
-  peso             String?          @db.VarChar(10) // Peso para productos que lo necesiten
-  edadRecomendada  String?          @db.VarChar(10) // Edad recomendada para juguetes
-  color            String?          @db.VarChar(25)
-  marca            String?          @db.VarChar(25)
-  descripcion      String?          @db.VarChar(70)
-  ubicacion        String?          @db.VarChar(40)
-  createdAt        DateTime?        @default(now())
-  updatedAt        DateTime?        @default(now()) @updatedAt
-  genero           GeneroProducto   @default(UNISEX)
-  estado           EstadoProducto   @default(INSTOCK)
-  detallesFacturas DetalleFactura[]
-  detallesCompras  DetalleCompra[]
-  empresa          Empresa          @relation(fields: [empresaId], references: [id])
-  categoria        Categoria        @relation(fields: [categoriaId], references: [id])
-  subCategoria     SubCategoria?    @relation(fields: [subCategoriaId], references: [id])
-  proveedor        Proveedor?       @relation(fields: [proveedorId], references: [id])
+  id                   Int                    @id @default(autoincrement())
+  codigo               String?                @db.VarChar(50)
+  codigoBarras         String?                @unique @db.VarChar(50) // Código de barras
+  nombre               String                 @db.VarChar(50)
+  precio               Decimal                @default(0.0) @db.Decimal(10, 2)
+  stock                Int?                   @default(0)
+  ubicacion            String?                @db.VarChar(40)
+  descripcion          String?                @db.VarChar(70)
+  color                String?                @db.VarChar(25)
+  marca                String?                @db.VarChar(25)
+  talla                String?                @db.VarChar(10) // Talla para ropa
+  genero               GeneroProducto         @default(UNISEX)
+  estado               EstadoProducto         @default(INSTOCK)
+  categoriaId          Int
+  subCategoriaId       Int?
+  proveedorId          Int?
+  volumen              String?                @db.VarChar(10) // Volumen para cosméticos
+  peso                 String?                @db.VarChar(10) // Peso para productos que lo necesiten
+  edadRecomendada      String?                @db.VarChar(10) // Edad recomendada para juguetes
+  empresaId            Int
+  detallesFacturas     DetalleFactura[]
+  detallesCompras      DetalleCompra[]
+  empresa              Empresa                @relation(fields: [empresaId], references: [id])
+  categoria            Categoria              @relation(fields: [categoriaId], references: [id])
+  subCategoria         SubCategoria?          @relation(fields: [subCategoriaId], references: [id])
+  proveedor            Proveedor?             @relation(fields: [proveedorId], references: [id])
+  DescuentoProducto   DescuentoProducto[]
+  HistorialDescuentos HistorialDescuentos[]
+  PromocionDetalle    PromocionDetalle[]
+  HistorialPrecio      HistorialPrecio[]
+  MovimientoInventario MovimientoInventario[]
+  DevolucionCliente    DevolucionCliente[]
+  DevolucionProveedor  DevolucionProveedor[]
+  createdAt            DateTime?              @default(now())
+  updatedAt            DateTime?              @default(now()) @updatedAt
 
   @@index([nombre], map: "producto_nombre_idx")
 }
 
 model Usuario {
-  id         Int           @id @default(autoincrement())
-  empresaId  Int
-  contactoId Int           @unique
-  nombre     String        @db.VarChar(50)
-  password   String        @db.VarChar(100)
-  createdAt  DateTime?     @default(now())
-  updatedAt  DateTime?     @default(now()) @updatedAt
-  genero     GeneroPersona
-  role       Role          @default(EMPLEADO)
-  estado     EstadoUsuario @default(PENDIENTE)
-  contacto   Contacto?     @relation(fields: [contactoId], references: [id])
-  empresa    Empresa       @relation(fields: [empresaId], references: [id])
-  facturas   Factura[]
-  Compras    Compra[]
+  id                   Int                    @id @default(autoincrement())
+  nombreUsuario        String                 @db.VarChar(50)
+  password             String                 @db.VarChar(100)
+  contactoId           Int                    @unique
+  role                 Role                   @default(EMPLEADO)
+  genero               GeneroPersona
+  empresaId            Int
+  estado               EstadoUsuario          @default(PENDIENTE)
+  contacto             Contacto?              @relation(fields: [contactoId], references: [id])
+  empresa              Empresa                @relation(fields: [empresaId], references: [id])
+  facturas             Factura[]
+  Compras              Compra[]
+  Notificacion         Notificacion[]
+  createdAt            DateTime?              @default(now())
+  updatedAt            DateTime?              @default(now()) @updatedAt
+  MovimientoInventario MovimientoInventario[]
+  DevolucionCliente    DevolucionCliente[]
+  DevolucionProveedor  DevolucionProveedor[]
 
-  @@unique([empresaId, nombre], map: "empresa_usuario_unique")
+  @@unique([empresaId, nombreUsuario], map: "empresa_usuario_unique")
 }
 
 model Cliente {
-  id             Int         @id @default(autoincrement())
-  contactoId     Int         @unique
-  empresaId      Int
-  nombre         String      @db.VarChar(50)
-  identificacion String      @unique @db.VarChar(50)
-  createdAt      DateTime?   @default(now())
-  updatedAt      DateTime?   @default(now()) @updatedAt
-  tipoCliente    TipoCliente @default(FISICO)
-  contacto       Contacto?   @relation(fields: [contactoId], references: [id])
-  empresa        Empresa     @relation(fields: [empresaId], references: [id])
-  facturas       Factura[]
+  id                Int                 @id @default(autoincrement())
+  identificacion    String              @unique @db.VarChar(50)
+  nombre            String              @db.VarChar(50)
+  contactoId        Int                 @unique
+  tipoCliente       TipoCliente         @default(FISICO)
+  empresaId         Int
+  contacto          Contacto?           @relation(fields: [contactoId], references: [id])
+  empresa           Empresa             @relation(fields: [empresaId], references: [id])
+  facturas          Factura[]
+  DescuentoCliente DescuentoCliente[]
+  createdAt         DateTime?           @default(now())
+  updatedAt         DateTime?           @default(now()) @updatedAt
 }
 
 model Factura {
-  id               Int              @id @default(autoincrement())
-  empresaId        Int
-  usuarioId        Int
-  clienteId        Int?
-  itebisTotal      Decimal          @db.Decimal(10, 2)
-  total            Decimal          @db.Decimal(10, 2)
-  clienteNombre    String?          @db.VarChar(50)
-  createdAt        DateTime?        @default(now())
-  updatedAt        DateTime?        @default(now()) @updatedAt
-  metodoPago       MetodoPago       @default(EFECTIVO)
-  empresa          Empresa          @relation(fields: [empresaId], references: [id])
-  usuario          Usuario          @relation(fields: [usuarioId], references: [id])
-  cliente          Cliente?         @relation(fields: [clienteId], references: [id])
-  detallesFacturas DetalleFactura[]
+  id                   Int                    @id @default(autoincrement())
+  codigo               String                 @unique
+  subtotal             Decimal                @default(0.00) @db.Decimal(10, 2)
+  total                Decimal                @default(0.00) @db.Decimal(10, 2)
+  itebisTotal          Decimal                @default(0.00) @db.Decimal(10, 2)
+  metodoPago           MetodoPago             @default(EFECTIVO)
+  usuarioId            Int
+  clienteId            Int?
+  clienteNombre        String?                @db.VarChar(50)
+  empresaId            Int
+  estado               Estado                 @default(PAGADA)
+  moneda               TipoMoneda             @default(DOP)
+  empresa              Empresa                @relation(fields: [empresaId], references: [id])
+  usuario              Usuario                @relation(fields: [usuarioId], references: [id])
+  cliente              Cliente?               @relation(fields: [clienteId], references: [id])
+  detallesFacturas     DetalleFactura[]
+  HistorialDescuentos HistorialDescuentos[]
+  DevolucionCliente    DevolucionCliente[]
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @default(now()) @updatedAt
 
   @@index([clienteNombre], map: "factura_cliente_idx")
 }
@@ -169,51 +201,310 @@ model Factura {
 model DetalleFactura {
   id             Int       @id @default(autoincrement())
   facturaId      Int
-  empresaId      Int
   productoId     Int
   cantidad       Int
-  precioUnitario Decimal   @db.Decimal(10, 2)
-  descuento      Decimal   @default(0.00) @db.Decimal(10, 2) // Descuento aplicado
+  precioUnitario Decimal?  @default(0.00) @db.Decimal(10, 2)
+  importe        Decimal   @default(0.00) @db.Decimal(10, 2)
   itebis         Decimal   @default(0.00) @db.Decimal(10, 2)
-  subtotal       Decimal   @db.Decimal(10, 2)
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @default(now()) @updatedAt
+  empresaId      Int
   factura        Factura   @relation(fields: [facturaId], references: [id])
   empresa        Empresa   @relation(fields: [empresaId], references: [id])
   producto       Producto  @relation(fields: [productoId], references: [id])
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now()) @updatedAt
 
   @@index([facturaId, productoId], map: "detalle_factura_idx")
 }
 
 model Compra {
-  id              Int             @id @default(autoincrement())
-  usuarioId       Int
-  empresaId       Int
-  total           Decimal         @default(0.00) @db.Decimal(10, 2)
-  createdAt       DateTime?       @default(now())
-  updatedAt       DateTime?       @default(now()) @updatedAt
-  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
-  empresa         Empresa         @relation(fields: [empresaId], references: [id])
-  detallesCompras DetalleCompra[]
+  id                  Int                   @id @default(autoincrement())
+  total               Decimal               @default(0.00) @db.Decimal(10, 2)
+  usuarioId           Int
+  empresaId           Int
+  moneda              TipoMoneda            @default(DOP)
+  usuario             Usuario               @relation(fields: [usuarioId], references: [id])
+  empresa             Empresa               @relation(fields: [empresaId], references: [id])
+  detallesCompras     DetalleCompra[]
+  DevolucionProveedor DevolucionProveedor[]
+  createdAt           DateTime?             @default(now())
+  updatedAt           DateTime?             @default(now()) @updatedAt
 
   @@map("Compra")
 }
 
 model DetalleCompra {
   id             Int       @id @default(autoincrement())
-  compraId       Int?
   productoId     Int?
   cantidad       Int
-  empresaId      Int
   precioUnitario Decimal   @db.Decimal(10, 2)
   subtotal       Decimal   @db.Decimal(10, 2)
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @default(now()) @updatedAt
+  compraId       Int?
+  empresaId      Int
   Compra         Compra?   @relation(fields: [compraId], references: [id])
   producto       Producto? @relation(fields: [productoId], references: [id])
   empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now()) @updatedAt
 
   @@map("DetalleCompra")
+}
+
+//modelos de promociones 
+
+//Esta tabla almacenará la información básica sobre cada descuento.
+
+model Descuento {
+  id                     Int                      @id @default(autoincrement())
+  tipo                   TipoDescuento            @default(PORCENTUAL)
+  valor                  Decimal                  @default(0.00) @db.Decimal(10, 2)
+  fechaInicio            DateTime
+  fechaFin               DateTime
+  createdAt              DateTime?                @default(now())
+  updatedAt              DateTime?                @default(now()) @updatedAt
+  condicion              String                   @db.Text
+  activo                 Boolean                  @default(true)
+  DescuentoProducto     DescuentoProducto[]
+  DescuentoSubcategoria DescuentoSubcategoria[]
+  DescuentoCliente      DescuentoCliente[]
+  HistorialDescuentos   HistorialDescuentos[]
+  PromocionDetalle      PromocionDetalle[]
+  empresaId              Int
+  empresa                Empresa                  @relation(fields: [empresaId], references: [id])
+}
+
+//Tabla de Descuentos por Producto
+//Para asociar descuentos a productos específicos.
+
+model DescuentoProducto {
+  id          Int       @id @default(autoincrement())
+  descuentoId Int
+  productoId  Int
+  descuento   Descuento @relation(fields: [descuentoId], references: [id])
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @default(now()) @updatedAt
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+// Tabla de Descuentos por SubCategoria
+// Para aplicar descuentos a todos los productos dentro de una SubCategoria específica.
+
+model DescuentoSubcategoria {
+  id             Int          @id @default(autoincrement())
+  descuentoId    Int
+  subCategoriaId Int
+  descuento      Descuento    @relation(fields: [descuentoId], references: [id])
+  subcategoria   SubCategoria @relation(fields: [subCategoriaId], references: [id])
+  createdAt      DateTime?    @default(now())
+  updatedAt      DateTime?    @default(now()) @updatedAt
+  empresaId      Int
+  empresa        Empresa      @relation(fields: [empresaId], references: [id])
+}
+
+// Tabla de Descuentos por Cliente
+// Para aplicar descuentos específicos a ciertos clientes.
+
+model DescuentoCliente {
+  id          Int       @id @default(autoincrement())
+  descuentoId Int
+  clienteId   Int
+  descuento   Descuento @relation(fields: [descuentoId], references: [id])
+  cliente     Cliente   @relation(fields: [clienteId], references: [id])
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @default(now()) @updatedAt
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+// Tabla de Historial de Descuentos Aplicados
+// Para registrar cuándo y cómo se aplicaron los descuentos. Esto es útil para auditoría y análisis.
+
+model HistorialDescuentos {
+  id              Int       @id @default(autoincrement())
+  descuentoId     Int
+  productoId      Int
+  facturaId       Int
+  fechaAplicacion DateTime
+  cantidad        Decimal   @default(0.00) @db.Decimal(10, 2)
+  valorDescuento  Decimal   @default(0.00) @db.Decimal(10, 2)
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @default(now()) @updatedAt
+  descuento       Descuento @relation(fields: [descuentoId], references: [id])
+  producto        Producto  @relation(fields: [productoId], references: [id])
+  factura         Factura   @relation(fields: [facturaId], references: [id])
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+// Tabla de Promociones Especiales
+// Para manejar promociones que pueden involucrar reglas más complejas o combinaciones de productos y descuentos.
+
+model Promocion {
+  id                Int                 @id @default(autoincrement())
+  nombre            String
+  descripcion       String
+  fechaInicio       DateTime
+  createdAt         DateTime?           @default(now())
+  updatedAt         DateTime?           @default(now()) @updatedAt
+  PromocionDetalle PromocionDetalle[]
+  empresaId         Int
+  empresa           Empresa             @relation(fields: [empresaId], references: [id])
+}
+
+model PromocionDetalle {
+  id          Int       @id @default(autoincrement())
+  promocionId Int
+  productoId  Int
+  descuentoId Int
+  descuento   Descuento @relation(fields: [descuentoId], references: [id])
+  promocion   Promocion @relation(fields: [promocionId], references: [id])
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @default(now()) @updatedAt
+}
+
+// Historial de Precios
+// Este modelo rastreará los cambios de precios en los productos a lo largo del tiempo.
+model HistorialPrecio {
+  id             Int       @id @default(autoincrement())
+  productoId     Int
+  precioAnterior Decimal   @db.Decimal(10, 2)
+  precioNuevo    Decimal   @db.Decimal(10, 2)
+  fechaCambio    DateTime  @default(now())
+  producto       Producto  @relation(fields: [productoId], references: [id])
+  empresaId      Int
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @default(now()) @updatedAt
+}
+
+// Manejo de Inventarios
+// Agregaremos un modelo para registrar entradas y salidas de inventario.
+model MovimientoInventario {
+  id          Int            @id @default(autoincrement())
+  productoId  Int
+  tipo        TipoMovimiento @default(ENTRADA)
+  cantidad    Int
+  descripcion String?        @db.VarChar(100)
+  usuarioId   Int
+  producto    Producto       @relation(fields: [productoId], references: [id])
+  empresaId   Int
+  empresa     Empresa        @relation(fields: [empresaId], references: [id])
+  usuario     Usuario        @relation(fields: [usuarioId], references: [id])
+  createdAt   DateTime?      @default(now())
+  updatedAt   DateTime?      @default(now()) @updatedAt
+}
+
+//Notificaciones o Alertas
+//Crear un modelo para manejar notificaciones en el sistema.
+model Notificacion {
+  id        Int       @id @default(autoincrement())
+  titulo    String    @db.VarChar(100)
+  mensaje   String    @db.Text
+  leido     Boolean   @default(false)
+  fecha     DateTime  @default(now())
+  usuarioId Int
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  empresaId Int
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @default(now()) @updatedAt
+}
+
+//Devoluciones
+//Crear modelos para manejar devoluciones de clientes y proveedores.
+
+model DevolucionCliente {
+  id         Int       @id @default(autoincrement())
+  facturaId  Int
+  productoId Int
+  cantidad   Int
+  motivo     String    @db.VarChar(100)
+  fecha      DateTime  @default(now())
+  usuarioId  Int
+  factura    Factura   @relation(fields: [facturaId], references: [id])
+  producto   Producto  @relation(fields: [productoId], references: [id])
+  empresaId  Int
+  empresa    Empresa   @relation(fields: [empresaId], references: [id])
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now()) @updatedAt
+}
+
+model DevolucionProveedor {
+  id         Int       @id @default(autoincrement())
+  compraId   Int
+  productoId Int
+  cantidad   Int
+  motivo     String    @db.VarChar(100)
+  fecha      DateTime  @default(now())
+  compra     Compra    @relation(fields: [compraId], references: [id])
+  usuarioId  Int
+  producto   Producto  @relation(fields: [productoId], references: [id])
+  empresaId  Int
+  empresa    Empresa   @relation(fields: [empresaId], references: [id])
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now()) @updatedAt
+}
+
+//Manejo de Usuarios y Permisos
+//Agregar un modelo para permisos más detallados.
+
+model Permiso {
+  id          Int          @id @default(autoincrement())
+  nombre      String       @db.VarChar(50)
+  descripcion String?      @db.VarChar(100)
+  roles       RolPermiso[]
+}
+
+model RolPermiso {
+  id        Int     @id @default(autoincrement())
+  rol       Role
+  permisoId Int
+  permiso   Permiso @relation(fields: [permisoId], references: [id])
+
+  @@unique([rol, permisoId], map: "rol_permiso_unique")
+}
+
+//Reporte de Ventas y Compras
+//Agregar un modelo para almacenar reportes generados de ventas y compras.
+model Reporte {
+  id          Int         @id @default(autoincrement())
+  tipo        TipoReporte
+  titulo      String      @db.VarChar(100)
+  descripcion String?     @db.Text
+  fecha       DateTime    @default(now())
+  datos       Json // Aquí se almacenan los datos del reporte en formato JSON
+  empresaId   Int
+  empresa     Empresa     @relation(fields: [empresaId], references: [id])
+}
+
+//enums
+
+enum TipoReporte {
+  VENTAS
+  COMPRAS
+  INVENTARIO
+  CLIENTES
+  PROVEEDORES
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+enum TipoDescuento {
+  FIJO
+  PORCENTUAL
+  Volumen
+  CATEGORIA
+  CLIENTE
+  PROMOCIONAL
 }
 
 enum Role {
@@ -255,4 +546,15 @@ enum MetodoPago {
   EFECTIVO
   TRANSFERENCIA
   TARJETA
+}
+
+enum TipoMoneda {
+  USD
+  DOP
+  EU
+}
+
+enum Estado {
+  CANCELADA
+  PAGADA
 }
