@@ -10,15 +10,7 @@ export class DetalleOrdenCompraService {
         private pisma: PrismaService
     ) { }
 
-    async createDetalleOrdenCompra(data: DetalleOrdenCompraDto): Promise<ApiResponse<DetalleCompra>> {
-        try {
-            const detalleOrden = await this.pisma.detalleCompra.create({ data })
-            return { success: false, data: detalleOrden }
-        } catch (error: any) {
-            throw error;
-        }
-
-    }
+    
 
     async findAllDetalleOrdenCompra(): Promise<ApiResponse<DetalleCompra[]>> {
         try {

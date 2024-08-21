@@ -52,6 +52,7 @@ model Empresa {
   Reporte               Reporte[]
   createdAt             DateTime?               @default(now())
   updatedAt             DateTime?               @default(now()) @updatedAt
+  LoteProducto          LoteProducto[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
@@ -83,14 +84,14 @@ model SubCategoria {
 }
 
 model Proveedor {
-  id         Int        @id @default(autoincrement())
-  nombre     String     @db.VarChar(50)
-  contactoId Int?       @unique
+  id         Int       @id @default(autoincrement())
+  nombre     String    @db.VarChar(50)
+  contactoId Int?      @unique
   empresaId  Int
-  empresa    Empresa    @relation(fields: [empresaId], references: [id])
-  contacto   Contacto?  @relation(fields: [contactoId], references: [id])
-  createdAt  DateTime?  @default(now())
-  updatedAt  DateTime?  @default(now()) @updatedAt
+  empresa    Empresa   @relation(fields: [empresaId], references: [id])
+  contacto   Contacto? @relation(fields: [contactoId], references: [id])
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now()) @updatedAt
   Compra     Compra[]
 }
 
@@ -107,7 +108,7 @@ model Producto {
   marca                String?                @db.VarChar(25)
   talla                String?                @db.VarChar(10) // Talla para ropa
   genero               GeneroProducto         @default(UNISEX)
-  estado               EstadoProducto         @default(INSTOCK)
+  estado               EstadoProducto         @default(OUTOFSTOCK)
   categoriaId          Int
   subCategoriaId       Int?
   volumen              String?                @db.VarChar(10) // Volumen para cosméticos
@@ -128,6 +129,7 @@ model Producto {
   DevolucionProveedor  DevolucionProveedor[]
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
+  LoteProducto         LoteProducto[]
 
   @@index([nombre], map: "producto_nombre_idx")
 }
@@ -233,18 +235,19 @@ model Compra {
 }
 
 model DetalleCompra {
-  id             Int       @id @default(autoincrement())
-  productoId     Int?
-  cantidad       Int
-  precioUnitario Decimal   @db.Decimal(10, 2)
-  subtotal       Decimal   @db.Decimal(10, 2)
-  compraId       Int?
-  empresaId      Int
-  Compra         Compra?   @relation(fields: [compraId], references: [id])
-  producto       Producto? @relation(fields: [productoId], references: [id])
-  empresa        Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @default(now()) @updatedAt
+  id           Int       @id @default(autoincrement())
+  productoId   Int?
+  cantidad     Int
+  precioCompra Decimal   @db.Decimal(10, 2)
+  precioVenta  Decimal   @db.Decimal(10, 2)
+  subtotal     Decimal   @db.Decimal(10, 2)
+  compraId     Int?
+  empresaId    Int
+  Compra       Compra?   @relation(fields: [compraId], references: [id])
+  producto     Producto? @relation(fields: [productoId], references: [id])
+  empresa      Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @default(now()) @updatedAt
 
   @@map("DetalleCompra")
 }
@@ -396,6 +399,19 @@ model MovimientoInventario {
   usuario     Usuario        @relation(fields: [usuarioId], references: [id])
   createdAt   DateTime?      @default(now())
   updatedAt   DateTime?      @default(now()) @updatedAt
+}
+
+//Este modelo contendrá los datos del lote, como la cantidad y el precio de compra
+model LoteProducto {
+  id           Int       @id @default(autoincrement())
+  productoId   Int
+  cantidad     Int
+  empresaId    Int
+  precioVenta Decimal   @db.Decimal(10, 2)
+  fechaEntrada DateTime  @default(now())
+  updatedAt    DateTime? @default(now()) @updatedAt
+  producto     Producto  @relation(fields: [productoId], references: [id])
+  empresa      Empresa   @relation(fields: [empresaId], references: [id])
 }
 
 //Notificaciones o Alertas

@@ -8,15 +8,7 @@ import { DetalleOrdenCompraDto } from './DTO/detalle-compra.dto';
 export class DetalleOrdenCompraController {
   constructor(private readonly detalleOrdenCompraService: DetalleOrdenCompraService) { }
 
-  @Post()
-  async create(@Body() data: DetalleOrdenCompraDto): Promise<ApiResponse<DetalleCompra>> {
-    try {
-      const detalle = await this.detalleOrdenCompraService.createDetalleOrdenCompra(data);
-      return detalle;
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
+  
 
   @Get()
   async find(): Promise<ApiResponse<DetalleCompra[]>> {

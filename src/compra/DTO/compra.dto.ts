@@ -19,7 +19,7 @@ export class CompraDto {
     moneda: TipoMoneda;
 }
 
-export class DetalleCOmpraDto {
+export class DetalleCompraDto {
 
     @IsNotEmpty()
     @IsNumber()
@@ -28,5 +28,13 @@ export class DetalleCOmpraDto {
     @IsNotEmpty()
     @IsNumber()
     cantidad: number;
+
+    @IsNotEmpty()
+    @IsDecimal()
+    precioCompra: number;
+
+    @IsNotEmpty()
+    @IsDecimal()
+    precioVenta: number;
     
 }

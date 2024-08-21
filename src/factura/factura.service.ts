@@ -14,6 +14,13 @@ export class FacturaService {
     private readonly detalleFactura: DetalleFacturaService,
   ) { }
 
+  /**
+ * Crea una nueva factura y sus detalles asociados, manejando el inventario de productos
+ * por lotes y actualizando precios según el lote más antiguo disponible.
+ * 
+ * @param data - Los datos necesarios para crear la factura, incluyendo los detalles.
+ * @returns Una respuesta que indica si la factura se creó correctamente o si ocurrió un error.
+ */
   async createFactura(
     data: FacturaDto & { detalles: DetalleFacturaDto[] },
   ): Promise<ApiResponse<Factura>> {
@@ -21,32 +28,30 @@ export class FacturaService {
       let subtotalTotal = 0;
       let totalItebis = 0;
 
+      // Desestructuración de los datos de entrada
       const {
         codigo,
         detalles,
         empresaId,
         estado,
-        itebisTotal,
         metodoPago,
         moneda,
-        subtotal,
-        total,
         usuarioId,
         clienteId,
         clienteNombre,
       } = data;
 
-      console.log('Datos recibidos: ', data);
 
+      // Datos base para la creación de la factura
       const facturaData = {
-        codigo: 'FACT-',
+        codigo: 'FACT-', // El código se completará después con el ID de la factura
         empresaId,
         estado,
-        itebisTotal: 0,
+        itebisTotal: 0, // Se calculará después
         metodoPago,
         moneda,
-        subtotal: 0,
-        total: 0,
+        subtotal: 0, // Se calculará después
+        total: 0, // Se calculará después
         usuarioId,
         clienteId,
         clienteNombre,
@@ -54,43 +59,40 @@ export class FacturaService {
         updatedAt: GetLocalDate(),
       };
 
-      console.log('Datos enviados a facturaData: ', facturaData);
 
+      // Creación de la factura y sus detalles dentro de una transacción
       const factura = await this.prisma.$transaction(async (prisma) => {
+        // Crea la factura inicial
         const createdFactura = await prisma.factura.create({
           data: facturaData,
         });
 
         if (createdFactura) {
           const detallePromises = detalles.map(async (detalle) => {
+            // Obtiene el producto para verificar el stock y obtener información de precios
             const producto = await prisma.producto.findUnique({
               where: { id: detalle.productoId },
             });
 
-            if (!producto ) {
+            if (!producto) {
               throw new Error(`Producto con id ${detalle.productoId} no encontrado`);
             }
 
             if (producto.stock < detalle.cantidad) {
               throw new Error(
-                `Inventario insuficiente: Solo quedan ${producto.stock} unidades del producto ${producto.nombre} (talla ${producto.talla}) disponibles. No se puede completar la venta de ${detalle.cantidad} unidades.`
+                `Inventario insuficiente: Solo quedan ${producto.stock} unidades del producto ${producto.nombre} (talla ${producto.talla}) disponibles. No se puede completar la venta de ${detalle.cantidad} unidades.`,
               );
             }
-            
 
-            console.log('Producto: ', producto);
 
             const precioUnitario = parseFloat(producto.precio.toString());
             const cantidad = parseFloat(detalle.cantidad.toString());
             const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
 
-
-            // Calcula el importe antes del descuento e ITBIS
+            // Calcula el importe del detalle (antes del ITBIS)
             const importe = cantidad * precioUnitario;
 
-            // Calcula el descuento
-
-            // Calcula el ITBIS
+            // Calcula el ITBIS del detalle
             const itebis = importe * itebisPorcentaje;
 
             subtotalTotal += importe;
@@ -108,12 +110,81 @@ export class FacturaService {
               updatedAt: GetLocalDate(),
             };
 
-            console.log('Datos enviados a detalleFacturaData: ', detalleFacturaData);
+            console.log("detalleFacturaData: ", detalleFacturaData);
+            
+
 
             // Crea el detalle de la factura
             await prisma.detalleFactura.create({ data: detalleFacturaData });
 
-            // Crea el movimiento de inventario
+            // Maneja la reducción de stock y la gestión de lotes
+            let cantidadRestante = detalle.cantidad;
+
+            console.log(`Cantidad solicitada: ${cantidadRestante}`);
+
+            const lotes = await prisma.loteProducto.findMany({
+              where: { 
+                productoId: detalle.productoId,
+                cantidad: { gt: 0 } // Solo obtener lotes con cantidad > 0
+              },
+              orderBy: { fechaEntrada: 'asc' }, // FIFO: Primero en entrar, primero en salir
+            });
+
+            if (lotes.length === 0) {
+              throw new Error(`No hay lotes disponibles para el producto ${detalle.productoId}`);
+            }
+
+            console.log(`Lotes disponibles para el producto ${detalle.productoId}:`, lotes);
+
+            for (const [index, lote] of lotes.entries()) {
+              if (cantidadRestante <= 0) break;
+
+              console.log(`Trabajando con el lote ${lote.id} que tiene ${lote.cantidad} unidades y un precio de ${lote.precioVenta}`);
+
+              if (lote.cantidad <= cantidadRestante) {
+                // Si el lote se consume completamente
+                console.log(`El lote ${lote.id} será consumido completamente.`);
+                cantidadRestante -= lote.cantidad;
+                console.log(`Cantidad restante después de consumir el lote ${lote.id}: ${cantidadRestante}`);
+
+                await prisma.loteProducto.update({
+                  where: { id: lote.id },
+                  data: { cantidad: 0 },
+                });
+
+                // Si existe un siguiente lote, actualiza el precio del producto al del siguiente lote
+                const siguienteLote = lotes[index + 1];
+                if (siguienteLote) {
+                  console.log(`Actualizando el precio del producto al precio del siguiente lote ${siguienteLote.id} que es ${siguienteLote.precioVenta}`);
+                  await prisma.producto.update({
+                    where: { id: detalle.productoId },
+                    data: {
+                      precio: siguienteLote.precioVenta,
+                      updatedAt: GetLocalDate(),
+                    },
+                  });
+                } else {
+                  console.log(`No hay más lotes disponibles después del lote ${lote.id}, el precio no se actualizará.`);
+                }
+
+              } else {
+                // Si solo se consume parte del lote
+                console.log(`El lote ${lote.id} no será consumido completamente. Cantidad restante antes de consumir: ${cantidadRestante}`);
+                await prisma.loteProducto.update({
+                  where: { id: lote.id },
+                  data: { cantidad: lote.cantidad - cantidadRestante },
+                });
+                console.log(`Cantidad restante después de actualizar el lote ${lote.id}: 0 (Lote reducido a ${lote.cantidad - cantidadRestante} unidades)`);
+
+                cantidadRestante = 0;
+              }
+            }
+
+            console.log(`Proceso de reducción de stock y gestión de lotes completado para el producto ${detalle.productoId}`);
+
+
+
+            // Crea el movimiento de inventario asociado a la venta
             await prisma.movimientoInventario.create({
               data: {
                 productoId: detalle.productoId,
@@ -124,24 +195,39 @@ export class FacturaService {
                 empresaId,
                 createdAt: GetLocalDate(),
                 updatedAt: GetLocalDate(),
-              }
+              },
             });
 
-            // Actualiza el stock del producto
+            // Verifica y actualiza el estado del producto basado en el nuevo stock
             let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
+            const nuevoStock = producto.stock - detalle.cantidad;
 
-            if (producto.stock - detalle.cantidad > 0) {
-              estadoProducto = producto.stock - detalle.cantidad < 10 ? 'LOWSTOCK' : 'INSTOCK';
+            if (nuevoStock > 0) {
+              estadoProducto = nuevoStock < 10 ? 'LOWSTOCK' : 'INSTOCK';
             }
 
             await prisma.producto.update({
               where: { id: detalle.productoId },
               data: {
-                stock: { decrement: detalle.cantidad },
+                stock: nuevoStock,
                 updatedAt: GetLocalDate(),
-                estado: estadoProducto
-              }
+                estado: estadoProducto,
+              },
             });
+
+            // Si el lote más antiguo se agotó, actualiza el precio del producto con el próximo lote
+            if (lotes.length > 0 && lotes[0].cantidad === 0) {
+              const siguienteLote = lotes.find(lote => lote.cantidad > 0);
+              if (siguienteLote) {
+                await prisma.producto.update({
+                  where: { id: detalle.productoId },
+                  data: {
+                    precio: siguienteLote.precioVenta,
+                    updatedAt: GetLocalDate(),
+                  },
+                });
+              }
+            }
           });
 
           // Espera a que se completen todas las operaciones de detalle
@@ -154,7 +240,7 @@ export class FacturaService {
               subtotal: subtotalTotal,
               total: subtotalTotal + totalItebis,
               itebisTotal: totalItebis,
-              codigo: `FACT-00${createdFactura.id}`,
+              codigo: `FACT-00${createdFactura.id}`, // Actualiza el código de la factura con su ID
               updatedAt: GetLocalDate(),
             },
           });
@@ -168,10 +254,10 @@ export class FacturaService {
       return { success: true, data: factura };
     } catch (error: any) {
       console.error('Error al crear la factura:', error);
-      //throw error;
       return { success: false, error: `${error}` };
     }
   }
+
 
 
   async findAllFactura(): Promise<ApiResponse<Factura[]>> {

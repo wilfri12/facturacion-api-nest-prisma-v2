@@ -1,14 +1,14 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Compra } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { CompraService } from './compra.service';
-import { CompraDto, DetalleCOmpraDto } from './DTO/compra.dto';
+import { CompraDto, DetalleCompraDto } from './DTO/compra.dto';
 
-@Controller('orden-compra')
+@Controller('api/v1/compra')
 export class CompraController {
   constructor(private readonly compraService: CompraService) {}
-
-  async createCompra(data: CompraDto & { detalles: DetalleCOmpraDto[] }): Promise<ApiResponse<Compra>> {
+@Post()
+  async createCompra(@Body() data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
     try {
         const orden = await this.compraService.createCompra(data);
         return orden;
@@ -18,6 +18,7 @@ export class CompraController {
     }
 }
 
+@Get()
 async findAllCompra(): Promise<ApiResponse<Compra[]>> {
     try {
         const ordenes = await this.compraService.findAllCompra();
