@@ -12,11 +12,7 @@ export class CreateProductoDto {
 
     @IsNotEmpty()
     @IsDecimal()
-    precioCompra: number;
-
-    @IsNotEmpty()
-    @IsDecimal()
-    precioVenta: number;
+    precio: number;
 
     @IsOptional()
     @IsString()
@@ -79,9 +75,6 @@ export class CreateProductoDto {
     @IsNumber()
     categoriaId: number;
 
-    @IsOptional()
-    @IsNumber()
-    proveedorId?: number;
 }
 
 export class UpdateProductoDto {
@@ -95,11 +88,7 @@ export class UpdateProductoDto {
 
     @IsOptional()
     @IsDecimal()
-    precioCompra?: number;
-
-    @IsOptional()
-    @IsDecimal()
-    precioVenta?: number;
+    precio?: number;
 
     @IsOptional()
     @IsString()
@@ -161,10 +150,5 @@ export class UpdateProductoDto {
     @IsOptional()
     @IsNumber()
     categoriaId?: number;
-
-    @IsOptional()
-    @IsNumber()
-    proveedorId?: number;
-
     
 }

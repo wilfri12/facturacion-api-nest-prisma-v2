@@ -9,11 +9,11 @@ import { ProveedorModule } from './proveedor/proveedor.module';
 import { ClienteModule } from './cliente/cliente.module';
 import { ProductoModule } from './producto/producto.module';
 import { DetalleOrdenCompraModule } from './detalle-compra/detalle-compra.module';
-import { OrdenCompraModule } from './compra/compra.module';
+import { CompraModule } from './compra/compra.module';
 import { SubcategoriaModule } from './subcategoria/subcategoria.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, OrdenCompraModule, SubcategoriaModule],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule],
   controllers: [],
   providers: [],
 })

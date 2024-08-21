@@ -1,18 +1,32 @@
-import { IsDecimal, IsNotEmpty, IsNumber} from "class-validator";
+import { TipoMoneda } from "@prisma/client";
+import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString} from "class-validator";
 
-export class OrdenCompraDto {
+export class CompraDto {
+    @IsNotEmpty()
     @IsNumber()
-    proveedorId: number;
+    usuarioId: number;
+
+    @IsOptional()
+    @IsNumber()
+    proveedorId: number;   
 
     @IsNotEmpty()
     @IsNumber()
-    empresaId: number;   
+    empresaId: number;
+
+    @IsNotEmpty()
+    @IsEnum(TipoMoneda)
+    moneda: TipoMoneda;
+}
+
+export class DetalleCOmpraDto {
 
     @IsNotEmpty()
     @IsNumber()
-    usuarioId: number; 
+    productoId: number;
 
     @IsNotEmpty()
-    @IsDecimal()
-    total: number;
+    @IsNumber()
+    cantidad: number;
+    
 }
