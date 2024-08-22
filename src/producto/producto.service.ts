@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma.service';
 import { CreateProductoDto, UpdateProductoDto } from './DTO/producto.dto';
 import { ApiResponse } from 'src/interface';
 import { GetLocalDate } from 'src/utility/getLocalDate';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ProductoService {
@@ -34,8 +35,8 @@ export class ProductoService {
         } = data;
 
         const productoData = {
-            categoriaId,
-            empresaId,
+            categoriaId: parseInt(categoriaId.toString()),
+            empresaId: parseInt(empresaId.toString()),
             estado,
             genero,
             nombre,
@@ -48,7 +49,7 @@ export class ProductoService {
             edadRecomendada,
             marca,
             peso,
-            subCategoriaId,
+            subCategoriaId: parseInt(subCategoriaId.toString()),
             talla,
             ubicacion,
             volumen,
@@ -58,8 +59,30 @@ export class ProductoService {
         try {
             const producto = await this.pisma.producto.create({ data: productoData });
             return { success: true, data: producto };
-        } catch (error: any) {
-            throw error;
+        } catch (error) {
+            if (error instanceof PrismaClientKnownRequestError) {
+                // Manejo específico de errores basado en el código de error
+                switch (error.code) {
+                    case 'P2002': // Violación de restricción única
+                        console.log('Error de duplicidad:', error);
+                        return { success: false, error: `Error de duplicidad (${error.meta.target})` };
+                    case 'P2004': // Campo nulo no permitido
+                        console.log('Campo nulo no permitido:', error);
+                        return { success: false, error: 'Campo nulo no permitido.' };
+                    case 'P2006': // Tipo de datos incorrecto
+                        console.log('Tipo de datos incorrecto:', error);
+                        return { success: false, error: 'Tipo de datos incorrecto.' };
+                    case 'P2027': // Error de conexión a la base de datos
+                        console.log('Error de conexión a la base de datos:', error);
+                        return { success: false, error: 'Error de conexión a la base de datos.' };
+                    default: // Otros errores de Prisma
+                        console.log('Error inesperado:', error);
+                        return { success: false, error: 'Error inesperado en la base de datos.' };
+                }
+            }
+            // Manejo de errores no relacionados con Prisma
+            console.log('Error inesperado:', error);
+            return { success: false, error: 'Ocurrió un error inesperado. Por favor, intente nuevamente más tarde.' };
         }
     }
 

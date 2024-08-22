@@ -18,8 +18,8 @@ export class SubcategoriaController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subcategoriaService.findOne(+id);
+  findByCategoria(@Param('id') id: string) {
+    return this.subcategoriaService.findByCategoria(+id);
   }
 
   @Patch(':id')

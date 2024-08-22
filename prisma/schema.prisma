@@ -59,7 +59,7 @@ model Empresa {
 
 model Categoria {
   id           Int            @id @default(autoincrement())
-  nombre       String         @unique @db.VarChar(20)
+  nombre       String         @unique @db.VarChar(50)
   empresaId    Int
   empresa      Empresa        @relation(fields: [empresaId], references: [id])
   productos    Producto[]
@@ -72,7 +72,7 @@ model Categoria {
 
 model SubCategoria {
   id                    Int                     @id @default(autoincrement())
-  nombre                String                  @db.VarChar(20)
+  nombre                String                  @db.VarChar(50)
   categoriaId           Int
   categoria             Categoria               @relation(fields: [categoriaId], references: [id])
   productos             Producto[]

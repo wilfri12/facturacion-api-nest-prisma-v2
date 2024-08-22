@@ -28,7 +28,7 @@ export class FacturaService {
       let subtotalTotal = 0;
       let totalItebis = 0;
 
-      // Desestructuración de los datos de entrada
+      // Desestructuración de los datos de entrada 
       const {
         codigo,
         detalles,
@@ -111,7 +111,7 @@ export class FacturaService {
             };
 
             console.log("detalleFacturaData: ", detalleFacturaData);
-            
+
 
 
             // Crea el detalle de la factura
@@ -123,7 +123,7 @@ export class FacturaService {
             console.log(`Cantidad solicitada: ${cantidadRestante}`);
 
             const lotes = await prisma.loteProducto.findMany({
-              where: { 
+              where: {
                 productoId: detalle.productoId,
                 cantidad: { gt: 0 } // Solo obtener lotes con cantidad > 0
               },
@@ -138,6 +138,13 @@ export class FacturaService {
 
             for (const [index, lote] of lotes.entries()) {
               if (cantidadRestante <= 0) break;
+
+              // Verificar si la cantidad solicitada es mayor que la cantidad disponible en el lote más antiguo
+              if (detalle.cantidad > lote.cantidad) {
+                throw new Error(
+                  `Solo se pueden comprar hasta ${lote.cantidad} unidades del producto ${producto.nombre} debido a limitaciones de inventario en el lote actual. Por favor, ajuste la cantidad o genere una nueva factura para el lote siguiente, teniendo en cuenta que los precios pueden variar entre lotes.`
+                );
+              }
 
               console.log(`Trabajando con el lote ${lote.id} que tiene ${lote.cantidad} unidades y un precio de ${lote.precioVenta}`);
 

@@ -45,9 +45,18 @@ export class SubcategoriaService {
     return { success: true, data: SubCategorias };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} subcategoria`;
-  }
+  async findByCategoria(categoriaId: number) {
+    try {
+      
+        const subCategoria = await this.prisma.subCategoria.findMany({
+            where: { categoriaId: categoriaId }
+        });
+        return { success: true, subCategoria };
+    } catch (error) {
+        console.error('Error al buscar subcategorías:', error);
+        return { success: false, error: 'Error al buscar subcategorías.' };
+    }
+}
 
   update(id: number, updateSubcategoriaDto: UpdateSubcategoriaDto) {
     return `This action updates a #${id} subcategoria`;
