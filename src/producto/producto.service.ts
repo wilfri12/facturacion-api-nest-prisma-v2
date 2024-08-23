@@ -8,7 +8,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ProductoService {
-    constructor(private pisma: PrismaService) { }
+    constructor(private prisma: PrismaService) { }
 
     async createProducto(
         data: CreateProductoDto,
@@ -57,8 +57,24 @@ export class ProductoService {
             updatedAt: GetLocalDate(),
         };
         try {
-            const producto = await this.pisma.producto.create({ data: productoData });
+            const producto = await this.prisma.producto.create({ data: productoData });
+            if (producto) {
+
+                await this.prisma.producto.update({
+                    where: {
+                        id: producto.id,
+                    },
+                    data: {
+                        codigo: codigo + producto.id,
+                    },
+                });
+
+            }
+
+
             return { success: true, data: producto };
+
+
         } catch (error) {
             if (error instanceof PrismaClientKnownRequestError) {
                 // Manejo específico de errores basado en el código de error
@@ -88,7 +104,7 @@ export class ProductoService {
 
     async findAllProducto(): Promise<ApiResponse<Producto[]>> {
         try {
-            const productos = await this.pisma.producto.findMany({
+            const productos = await this.prisma.producto.findMany({
                 include: {
                     empresa: {
                         select: {
@@ -117,11 +133,23 @@ export class ProductoService {
         Data: UpdateProductoDto,
         id: number,
     ): Promise<void> {
-        const producto = await this.pisma.producto.findUnique({ where: { id } });
+        const producto = await this.prisma.producto.findUnique({ where: { id } });
         let oldStock: number = parseInt(producto.stock.toString());
         let newStock: number = oldStock + Data.stock;
 
         const data = { stock: newStock } as UpdateProductoDto;
-        await this.pisma.producto.update({ data, where: { id } });
+        await this.prisma.producto.update({ data, where: { id } });
+    }
+
+
+    async findByCodigo(codigo: string): Promise<ApiResponse<Producto>> {
+
+        try {
+            const productos = await this.prisma.producto.findFirst({ where: { codigo } });
+            return { success: true, data: productos };
+        } catch (error: any) {
+            throw error;
+        }
+
     }
 }

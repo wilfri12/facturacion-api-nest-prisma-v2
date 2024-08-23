@@ -11,9 +11,10 @@ import { ProductoModule } from './producto/producto.module';
 import { DetalleOrdenCompraModule } from './detalle-compra/detalle-compra.module';
 import { CompraModule } from './compra/compra.module';
 import { SubcategoriaModule } from './subcategoria/subcategoria.module';
+import { MovimientoModule } from './movimiento/movimiento.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule],
   controllers: [],
   providers: [],
 })

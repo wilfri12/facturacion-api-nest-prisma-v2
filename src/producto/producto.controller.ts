@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ProductoService } from './producto.service';
 import { Producto } from '@prisma/client';
 import { CreateProductoDto } from './DTO/producto.dto';
@@ -23,6 +23,18 @@ export class ProductoController {
     try {
       const productos = this.productoService.findAllProducto();
       return productos;
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  @Get('codigo/:codigo')
+  async findByCodigo2(@Param('codigo') codigo: string) {
+    console.log('HOLA');
+    
+    try {
+      return this.productoService.findByCodigo(codigo);
+
     } catch (error) {
       return { success: false, error: error.message }
     }
