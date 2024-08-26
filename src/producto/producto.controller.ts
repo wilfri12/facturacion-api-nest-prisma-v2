@@ -30,10 +30,19 @@ export class ProductoController {
 
   @Get('codigo/:codigo')
   async findByCodigo2(@Param('codigo') codigo: string) {
-    console.log('HOLA');
-    
+
     try {
       return this.productoService.findByCodigo(codigo);
+
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  @Get('nombre/:nombre')
+  async findByNombre(@Param('nombre') nombre: string) {
+    try {
+      return this.productoService.FindByCodigoNombre(nombre);
 
     } catch (error) {
       return { success: false, error: error.message }
