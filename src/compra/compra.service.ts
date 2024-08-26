@@ -14,10 +14,10 @@ export class CompraService {
         let montoTotalCompra = 0;
 
         const CompraData = {
-            empresaId,
+            empresaId: parseInt(empresaId.toString()),
             moneda,
-            proveedorId,
-            usuarioId,
+            proveedorId:parseInt(proveedorId.toString()),
+            usuarioId:parseInt(usuarioId.toString()),
             total: 0,
             createdAt: GetLocalDate(),
             updatedAt: GetLocalDate(),
@@ -46,12 +46,12 @@ export class CompraService {
 
                         const detalleCompraData = {
                             productoId: detalle.productoId,
-                            cantidad: detalle.cantidad,
-                            precioCompra: detalle.precioCompra,
-                            precioVenta: detalle.precioVenta,
+                            cantidad: parseInt(detalle.cantidad.toString()),
+                            precioCompra: parseFloat(detalle.precioCompra.toString()),
+                            precioVenta: parseFloat(detalle.precioVenta.toString()),
                             subtotal: importe,
                             compraId: compraCreated.id,
-                            empresaId,
+                            empresaId: parseInt(empresaId.toString()),
                         };
 
                         await prisma.detalleCompra.create({ data: detalleCompraData });
@@ -61,10 +61,10 @@ export class CompraService {
                             data: {
                                 productoId: detalle.productoId,
                                 tipo: 'ENTRADA',
-                                cantidad: detalle.cantidad,
+                                cantidad: parseInt(detalle.cantidad.toString()),
                                 descripcion: `Compra de producto`,
-                                usuarioId,
-                                empresaId,
+                                usuarioId: parseInt(usuarioId.toString()),
+                                empresaId: parseInt(empresaId.toString()),
                                 createdAt: GetLocalDate(),
                                 updatedAt: GetLocalDate(),
                             },
@@ -75,8 +75,8 @@ export class CompraService {
                         await prisma.loteProducto.create({
                             data: {
                                 productoId: detalle.productoId,
-                                cantidad: detalle.cantidad,
-                                empresaId,
+                                cantidad: parseInt(detalle.cantidad.toString()),
+                                empresaId: parseInt(empresaId.toString()),
                                 precioVenta: detalle.precioVenta,
                                 fechaEntrada: GetLocalDate(),
                                 updatedAt: GetLocalDate(),
@@ -116,7 +116,7 @@ export class CompraService {
                             await prisma.producto.update({
                                 where: { id: detalle.productoId },
                                 data: {
-                                    stock: nuevoStock,
+                                    stock: parseInt(nuevoStock.toString()),
                                     updatedAt: GetLocalDate(),
                                     estado: estadoProducto,
                                     precio: detalle.precioVenta, // Actualiza el precio solo si no había stock
