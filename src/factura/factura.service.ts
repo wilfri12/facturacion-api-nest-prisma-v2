@@ -39,6 +39,7 @@ export class FacturaService {
         usuarioId,
         clienteId,
         clienteNombre,
+        cajaId
       } = data;
 
 
@@ -50,6 +51,7 @@ export class FacturaService {
         itebisTotal: 0, // Se calculará después
         metodoPago,
         moneda,
+        cajaId,
         subtotal: 0, // Se calculará después
         total: 0, // Se calculará después
         usuarioId,
@@ -189,7 +191,27 @@ export class FacturaService {
 
             console.log(`Proceso de reducción de stock y gestión de lotes completado para el producto ${detalle.productoId}`);
 
+            const historialCajaActivo = await prisma.historialCaja.findFirst({
+              where: {
+                cajaId,
+                estado: 'ABIERTA',
+              },
+              orderBy: {
+                fechaApertura: 'desc', //  obtener el historial más reciente si hay más de uno.
+              },
+            });
 
+            await this.prisma.movimientosCaja.create({
+              data:{
+                tipo: 'VENTA',
+                descripcion: `Venta de producto en factura FACT-${createdFactura.id}`,
+                historialCajaId: historialCajaActivo.id,
+                monto: subtotalTotal + totalItebis,
+                createdAt: GetLocalDate(),
+                updatedAt: GetLocalDate(),
+                usuarioId
+              }
+            })
 
             // Crea el movimiento de inventario asociado a la venta
             await prisma.movimientoInventario.create({
@@ -247,7 +269,7 @@ export class FacturaService {
               subtotal: subtotalTotal,
               total: subtotalTotal + totalItebis,
               itebisTotal: totalItebis,
-              codigo: `FACT-00${createdFactura.id}`, // Actualiza el código de la factura con su ID
+              codigo: `FACT-${createdFactura.id}`, // Actualiza el código de la factura con su ID
               updatedAt: GetLocalDate(),
             },
           });

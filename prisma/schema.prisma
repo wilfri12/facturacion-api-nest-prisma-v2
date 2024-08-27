@@ -53,6 +53,7 @@ model Empresa {
   createdAt             DateTime?               @default(now())
   updatedAt             DateTime?               @default(now()) @updatedAt
   LoteProducto          LoteProducto[]
+  Caja                  Caja[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
@@ -153,6 +154,7 @@ model Usuario {
   MovimientoInventario MovimientoInventario[]
   DevolucionCliente    DevolucionCliente[]
   DevolucionProveedor  DevolucionProveedor[]
+  MovimientosCaja      MovimientosCaja[]
 
   @@unique([empresaId, nombreUsuario], map: "empresa_usuario_unique")
 }
@@ -184,6 +186,7 @@ model Factura {
   clienteNombre       String?               @db.VarChar(50)
   empresaId           Int
   estado              Estado                @default(PAGADA)
+  cajaId              Int?
   moneda              TipoMoneda            @default(DOP)
   empresa             Empresa               @relation(fields: [empresaId], references: [id])
   usuario             Usuario               @relation(fields: [usuarioId], references: [id])
@@ -191,9 +194,9 @@ model Factura {
   detallesFacturas    DetalleFactura[]
   HistorialDescuentos HistorialDescuentos[]
   DevolucionCliente   DevolucionCliente[]
-
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @default(now()) @updatedAt
+  createdAt           DateTime?             @default(now())
+  updatedAt           DateTime?             @default(now()) @updatedAt
+  Caja                Caja?                 @relation(fields: [cajaId], references: [id])
 
   @@index([clienteNombre], map: "factura_cliente_idx")
 }
@@ -348,6 +351,7 @@ model Promocion {
   nombre           String
   descripcion      String
   fechaInicio      DateTime
+  fechaFin         DateTime
   createdAt        DateTime?          @default(now())
   updatedAt        DateTime?          @default(now()) @updatedAt
   PromocionDetalle PromocionDetalle[]
@@ -407,11 +411,55 @@ model LoteProducto {
   productoId   Int
   cantidad     Int
   empresaId    Int
-  precioVenta Decimal   @db.Decimal(10, 2)
+  precioVenta  Decimal   @db.Decimal(10, 2)
   fechaEntrada DateTime  @default(now())
   updatedAt    DateTime? @default(now()) @updatedAt
   producto     Producto  @relation(fields: [productoId], references: [id])
   empresa      Empresa   @relation(fields: [empresaId], references: [id])
+}
+
+//Sstema de Cajas
+model Caja {
+  id             Int             @id @default(autoincrement())
+  nombre         String          @db.VarChar(100) // Ejemplo de restricción de longitud
+  estado         EstadoCaja      @default(CERRADA)
+  ubicacion      String          @db.VarChar(255)
+  empresaId      Int
+  empresa        Empresa         @relation(fields: [empresaId], references: [id])
+  fechaEntrada   DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  historialCajas HistorialCaja[]
+  facturas       Factura[]
+}
+
+model HistorialCaja {
+  id              Int               @id @default(autoincrement())
+  cajaId          Int
+  caja            Caja              @relation(fields: [cajaId], references: [id])
+  montoInicial    Decimal           @default(0.0) @db.Decimal(10, 2) // Control de precisión
+  montoFinal      Decimal           @default(0.0) @db.Decimal(10, 2)
+  estado          EstadoCaja        @default(ABIERTA)
+  fechaApertura   DateTime          @default(now())
+  fechaCierre     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime?         @updatedAt
+  movimientosCaja MovimientosCaja[]
+}
+
+model MovimientosCaja {
+  id              Int                @id @default(autoincrement())
+  historialCajaId Int
+  monto           Decimal            @default(0.0) @db.Decimal(10, 2) // Control de precisión
+  tipo            tipoMovimientoCaja
+  descripcion     String?
+  historialCaja   HistorialCaja      @relation(fields: [historialCajaId], references: [id])
+  usuarioId       Int
+  usuario         Usuario            @relation(fields: [usuarioId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime?          @updatedAt
+
+  @@index([historialCajaId])
+  @@index([usuarioId])
 }
 
 //Notificaciones o Alertas
@@ -573,4 +621,17 @@ enum TipoMoneda {
 enum Estado {
   CANCELADA
   PAGADA
+}
+
+enum EstadoCaja {
+  ABIERTA
+  CERRADA
+}
+
+enum tipoMovimientoCaja {
+  INGRESO
+  EGRESO
+  VENTA
+  INICIAL
+  CIERRE
 }

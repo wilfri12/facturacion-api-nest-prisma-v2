@@ -21,6 +21,10 @@ export class FacturaDto {
     @IsNotEmpty()
     @IsEnum(MetodoPago)
     metodoPago: MetodoPago;
+
+    @IsNotEmpty()
+    @IsInt()
+    cajaId: number
     
     @IsNotEmpty()
     @IsInt()
@@ -42,6 +46,8 @@ export class FacturaDto {
 
     @IsEnum(TipoMoneda)
     moneda: TipoMoneda;
+
+    
 
 }
 
