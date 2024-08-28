@@ -297,15 +297,6 @@ export class FacturaService {
             select: {
               id: true,
               nombre: true,
-              contacto: {
-                select: {
-                  telefono: true,
-                  whatsapp: true,
-                  email: true,
-                  instagram: true,
-                  direccion: true,
-                },
-              },
             },
           },
           empresa: {
@@ -314,29 +305,11 @@ export class FacturaService {
               nombre: true,
             },
           },
-
-          detallesFacturas: {
-            select: {
-              producto: {
-                select: {
-                  id: true,
-                  nombre: true,
-                  precio: true,
-                  descripcion: true,
-                  estado: true,
-                  subCategoria: {
-                    select: {
-                      id: true,
-                      nombre: true,
-                    },
-                  },
-                },
-              },
-              cantidad: true,
-            },
-          },
         },
-      });
+        orderBy:{
+          createdAt: 'desc'
+        }
+      } );
 
       return { success: true, data: facturas };
     } catch (error: any) {

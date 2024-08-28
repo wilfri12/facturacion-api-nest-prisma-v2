@@ -1,4 +1,16 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateCajaDto } from './create-caja.dto';
+import { IsDecimal, IsEnum, isEnum, IsNumber, IsOptional } from 'class-validator';
 
-export class UpdateCajaDto extends PartialType(CreateCajaDto) {}
+
+
+
+export class UpdateCajaDto {
+
+    @IsNumber()
+    usuarioId: number;
+
+    @IsNumber()
+    cajaId: number;
+
+    @IsDecimal()
+    montoFinal: number;
+}

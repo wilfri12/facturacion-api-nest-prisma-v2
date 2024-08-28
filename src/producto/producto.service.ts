@@ -130,18 +130,29 @@ export class ProductoService {
     }
 
 
-    async FindByCodigoNombre(nombre: string): Promise<ApiResponse<Producto[]>> {
+    async FindByCodigoNombre(nombreOCodigo: string): Promise<ApiResponse<Producto[]>> {
         try {
             const productos = await this.prisma.producto.findMany({
                 where: {
                     OR: [
-                        nombre
-                            ? { nombre: { contains: nombre, } }
-                            : {},
-                        
+                        {
+                            nombre: {
+                                contains: nombreOCodigo,
+                            },
+                        },
+                        {
+                            codigo: {
+                                contains: nombreOCodigo,
+                            },
+                        },
+                        {
+                            codigoBarras: {
+                                contains: nombreOCodigo,
+                            },
+                        },
                     ],
                 },
-                take: 10, // Limitar a un máximo de 20 productos
+                take: 10, // Limitar a un máximo de 10 productos
                 include: {
                     empresa: {
                         select: {
@@ -165,6 +176,7 @@ export class ProductoService {
             throw error;
         }
     }
+    
     
 
     async updateProductoStock(

@@ -39,13 +39,14 @@ export class ProductoController {
     }
   }
 
-  @Get('nombre/:nombre')
-  async findByNombre(@Param('nombre') nombre: string) {
+  @Get('buscar/:filtro')
+async findByFiltro(@Param('filtro') filtro: string) {
     try {
-      return this.productoService.FindByCodigoNombre(nombre);
-
+        const resultado = await this.productoService.FindByCodigoNombre(filtro);
+        return resultado;
     } catch (error) {
-      return { success: false, error: error.message }
+        return { success: false, error: error.message };
     }
-  }
+}
+
 }
