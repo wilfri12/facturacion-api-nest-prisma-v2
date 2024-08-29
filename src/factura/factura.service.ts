@@ -46,7 +46,7 @@ export class FacturaService {
       // Datos base para la creación de la factura
       const facturaData = {
         codigo: 'FACT-', // El código se completará después con el ID de la factura
-        empresaId,
+        empresaId: parseInt(empresaId.toString()),
         estado,
         itebisTotal: 0, // Se calculará después
         metodoPago,
@@ -54,8 +54,8 @@ export class FacturaService {
         cajaId,
         subtotal: 0, // Se calculará después
         total: 0, // Se calculará después
-        usuarioId,
-        clienteId,
+        usuarioId: parseInt(usuarioId.toString()),
+        clienteId: parseInt(clienteId.toString() || null),
         clienteNombre,
         createdAt: GetLocalDate(),
         updatedAt: GetLocalDate(),
@@ -103,8 +103,8 @@ export class FacturaService {
             const detalleFacturaData = {
               facturaId: createdFactura.id,
               productoId: detalle.productoId,
-              empresaId,
-              cantidad: detalle.cantidad,
+              empresaId: parseInt(empresaId.toString()),
+              cantidad:parseInt(detalle.cantidad.toString()) ,
               precioUnitario,
               itebis,
               importe,
@@ -209,7 +209,7 @@ export class FacturaService {
                 monto: subtotalTotal + totalItebis,
                 createdAt: GetLocalDate(),
                 updatedAt: GetLocalDate(),
-                usuarioId
+                usuarioId: parseInt(usuarioId.toString()),
               }
             })
 
@@ -218,10 +218,10 @@ export class FacturaService {
               data: {
                 productoId: detalle.productoId,
                 tipo: 'SALIDA',
-                cantidad: detalle.cantidad,
+                cantidad: parseInt(detalle.cantidad.toString()),
                 descripcion: `Venta de producto en factura FACT-${createdFactura.id}`,
-                usuarioId,
-                empresaId,
+                usuarioId: parseInt(usuarioId.toString()),
+                empresaId: parseInt(empresaId.toString()),
                 createdAt: GetLocalDate(),
                 updatedAt: GetLocalDate(),
               },

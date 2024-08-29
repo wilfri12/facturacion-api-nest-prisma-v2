@@ -11,6 +11,8 @@ export class FacturaController {
 
   @Post()
   async create(@Body() data: FacturaDto & { detalles: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
+    console.log(data);
+    
     try {
       const factura = await this.facturaService.createFactura(data);
 
