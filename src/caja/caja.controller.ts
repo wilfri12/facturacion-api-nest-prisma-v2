@@ -22,9 +22,9 @@ export class CajaController {
     return this.cajaService.findAllCajaCerrada();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cajaService.findOne(+id);
+  @Get('/historial')
+  findOne() {
+    return this.cajaService.finsHistorialCaja();
   }
 
   @Put()

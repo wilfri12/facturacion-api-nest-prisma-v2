@@ -152,7 +152,11 @@ export class CompraService {
 
     async findAllCompra(): Promise<ApiResponse<Compra[]>> {
         try {
-            const ordenes = await this.prisma.compra.findMany();
+            const ordenes = await this.prisma.compra.findMany(
+                {orderBy:{
+                    createdAt: 'desc'
+                }}
+            );
             return { success: true, data: ordenes };
         } catch (error) {
             throw error;

@@ -122,6 +122,9 @@ export class ProductoService {
                         },
                     },
                 },
+                orderBy:{
+                    nombre: 'asc'
+                }
             });
             return { success: true, data: productos };
         } catch (error: any) {
@@ -170,6 +173,7 @@ export class ProductoService {
                         },
                     },
                 },
+               
             });
             return { success: true, data: productos };
         } catch (error: any) {

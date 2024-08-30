@@ -98,8 +98,22 @@ export class CajaService {
   }
 
 
-  findOne(id: number) {
-    return `This action returns a #${id} caja`;
+  async finsHistorialCaja(): Promise<ApiResponse<HistorialCaja[]>> {
+    try {
+
+      const historial = await this.prisma.historialCaja.findMany({
+        orderBy:{
+          createdAt: 'desc',
+        }
+      });
+
+      return {success: true, data: historial}
+      
+    } catch (error) {
+      
+    }
+
+    
   }
 
   async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Partial<Caja>>> {
