@@ -10,6 +10,9 @@ export class CompraService {
     constructor(private readonly prisma: PrismaService) { }
 
     async createCompra(data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
+        console.log(data);
+        
+        
         const { empresaId, moneda, proveedorId, usuarioId, detalles } = data;
         let montoTotalCompra = 0;
 
@@ -26,6 +29,9 @@ export class CompraService {
         try {
             const compra = await this.prisma.$transaction(async (prisma) => {
                 const compraCreated = await prisma.compra.create({ data: CompraData });
+
+                console.log('compraCreated: ', compraCreated);
+                
 
                 if (compraCreated) {
                     const detallePromises = detalles.map(async (detalle) => {
@@ -56,6 +62,9 @@ export class CompraService {
 
                         await prisma.detalleCompra.create({ data: detalleCompraData });
 
+                        console.log( 'Se creó el detalle.');
+                        
+
                         // Crear el movimiento de inventario
                         await prisma.movimientoInventario.create({
                             data: {
@@ -70,6 +79,9 @@ export class CompraService {
                             },
                         });
 
+                        console.log( 'Se creó el movimiento de inventario.');
+
+
 
                         // Registrar el nuevo lote de producto
                         await prisma.loteProducto.create({
@@ -83,11 +95,16 @@ export class CompraService {
                             },
                         });
 
+                        console.log( 'Se creó el lote.');
+
                         // Obtener lotes de productos existentes
                         const lotes = await prisma.loteProducto.findMany({
                             where: { productoId: detalle.productoId },
                             orderBy: { fechaEntrada: 'asc' },
                         });
+
+                        console.log( 'Lostes encontrados.:', lotes);
+
 
                         let nuevoStock = producto.stock + detalle.cantidad;
                         let estadoProducto: EstadoProducto = 'INSTOCK';
@@ -101,8 +118,21 @@ export class CompraService {
                             estadoProducto = 'INSTOCK';
                         }
 
+                        console.log('nuevoStock <= 0: ', nuevoStock <= 0);
+                        console.log('producto.stock > 0: ', producto.stock > 0);
+                        
+                        
+
                         // Si el producto tenía stock previo, no actualizar el precio
                         if (producto.stock > 0) {
+                            console.log('Lo siguiente que hará es actualizar el producto. ');
+
+                            console.log('Datos relevantes: ');
+                            console.log('  detalle.productoId: ',detalle.productoId );
+                            console.log('  GetLocalDate: ',GetLocalDate() );
+                            console.log('  estadoProducto: ',estadoProducto );
+                            
+                            
                             await prisma.producto.update({
                                 where: { id: detalle.productoId },
                                 data: {
@@ -111,6 +141,9 @@ export class CompraService {
                                     estado: estadoProducto,
                                 },
                             });
+
+                            console.log('se actualizo el producto. ');
+                            
                         } else {
                             // Si no había stock previo, actualizar el precio con el del nuevo lote
                             await prisma.producto.update({
