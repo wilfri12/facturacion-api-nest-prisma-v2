@@ -39,9 +39,7 @@ export class CajaService {
 
   async findAllCajaCerrada(): Promise<ApiResponse<Caja[]>> {
     try {
-      const cajas = await this.prisma.caja.findMany({
-        where: { estado: 'CERRADA' }
-      });
+      const cajas = await this.prisma.caja.findMany();
       return { success: true, data: cajas };
     } catch (error: any) {
       throw error;

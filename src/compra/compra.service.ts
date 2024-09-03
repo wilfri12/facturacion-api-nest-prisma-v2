@@ -10,76 +10,80 @@ export class CompraService {
     constructor(private readonly prisma: PrismaService) { }
 
     async createCompra(data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
-        console.log(data);
-        
-        
+
+
         const { empresaId, moneda, proveedorId, usuarioId, detalles } = data;
         let montoTotalCompra = 0;
 
+        // Convert necessary fields to the correct type once at the start
+        const parsedEmpresaId = parseInt(empresaId.toString());
+        const parsedProveedorId = parseInt(proveedorId.toString());
+        const parsedUsuarioId = parseInt(usuarioId.toString());
+        const createdAt = GetLocalDate();
+        const updatedAt = GetLocalDate();
+
         const CompraData = {
-            empresaId: parseInt(empresaId.toString()),
+            empresaId: parsedEmpresaId,
             moneda,
-            proveedorId:parseInt(proveedorId.toString()),
-            usuarioId:parseInt(usuarioId.toString()),
+            proveedorId: parsedProveedorId,
+            usuarioId: parsedUsuarioId,
             total: 0,
-            createdAt: GetLocalDate(),
-            updatedAt: GetLocalDate(),
+            createdAt,
+            updatedAt,
         };
 
         try {
             const compra = await this.prisma.$transaction(async (prisma) => {
                 const compraCreated = await prisma.compra.create({ data: CompraData });
 
-                console.log('compraCreated: ', compraCreated);
-                
-
                 if (compraCreated) {
                     const detallePromises = detalles.map(async (detalle) => {
                         const producto = await prisma.producto.findUnique({
                             where: { id: detalle.productoId },
                         });
-
                         if (!producto) {
                             throw new Error(`Producto con id ${detalle.productoId} no encontrado`);
                         }
 
-
-
                         const precioCompra = parseFloat(detalle.precioCompra.toString());
-                        const cantidad = parseFloat(detalle.cantidad.toString());
-                        const importe = cantidad * precioCompra;
+                        const parsedCantidad = parseInt(detalle.cantidad.toString());
+                        const parsedPrecioVenta = parseFloat(detalle.precioVenta.toString())
+
+
+                        const importe = parsedCantidad * precioCompra;
                         montoTotalCompra += importe;
+
 
                         const detalleCompraData = {
                             productoId: detalle.productoId,
-                            cantidad: parseInt(detalle.cantidad.toString()),
-                            precioCompra: parseFloat(detalle.precioCompra.toString()),
-                            precioVenta: parseFloat(detalle.precioVenta.toString()),
+                            cantidad: parsedCantidad,
+                            precioCompra,
+                            precioVenta: parsedPrecioVenta,
                             subtotal: importe,
                             compraId: compraCreated.id,
-                            empresaId: parseInt(empresaId.toString()),
+                            empresaId: parsedEmpresaId,
                         };
 
                         await prisma.detalleCompra.create({ data: detalleCompraData });
 
-                        console.log( 'Se creó el detalle.');
-                        
+                        console.log('Se creó el detalle.');
+
 
                         // Crear el movimiento de inventario
                         await prisma.movimientoInventario.create({
                             data: {
                                 productoId: detalle.productoId,
                                 tipo: 'ENTRADA',
-                                cantidad: parseInt(detalle.cantidad.toString()),
+                                cantidad: parsedCantidad,
                                 descripcion: `Compra de producto`,
-                                usuarioId: parseInt(usuarioId.toString()),
-                                empresaId: parseInt(empresaId.toString()),
-                                createdAt: GetLocalDate(),
-                                updatedAt: GetLocalDate(),
+                                usuarioId: parsedUsuarioId,
+                                empresaId: parsedEmpresaId,
+                                createdAt,
+                                updatedAt,
                             },
                         });
 
-                        console.log( 'Se creó el movimiento de inventario.');
+                        console.log('Se creó el movimiento de inventario.');
 
 
 
@@ -87,15 +91,15 @@ export class CompraService {
                         await prisma.loteProducto.create({
                             data: {
                                 productoId: detalle.productoId,
-                                cantidad: parseInt(detalle.cantidad.toString()),
-                                empresaId: parseInt(empresaId.toString()),
-                                precioVenta: detalle.precioVenta,
-                                fechaEntrada: GetLocalDate(),
-                                updatedAt: GetLocalDate(),
+                                cantidad: parsedCantidad,
+                                empresaId: parsedEmpresaId,
+                                precioVenta: parsedPrecioVenta,
+                                fechaEntrada: createdAt,
+                                updatedAt,
                             },
                         });
 
-                        console.log( 'Se creó el lote.');
+                        console.log('Se creó el lote.');
 
                         // Obtener lotes de productos existentes
                         const lotes = await prisma.loteProducto.findMany({
@@ -103,10 +107,10 @@ export class CompraService {
                             orderBy: { fechaEntrada: 'asc' },
                         });
 
-                        console.log( 'Lostes encontrados.:', lotes);
+                        console.log('Lostes encontrados.:', lotes);
 
 
-                        let nuevoStock = producto.stock + detalle.cantidad;
+                        let nuevoStock = producto.stock + parsedCantidad;
                         let estadoProducto: EstadoProducto = 'INSTOCK';
 
                         // Determina el estado del producto basado en el stock actualizado
@@ -120,37 +124,37 @@ export class CompraService {
 
                         console.log('nuevoStock <= 0: ', nuevoStock <= 0);
                         console.log('producto.stock > 0: ', producto.stock > 0);
-                        
-                        
+
+
 
                         // Si el producto tenía stock previo, no actualizar el precio
                         if (producto.stock > 0) {
                             console.log('Lo siguiente que hará es actualizar el producto. ');
 
                             console.log('Datos relevantes: ');
-                            console.log('  detalle.productoId: ',detalle.productoId );
-                            console.log('  GetLocalDate: ',GetLocalDate() );
-                            console.log('  estadoProducto: ',estadoProducto );
-                            
-                            
+                            console.log('  detalle.productoId: ', detalle.productoId);
+                            console.log('  GetLocalDate: ', GetLocalDate());
+                            console.log('  estadoProducto: ', estadoProducto);
+
+
                             await prisma.producto.update({
                                 where: { id: detalle.productoId },
                                 data: {
                                     stock: nuevoStock,
-                                    updatedAt: GetLocalDate(),
+                                    updatedAt,
                                     estado: estadoProducto,
                                 },
                             });
 
                             console.log('se actualizo el producto. ');
-                            
+
                         } else {
                             // Si no había stock previo, actualizar el precio con el del nuevo lote
                             await prisma.producto.update({
                                 where: { id: detalle.productoId },
                                 data: {
-                                    stock: parseInt(nuevoStock.toString()),
-                                    updatedAt: GetLocalDate(),
+                                    stock: nuevoStock,
+                                    updatedAt,
                                     estado: estadoProducto,
                                     precio: detalle.precioVenta, // Actualiza el precio solo si no había stock
                                 },
@@ -166,7 +170,7 @@ export class CompraService {
                         where: { id: compraCreated.id },
                         data: {
                             total: montoTotalCompra,
-                            updatedAt: GetLocalDate(),
+                            updatedAt,
                         },
                     });
 
@@ -183,12 +187,53 @@ export class CompraService {
     }
 
 
+
+
+
     async findAllCompra(): Promise<ApiResponse<Compra[]>> {
         try {
             const ordenes = await this.prisma.compra.findMany(
-                {orderBy:{
-                    createdAt: 'desc'
-                }}
+                {
+                    include: {
+                        proveedor: {
+                            select: {
+                                id: true,
+                                nombre: true
+                            }
+                        },
+                        usuario: {
+                            select: {
+                                nombreUsuario: true,
+                            }
+                        },
+
+                        detallesCompras: {
+                            select: {
+                                id: true,
+                                producto: {
+                                    select: {
+                                        codigo: true,
+                                        nombre: true,
+                                        marca: true,
+                                        color: true,
+                                        talla: true,
+                                        precio: true,
+                                        categoria: true,
+                                        subCategoria: true,
+                                    }
+                                },
+                                cantidad: true,
+                                precioCompra: true,
+                                subtotal: true,
+
+                            }
+                        }
+
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }
             );
             return { success: true, data: ordenes };
         } catch (error) {
