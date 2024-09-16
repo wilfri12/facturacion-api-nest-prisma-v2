@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMovimientoDto } from './dto/create-movimiento.dto';
-import { UpdateMovimientoDto } from './dto/update-movimiento.dto';
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { Movimiento } from './entities/movimiento.entity';
@@ -23,7 +21,9 @@ export class MovimientoService {
               nombreUsuario: true
             }
           }
-        }, 
+        }, orderBy: {
+          createdAt: ('desc')
+        }
         
       });
 
