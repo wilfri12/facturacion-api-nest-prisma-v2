@@ -3,7 +3,7 @@ import { DetalleFacturaService } from 'src/shop/detalle-factura/detalle-factura.
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
-import { EstadoProducto, Factura } from '@prisma/client';
+import { Estado, EstadoProducto, Factura } from '@prisma/client';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 import { GetLocalDate } from 'src/utility/getLocalDate';
 
@@ -30,7 +30,6 @@ export class FacturaService {
 
       // Desestructuración de los datos de entrada 
       const {
-        codigo,
         detalles,
         empresaId,
         estado,
@@ -39,26 +38,36 @@ export class FacturaService {
         usuarioId,
         clienteId,
         clienteNombre,
-        cajaId
+        cajaId,
       } = data;
+
+      console.log('Datos recibidos: ', data);
+
+
+      const empresaIdNumber = parseInt(empresaId.toString());
+      const usuarioIdNumber = parseInt(usuarioId.toString());
+      const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
+      const cajaIdNumber = cajaId;
+      const createdAt = GetLocalDate();
+      const updatedAt = GetLocalDate();
 
 
       // Datos base para la creación de la factura
       const facturaData = {
         codigo: 'FACT-', // El código se completará después con el ID de la factura
-        empresaId: parseInt(empresaId.toString()),
+        empresaId: empresaIdNumber,
         estado,
         itebisTotal: 0, // Se calculará después
         metodoPago,
         moneda,
-        cajaId,
+        cajaId: cajaIdNumber,
         subtotal: 0, // Se calculará después
         total: 0, // Se calculará después
-        usuarioId: parseInt(usuarioId.toString()),
-        clienteId: parseInt(clienteId.toString() || null),
+        usuarioId: usuarioIdNumber,
+        clienteId: (clienteIdNumber || null),
         clienteNombre,
-        createdAt: GetLocalDate(),
-        updatedAt: GetLocalDate(),
+        createdAt,
+        updatedAt,
       };
 
 
@@ -71,45 +80,45 @@ export class FacturaService {
 
         if (createdFactura) {
           const detallePromises = detalles.map(async (detalle) => {
+
             // Obtiene el producto para verificar el stock y obtener información de precios
             const producto = await prisma.producto.findUnique({
               where: { id: detalle.productoId },
             });
 
+            const precioUnitarioNumber = parseFloat(producto.precio.toString());
+            const cantidadNumber = parseInt(detalle.cantidad.toString());
+            const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
+
             if (!producto) {
               throw new Error(`Producto con id ${detalle.productoId} no encontrado`);
             }
 
-            if (producto.stock < detalle.cantidad) {
+            if (producto.stock < cantidadNumber) {
               throw new Error(
                 `Inventario insuficiente: Solo quedan ${producto.stock} unidades del producto ${producto.nombre} (talla ${producto.talla}) disponibles. No se puede completar la venta de ${detalle.cantidad} unidades.`,
               );
             }
 
-
-            const precioUnitario = parseFloat(producto.precio.toString());
-            const cantidad = parseFloat(detalle.cantidad.toString());
-            const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
-
             // Calcula el importe del detalle (antes del ITBIS)
-            const importe = cantidad * precioUnitario;
+            const importe = cantidadNumber * precioUnitarioNumber;
 
             // Calcula el ITBIS del detalle
-            const itebis = importe * itebisPorcentaje;
+            const itebisCalculado = importe * itebisPorcentaje;
 
             subtotalTotal += importe;
-            totalItebis += itebis;
+            totalItebis += itebisCalculado;
 
             const detalleFacturaData = {
               facturaId: createdFactura.id,
               productoId: detalle.productoId,
-              empresaId: parseInt(empresaId.toString()),
-              cantidad:parseInt(detalle.cantidad.toString()) ,
-              precioUnitario,
-              itebis,
+              empresaId: empresaIdNumber,
+              cantidad: cantidadNumber,
+              precioUnitario: precioUnitarioNumber,
+              itebis: itebisCalculado,
               importe,
-              createdAt: GetLocalDate(),
-              updatedAt: GetLocalDate(),
+              createdAt,
+              updatedAt,
             };
 
             console.log("detalleFacturaData: ", detalleFacturaData);
@@ -120,7 +129,7 @@ export class FacturaService {
             await prisma.detalleFactura.create({ data: detalleFacturaData });
 
             // Maneja la reducción de stock y la gestión de lotes
-            let cantidadRestante = detalle.cantidad;
+            let cantidadRestante = cantidadNumber;
 
             console.log(`Cantidad solicitada: ${cantidadRestante}`);
 
@@ -193,7 +202,7 @@ export class FacturaService {
 
             const historialCajaActivo = await prisma.historialCaja.findFirst({
               where: {
-                cajaId,
+                cajaId: cajaIdNumber,
                 estado: 'ABIERTA',
               },
               orderBy: {
@@ -202,14 +211,14 @@ export class FacturaService {
             });
 
             await this.prisma.movimientosCaja.create({
-              data:{
+              data: {
                 tipo: 'VENTA',
                 descripcion: `Venta de producto en factura FACT-${createdFactura.id}`,
                 historialCajaId: historialCajaActivo.id,
                 monto: subtotalTotal + totalItebis,
-                createdAt: GetLocalDate(),
-                updatedAt: GetLocalDate(),
-                usuarioId: parseInt(usuarioId.toString()),
+                createdAt,
+                updatedAt,
+                usuarioId: usuarioIdNumber,
               }
             })
 
@@ -218,18 +227,18 @@ export class FacturaService {
               data: {
                 productoId: detalle.productoId,
                 tipo: 'SALIDA',
-                cantidad: parseInt(detalle.cantidad.toString()),
+                cantidad: cantidadNumber,
                 descripcion: `Venta de producto en factura FACT-${createdFactura.id}`,
-                usuarioId: parseInt(usuarioId.toString()),
-                empresaId: parseInt(empresaId.toString()),
-                createdAt: GetLocalDate(),
-                updatedAt: GetLocalDate(),
+                usuarioId: usuarioIdNumber,
+                empresaId: empresaIdNumber,
+                createdAt,
+                updatedAt,
               },
             });
 
             // Verifica y actualiza el estado del producto basado en el nuevo stock
             let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
-            const nuevoStock = producto.stock - detalle.cantidad;
+            const nuevoStock = producto.stock - cantidadNumber;
 
             if (nuevoStock > 0) {
               estadoProducto = nuevoStock < 10 ? 'LOWSTOCK' : 'INSTOCK';
@@ -287,33 +296,103 @@ export class FacturaService {
     }
   }
 
+  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
+    const { startDate, endDate, estado, page = 1, pageSize = 10 } = params;
+
+    console.log('params filter', params);
 
 
-  async findAllFactura(): Promise<ApiResponse<Factura[]>> {
+
+
+    // Validación: evita páginas negativas o tamaños de página demasiado pequeños
+    const pageNumber = Math.max(1, parseInt(page.toString()));
+    const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
+
     try {
-      const facturas = await this.prisma.factura.findMany({
-        include: {
-          cliente: {
-            select: {
-              id: true,
-              nombre: true,
+      const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
+      const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
+      // Obtener el total de registros que coinciden con los filtros
+      const [facturas, totalRecords] = await Promise.all([
+        this.prisma.factura.findMany({
+          where: {
+            AND: [
+              startDateTime  ? { createdAt: { gte: startDateTime } } : {},
+              endDateTime ? { createdAt: { lte: endDateTime } } : {},
+              estado ? { estado: estado } : {}
+            ]
+          },
+          include: {
+            detallesFacturas: {
+              select: {
+                id: true,
+                producto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    precio: true,
+                  }
+                },
+                cantidad: true,
+                importe: true,
+              }
+            },
+            Caja: {
+              select: {
+                id: true,
+                nombre: true,
+              }
+            },
+            usuario: {
+              select: {
+                id: true,
+                nombreUsuario: true,
+              },
+            },
+            empresa: {
+              select: {
+                id: true,
+                nombre: true,
+              },
             },
           },
-          empresa: {
-            select: {
-              id: true,
-              nombre: true,
-            },
+          orderBy: {
+            createdAt: 'desc'
           },
-        },
-        orderBy:{
-          createdAt: 'desc'
-        }
-      } );
+          skip: (pageNumber - 1) * pageSizeNumber,
+          take: pageSizeNumber,
+        }),
+        this.prisma.factura.count({
+          where: {
+            AND: [
+              startDateTime  ? { createdAt: { gte: startDateTime  } } : {},
+              endDateTime  ? { createdAt: { lte: endDateTime  } } : {},
+              estado ? { estado: estado } : {}
+            ]
+          }
+        })
+      ]);
 
-      return { success: true, data: facturas };
+      const totalPages = Math.ceil(totalRecords / pageSizeNumber);
+
+
+
+      return {
+        success: true,
+        data: {
+          facturas,
+          totalRecords,
+          currentPage: pageNumber,
+          totalPages
+        }
+      };
+
+
+
     } catch (error: any) {
       throw error;
     }
   }
+
+
+
 }
