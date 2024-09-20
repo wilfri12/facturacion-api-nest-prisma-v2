@@ -41,7 +41,12 @@ export class FacturaService {
         cajaId,
       } = data;
 
-      console.log('Datos recibidos: ', data);
+      
+      if (!data || !detalles || detalles.length === 0) {
+        console.error('Datos recibidos (data): ', data);
+        console.error('Datos recibidos (detalles): ', detalles);
+        throw new Error('No se recibió ningún dato en la factura');
+      }
 
 
       const empresaIdNumber = parseInt(empresaId.toString());
@@ -299,11 +304,6 @@ export class FacturaService {
   async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
     const { startDate, endDate, estado, page = 1, pageSize = 10 } = params;
 
-    console.log('params filter', params);
-
-
-
-
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
     const pageNumber = Math.max(1, parseInt(page.toString()));
     const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
@@ -373,9 +373,6 @@ export class FacturaService {
       ]);
 
       const totalPages = Math.ceil(totalRecords / pageSizeNumber);
-
-
-
       return {
         success: true,
         data: {
@@ -385,14 +382,8 @@ export class FacturaService {
           totalPages
         }
       };
-
-
-
     } catch (error: any) {
       throw error;
     }
   }
-
-
-
 }
