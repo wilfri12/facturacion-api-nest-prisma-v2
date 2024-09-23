@@ -17,9 +17,10 @@ export class ClienteService {
     }
   }
 
-  async findAllCliente(): Promise<ApiResponse<Cliente[]>> {
+  async findAllCliente(identificacion: string): Promise<ApiResponse<Cliente>> {
     try {
-      const clientes = await this.prisma.cliente.findMany({
+      const cliente = await this.prisma.cliente.findUnique({
+        where: { identificacion},
         include:{
           contacto:{
             select:{
@@ -61,10 +62,10 @@ export class ClienteService {
               }
             }
           }
-        }
+        } 
       });
 
-      return { success: true, data: clientes };
+      return { success: true, data: cliente };
     } catch (error: any) {
       throw error;
     }

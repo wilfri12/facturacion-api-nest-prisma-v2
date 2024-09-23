@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ClienteService } from './cliente.service';
 import { ClienteDto } from './DTO/create-cliente.dto';
 import { ApiResponse } from 'src/interface';
@@ -18,11 +18,13 @@ export class ClienteController {
     }
   }
 
-  @Get()
-  async find(): Promise<ApiResponse<Cliente[]>> {
+  @Get('/:identificacion')
+  async findByDocumento(@Param('identificacion') identificacion: string): Promise<ApiResponse<Cliente>> {
     try {
-      const clientes = await this.clienteService.findAllCliente();
-      return clientes;
+      console.log(identificacion);
+      
+      const cliente = await this.clienteService.findAllCliente(identificacion);
+      return cliente;
     } catch (error) {
       return { success: false, error: error.message };
     }

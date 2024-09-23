@@ -101,7 +101,7 @@ export class FacturaService {
 
             if (producto.stock < cantidadNumber) {
               throw new Error(
-                `Inventario insuficiente: Solo quedan ${producto.stock} unidades del producto ${producto.nombre} (talla ${producto.talla}) disponibles. No se puede completar la venta de ${detalle.cantidad} unidades.`,
+                `Inventario insuficiente: Solo quedan ${producto.stock} unidades del producto ${producto.nombre} (talla ${producto.talla}) disponibles. No se puede completar la venta de ${detalle.cantidad} unidadad/des.`,
               );
             }
 
@@ -330,6 +330,17 @@ export class FacturaService {
                     id: true,
                     nombre: true,
                     precio: true,
+                    color: true,
+                    descripcion: true,
+                    marca: true,
+                    talla: true,
+                    genero: true,
+                    codigo: true,
+                    categoria: {
+                      select:{
+                        nombre: true,
+                      }
+                    }
                   }
                 },
                 cantidad: true,

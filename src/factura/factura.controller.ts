@@ -7,7 +7,7 @@ import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.
 
 @Controller('api/v1/factura')
 export class FacturaController {
-  constructor(private readonly facturaService: FacturaService) {}
+  constructor(private readonly facturaService: FacturaService) { }
 
   @Post()
   async create(@Body() data: FacturaDto & { detalles: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
@@ -34,6 +34,11 @@ export class FacturaController {
       // Convertir las fechas de string a Date si están presentes
       const start = startDate ? new Date(startDate) : undefined;
       const end = endDate ? new Date(endDate) : undefined;
+     
+
+      if ((startDate && !endDate) || (!startDate && endDate)) {
+        return
+      }
 
       const facturas = await this.facturaService.findAllFactura({
         startDate: start,
