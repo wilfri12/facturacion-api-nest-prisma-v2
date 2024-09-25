@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ProductoService } from './producto.service';
 import { Producto } from '@prisma/client';
 import { CreateProductoDto } from './DTO/producto.dto';
@@ -19,9 +19,17 @@ export class ProductoController {
   }
 
   @Get()
-  async find(): Promise<Promise<ApiResponse<Producto[]>>> {
+  async find(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('filtro') filtro?: string
+  ): Promise<ApiResponse<{ productos: Producto[], totalRecords: number}>> {
     try {
-      const productos = this.productoService.findAllProducto();
+      const productos = await this.productoService.findAllProducto({
+        page,
+        pageSize,
+        filtro
+      });
       return productos;
     } catch (error) {
       return { success: false, error: error.message }

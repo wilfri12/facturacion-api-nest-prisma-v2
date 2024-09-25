@@ -102,31 +102,68 @@ export class ProductoService {
         }
     }
 
-    async findAllProducto(): Promise<ApiResponse<Producto[]>> {
+    async findAllProducto(params: { page?: number, pageSize?: number, filtro?: string }): Promise<ApiResponse<{ productos: Producto[], totalRecords: number, currentPage: number, totalPages: number }>> {
         try {
-            const productos = await this.prisma.producto.findMany({
-                include: {
-                    empresa: {
-                        select: {
-                            nombre: true,
-                        },
+            const { page = 1, pageSize = 10, filtro= '' } = params;
+            
+
+            // Validación: evita páginas negativas o tamaños de página demasiado pequeños
+            const pageNumber = Math.max(1, parseInt(page.toString()));
+            const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
+            const [productos, totalRecords] = await Promise.all([
+                this.prisma.producto.findMany({
+                    where: {
+                        OR: [
+                            {
+                                nombre: {
+                                    contains: filtro,
+                                },
+                            },
+                            {
+                                codigo: {
+                                    contains: filtro,
+                                },
+                            },
+                            
+                        ],
                     },
-                    categoria: {
-                        select: {
-                            nombre: true,
+                    include: {
+                        empresa: {
+                            select: {
+                                nombre: true,
+                            },
                         },
-                    },
-                    subCategoria: {
-                        select: {
-                            nombre: true,
+                        categoria: {
+                            select: {
+                                nombre: true,
+                            },
                         },
+                        subCategoria: {
+                            select: {
+                                nombre: true,
+                            },
+                        },
+                    }, orderBy: {
+                        createdAt: 'desc'
                     },
-                },
-                orderBy:{
-                    nombre: 'asc'
+                    skip: (pageNumber - 1) * pageSizeNumber,
+                    take: pageSizeNumber,
+                }),
+
+                this.prisma.producto.count(),
+
+            ]);
+
+            const totalPages = Math.ceil(totalRecords / pageSizeNumber);
+            return {
+                success: true,
+                data: {
+                    productos,
+                    totalRecords,
+                    currentPage: pageNumber,
+                    totalPages
                 }
-            });
-            return { success: true, data: productos };
+            };
         } catch (error: any) {
             throw error;
         }
@@ -173,15 +210,15 @@ export class ProductoService {
                         },
                     },
                 },
-               
+
             });
             return { success: true, data: productos };
         } catch (error: any) {
             throw error;
         }
     }
-    
-    
+
+
 
     async updateProductoStock(
         Data: UpdateProductoDto,
@@ -206,4 +243,5 @@ export class ProductoService {
         }
 
     }
+    
 }
