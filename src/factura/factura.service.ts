@@ -41,7 +41,7 @@ export class FacturaService {
         cajaId,
       } = data;
 
-      
+
       if (!data || !detalles || detalles.length === 0) {
         console.error('Datos recibidos (data): ', data);
         console.error('Datos recibidos (detalles): ', detalles);
@@ -316,7 +316,7 @@ export class FacturaService {
         this.prisma.factura.findMany({
           where: {
             AND: [
-              startDateTime  ? { createdAt: { gte: startDateTime } } : {},
+              startDateTime ? { createdAt: { gte: startDateTime } } : {},
               endDateTime ? { createdAt: { lte: endDateTime } } : {},
               estado ? { estado: estado } : {}
             ]
@@ -337,7 +337,7 @@ export class FacturaService {
                     genero: true,
                     codigo: true,
                     categoria: {
-                      select:{
+                      select: {
                         nombre: true,
                       }
                     }
@@ -375,8 +375,8 @@ export class FacturaService {
         this.prisma.factura.count({
           where: {
             AND: [
-              startDateTime  ? { createdAt: { gte: startDateTime  } } : {},
-              endDateTime  ? { createdAt: { lte: endDateTime  } } : {},
+              startDateTime ? { createdAt: { gte: startDateTime } } : {},
+              endDateTime ? { createdAt: { lte: endDateTime } } : {},
               estado ? { estado: estado } : {}
             ]
           }
@@ -393,6 +393,66 @@ export class FacturaService {
           totalPages
         }
       };
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+
+
+  async findFacturaById(idFactura: number): Promise<ApiResponse<Factura>> {
+    try {
+      const factura = await this.prisma.factura.findUnique({
+        where: {
+          id: idFactura
+        },
+        include: {
+          detallesFacturas: {
+            select: {
+              id: true,
+              producto: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  precio: true,
+                  color: true,
+                  descripcion: true,
+                  marca: true,
+                  talla: true,
+                  genero: true,
+                  codigo: true,
+                  categoria: {
+                    select: {
+                      nombre: true,
+                    }
+                  }
+                }
+              },
+              cantidad: true,
+              importe: true,
+            }
+          },
+          Caja: {
+            select: {
+              id: true,
+              nombre: true,
+            }
+          },
+          usuario: {
+            select: {
+              id: true,
+              nombreUsuario: true,
+            },
+          },
+          empresa: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+        }
+      })
+      return { success: true, data: factura }
     } catch (error: any) {
       throw error;
     }

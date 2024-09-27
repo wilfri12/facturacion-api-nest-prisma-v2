@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
 import { Estado, Factura } from '@prisma/client';
@@ -54,6 +54,18 @@ export class FacturaController {
         success: false,
         message: error.message,
       }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
+  @Get('/:idFactura')
+  async findByCodigo2(@Param('idFactura') idFactura: number) {
+
+    try {
+      return this.facturaService.findFacturaById(+idFactura);
+
+    } catch (error) {
+      return { success: false, error: error.message }
     }
   }
 }
