@@ -24,6 +24,8 @@ export class LotesService {
               nombre: true,
             }
           }
+        }, orderBy:{
+          fechaEntrada: 'desc',
         }
       });
       return { success: true, data: lotes };
