@@ -31,26 +31,21 @@ export class CompraController {
         @Query('pageSize') pageSize?: number
     ): Promise<ApiResponse<{ compras: Compra[], totalRecords: number }>> {
         try {
-
             // Convertir las fechas de string a Date si están presentes
             const start = startDate ? new Date(startDate) : undefined;
             const end = endDate ? new Date(endDate) : undefined;
-
-            
-            
 
             if ((startDate && !endDate) || (!startDate && endDate)) {
                 return
             }
 
-
-            const ordenes = await this.compraService.findAllCompra(
+            const compras = await this.compraService.findAllCompra(
                 {startDate: start,
                 endDate: end,
                 page,
                 pageSize}
             );
-            return ordenes;
+            return compras;
 
         } catch (error) {
             return { success: false, error: error.message }

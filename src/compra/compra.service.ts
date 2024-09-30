@@ -188,89 +188,89 @@ export class CompraService {
 
     async findAllCompra(params: { startDate?: Date, endDate?: Date, page?: number, pageSize?: number })
         : Promise<ApiResponse<{ compras: Compra[], totalRecords: number, currentPage: number, totalPages: number }>> {
-        {
-            const { startDate, endDate, page = 1, pageSize = 10 } = params;
 
-            // Validación: evita páginas negativas o tamaños de página demasiado pequeños
-            const pageNumber = Math.max(1, parseInt(page.toString()));
-            const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
+        const { startDate, endDate, page = 1, pageSize = 10 } = params;
 
-            try {
-                const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
-                const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
-                
-                const [compras, totalRecords] = await Promise.all([
-                    this.prisma.compra.findMany(
-                        {
-                            where: {
-                                AND: [
-                                  startDateTime  ? { createdAt: { gte: startDateTime } } : {},
-                                  endDateTime ? { createdAt: { lte: endDateTime } } : {},
-                                ]
-                              },
-                            include: {
-                                proveedor: {
-                                    select: {
-                                        id: true,
-                                        nombre: true
-                                    }
-                                },
-                                usuario: {
-                                    select: {
-                                        nombreUsuario: true,
-                                    }
-                                },
+        // Validación: evita páginas negativas o tamaños de página demasiado pequeños
+        const pageNumber = Math.max(1, parseInt(page.toString()));
+        const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
 
-                                detallesCompras: {
-                                    select: {
-                                        id: true,
-                                        producto: {
-                                            select: {
-                                                codigo: true,
-                                                nombre: true,
-                                                marca: true,
-                                                color: true,
-                                                talla: true,
-                                                precio: true,
-                                                categoria: true,
-                                                subCategoria: true,
-                                            }
-                                        },
-                                        cantidad: true,
-                                        precioCompra: true,
-                                        subtotal: true,
+        try {
+            const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
+            const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
 
-                                    }
-                                }
-
-                            }, orderBy: {
-                                createdAt: 'desc'
-                            },
-                            skip: (pageNumber - 1) * pageSizeNumber,
-                            take: pageSizeNumber,
-                        }),
-                    this.prisma.compra.count({
+            const [compras, totalRecords] = await Promise.all([
+                this.prisma.compra.findMany(
+                    {
                         where: {
                             AND: [
                                 startDateTime ? { createdAt: { gte: startDateTime } } : {},
                                 endDateTime ? { createdAt: { lte: endDateTime } } : {},
                             ]
-                        }
-                    })
-                ]);
-                const totalPages = Math.ceil(totalRecords / pageSizeNumber);
-                return {
-                    success: true,
-                    data: {
-                        compras,
-                        totalRecords,
-                        currentPage: pageNumber,
-                        totalPages
+                        },
+                        include: {
+                            proveedor: {
+                                select: {
+                                    id: true,
+                                    nombre: true
+                                }
+                            },
+                            usuario: {
+                                select: {
+                                    nombreUsuario: true,
+                                }
+                            },
+
+                            detallesCompras: {
+                                select: {
+                                    id: true,
+                                    producto: {
+                                        select: {
+                                            codigo: true,
+                                            nombre: true,
+                                            marca: true,
+                                            color: true,
+                                            talla: true,
+                                            precio: true,
+                                            categoria: true,
+                                            subCategoria: true,
+                                        }
+                                    },
+                                    cantidad: true,
+                                    precioCompra: true,
+                                    subtotal: true,
+
+                                }
+                            }
+
+                        }, orderBy: {
+                            createdAt: 'desc'
+                        },
+                        skip: (pageNumber - 1) * pageSizeNumber,
+                        take: pageSizeNumber,
+                    }),
+                this.prisma.compra.count({
+                    where: {
+                        AND: [
+                            startDateTime ? { createdAt: { gte: startDateTime } } : {},
+                            endDateTime ? { createdAt: { lte: endDateTime } } : {},
+                        ]
                     }
-                };
-            } catch (error) {
-                throw error;
-            }
+                })
+            ]);
+            const totalPages = Math.ceil(totalRecords / pageSizeNumber);
+            return {
+                success: true,
+                data: {
+                    compras,
+                    totalRecords,
+                    currentPage: pageNumber,
+                    totalPages
+                }
+            };
+        } catch (error) {
+            throw error;
         }
+
     }
 }
