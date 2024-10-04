@@ -32,15 +32,7 @@ export class SubcategoriaService {
   }
 
  async findAll() : Promise<ApiResponse<SubCategoria[]>> {
-    const SubCategorias =  await this.prisma.subCategoria.findMany({
-      include: {
-        categoria: {
-          select:{
-            nombre: true, 
-          }
-        },
-      }
-    });
+    const SubCategorias =  await this.prisma.subCategoria.findMany();
 
     return { success: true, data: SubCategorias };
   }

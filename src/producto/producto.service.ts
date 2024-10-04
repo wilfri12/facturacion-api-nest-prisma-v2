@@ -124,7 +124,13 @@ export class ProductoService {
                                     contains: filtro,
                                 },
                             },
-                            
+                            {
+                                categoria: {
+                                    nombre: {
+                                        contains: filtro,
+                                    },
+                                },
+                            },
                         ],
                     },
                     include: {
@@ -144,7 +150,7 @@ export class ProductoService {
                             },
                         },
                     }, orderBy: {
-                        createdAt: 'desc'
+                        nombre: 'asc'
                     },
                     skip: (pageNumber - 1) * pageSizeNumber,
                     take: pageSizeNumber,
