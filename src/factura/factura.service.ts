@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { DetalleFacturaService } from 'src/shop/detalle-factura/detalle-factura.service';
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
@@ -6,12 +6,15 @@ import { FacturaDto } from './DTO/factura.dto';
 import { Estado, EstadoProducto, Factura } from '@prisma/client';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 import { GetLocalDate } from 'src/utility/getLocalDate';
+import { PrinterService } from 'src/printer/printer.service';
+import { facturaReport } from 'report/factura.report';
+import { FacturaInterface } from 'src/interface/factura.interface';
 
 @Injectable()
 export class FacturaService {
   constructor(
     private prisma: PrismaService,
-    private readonly detalleFactura: DetalleFacturaService,
+    private readonly printerService: PrinterService
   ) { }
 
   /**
@@ -457,10 +460,80 @@ export class FacturaService {
             },
           },
         }
+
       })
+      console.log('factura', factura);
       return { success: true, data: factura }
     } catch (error: any) {
       throw error;
     }
   }
+
+  async facturaReportById(idFactura: number) {
+    try {
+        const factura = await this.prisma.factura.findUnique({
+            where: { id: idFactura },
+            include: {
+                detallesFacturas: {
+                    select: {
+                        id: true,
+                        producto: {
+                            select: {
+                                id: true,
+                                nombre: true,
+                                precio: true,
+                                color: true,
+                                descripcion: true,
+                                marca: true,
+                                talla: true,
+                                genero: true,
+                                codigo: true,
+                                categoria: {
+                                    select: {
+                                        nombre: true,
+                                    },
+                                },
+                            },
+                        },
+                        cantidad: true,
+                        importe: true,
+                    },
+                },
+                Caja: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                    },
+                },
+                usuario: {
+                    select: {
+                        id: true,
+                        nombreUsuario: true,
+                    },
+                },
+                empresa: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                    },
+                },
+            },
+        });
+
+        console.log('factura', factura);
+        
+        if (!factura) {
+            throw new Error(`Factura with ID ${idFactura} not found`);
+        }
+
+        const docDefinition = facturaReport(factura); // Ensure 'factura' is passed here
+        const pdfDoc = await this.printerService.createPdf(docDefinition);
+        return pdfDoc;
+    } catch (error: any) {
+        console.error('Error generating factura report:', error);
+        throw error; // Rethrow or handle accordingly
+    }
+}
+
+
 }

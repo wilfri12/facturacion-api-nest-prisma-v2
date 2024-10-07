@@ -14,9 +14,10 @@ import { SubcategoriaModule } from './subcategoria/subcategoria.module';
 import { MovimientoModule } from './movimiento/movimiento.module';
 import { LotesModule } from './lotes/lotes.module';
 import { CajaModule } from './caja/caja.module';
+import { PrinterModule } from './printer/printer.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule, LotesModule, CajaModule],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule, LotesModule, CajaModule, PrinterModule],
   controllers: [],
   providers: [],
 })

@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Res } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
 import { Estado, Factura } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
+import { Response } from 'express';
 
 @Controller('api/v1/factura')
 export class FacturaController {
@@ -36,7 +37,6 @@ export class FacturaController {
       const end = endDate ? new Date(endDate) : undefined;
       console.log(start);
       console.log(end);
-      
 
       if ((startDate && !endDate) || (!startDate && endDate)) {
         return
@@ -69,5 +69,35 @@ export class FacturaController {
     } catch (error) {
       return { success: false, error: error.message }
     }
+  }
+
+
+
+  @Get('report-factura/:id')
+  async employmentLetterById(@Res() response: Response, @Param('id') id: string) {
+    try {
+      const pdfDoc = await this.facturaService.facturaReportById(+id);
+       response.setHeader('Content-Type', 'application/pdf');
+       pdfDoc.pipe(response);
+       pdfDoc.end();  // End the PDF document after piping
+      return pdfDoc;
+    } catch (error) {
+      console.error(error);
+      response.status(500).send('Error al generar el reporte PDF');
+    }
+
+    /* @Get('report-factura/:id')
+     async employmentLetterById(@Res() response: Response, @Param('id') id: string){
+       try {
+         const pdfDoc = await this.facturaService.facturareportByIds(+id);
+         // response.setHeader('Content-Type', 'application/pdf');
+         // pdfDoc.pipe(response);
+         // pdfDoc.end();  // End the PDF document after piping
+         return pdfDoc;
+       } catch (error) {
+         console.error(error);
+         response.status(500).send('Error al generar el reporte PDF');
+       }
+     }*/
   }
 }
