@@ -52,7 +52,7 @@ export class FacturaService {
       const empresaIdNumber = parseInt(empresaId.toString());
       const usuarioIdNumber = parseInt(usuarioId.toString());
       const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
-      const cajaIdNumber = cajaId;
+      const cajaIdNumber = cajaId ? cajaId : 1; //Aqui si el id de la caja no se envia, se pone la caja uno por defecto.
       const createdAt = GetLocalDate();
       const updatedAt = GetLocalDate();
 
@@ -74,6 +74,9 @@ export class FacturaService {
         createdAt,
         updatedAt,
       };
+
+      console.log('Datos de la factura: ', facturaData);
+
 
 
       // Creación de la factura y sus detalles dentro de una transacción
@@ -214,6 +217,7 @@ export class FacturaService {
                 fechaApertura: 'desc', //  obtener el historial más reciente si hay más de uno.
               },
             });
+            console.log('LLego aqui 1');
 
             await this.prisma.movimientosCaja.create({
               data: {
@@ -226,6 +230,7 @@ export class FacturaService {
                 usuarioId: usuarioIdNumber,
               }
             })
+            console.log('LLego aqui 2');
 
             // Crea el movimiento de inventario asociado a la venta
             await prisma.movimientoInventario.create({
@@ -240,6 +245,7 @@ export class FacturaService {
                 updatedAt,
               },
             });
+            console.log('LLego aqui 3');
 
             // Verifica y actualiza el estado del producto basado en el nuevo stock
             let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
