@@ -3,60 +3,53 @@ import { FacturaInterface } from 'src/interface/factura.interface';
 
 const styles: StyleDictionary = {
     header: {
-        fontSize: 18,
+        fontSize: 12,
         bold: true,
         alignment: 'center',
-        margin: [0, 0, 0, 10],
-    },
-    subheader: {
-        fontSize: 12,
-        alignment: 'center',
-        margin: [0, 0, 0, 20],
+        margin: [0, 0, 0, 5],
     },
     details: {
-        fontSize: 10,
-        margin: [0, 5, 0, 5],
+        fontSize: 8,
+        margin: [0, 3, 0, 3],
     },
     tableHeader: {
         bold: true,
-        fontSize: 10,
+        fontSize: 8,
         fillColor: '#eeeeee',
         alignment: 'center',
     },
     tableContent: {
-        fontSize: 10,
-        margin: [0, 5, 0, 5],
+        fontSize: 8,
+        margin: [0, 3, 0, 3],
     },
     total: {
-        fontSize: 12,
+        fontSize: 10,
         bold: true,
         alignment: 'right',
-        margin: [0, 5, 0, 5],
+        margin: [0, 3, 0, 3],
     },
     footer: {
-        fontSize: 8,
+        fontSize: 7,
         alignment: 'center',
-        margin: [0, 20, 0, 0],
+        margin: [0, 10, 0, 0],
     },
 };
 
 export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions => {
-    console.log('Generating report for factura:', factura);
-
     // Prepara los detalles de los productos
     const productRows = factura.detallesFacturas.map(detalle => {
         const producto = detalle.producto;
         return [
-            { text: `${producto.nombre}\n${detalle.cantidad} x RD$${detalle.importe.toFixed(2)}`, style: 'tableContent', alignment: 'left' },
-            { text: `RD$${88}`, style: 'tableContent', alignment: 'center' },
-            { text: `RD$${(detalle.cantidad * parseFloat(detalle.importe.toString()))}`, style: 'tableContent', alignment: 'right' },
+            { text: producto.nombre, style: 'tableContent', alignment: 'left' },
+            { text: `x${detalle.cantidad}`, style: 'tableContent', alignment: 'center' },
+            { text: `RD$${detalle.importe.toFixed(2)}`, style: 'tableContent', alignment: 'right' },
         ];
     });
 
     // Definición del documento
     const docDefinition: TDocumentDefinitions = {
-        pageSize: 'A4',
-        pageMargins: [40, 60, 40, 60],
+        pageSize: { width: 200, height: 'auto' },  // Configuración para impresoras pequeñas
+        pageMargins: [10, 10, 10, 10],  // Márgenes pequeños
         styles: styles,
         content: [
             {
@@ -65,51 +58,55 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
             },
             {
                 text: 'FACTURA DE VENTA',
-                style: 'subheader',
+                style: 'header',
             },
             {
-                columns: [
-                    { text: `Factura: ${factura.codigo}`, style: 'details' },
-                ],
+                text: `Factura: ${factura.codigo}`,
+                style: 'details',
             },
             {
-                columns: [
-                    { text: `Método de pago: ${factura.metodoPago}`, style: 'details' },
-                    { text: `Usuario: ${factura.usuario}`, style: 'details', alignment: 'right' },
-                ],
+                text: `Fecha: ${new Date(factura.createdAt).toLocaleDateString('es-ES')}`,
+                style: 'details',
             },
             {
-                columns: [
-                    { text: `Fecha: ${new Date(factura.createdAt).toLocaleDateString('es-ES')}`, style: 'details' },
-                    { text: `Cliente: ${factura.clienteNombre}`, style: 'details', alignment: 'right' },
-                ],
+                text: `Método de pago: ${factura.metodoPago}`,
+                style: 'details',
+            },
+            {
+                text: `Cliente: ${factura.clienteNombre || 'Cliente no registrado'}`,
+                style: 'details',
             },
             {
                 table: {
                     headerRows: 1,
                     widths: ['*', 'auto', 'auto'],
                     body: [
-                        [{ text: 'Descripción', style: 'tableHeader' }, { text: 'ITEBIS', style: 'tableHeader' }, { text: 'Importe', style: 'tableHeader' }],
+                        [{ text: 'Descripción', style: 'tableHeader' }, { text: 'Cant.', style: 'tableHeader' }, { text: 'Total', style: 'tableHeader' }],
                         ...productRows,
                     ],
                 },
-                layout: 'lightHorizontalLines',
+                layout: 'lightHorizontalLines',  // Líneas simples
             },
             {
                 text: `Subtotal: RD$${factura.subtotal.toFixed(2)}`,
                 style: 'total',
             },
             {
-                text: `ITBIS: RD$${factura.itebisTotal.toFixed(2)}`,
-                style: 'total',
-            },
+                ...(factura.itebisTotal.toNumber() !== 0
+                    ? {
+                        text: `ITBIS: RD$${factura.itebisTotal.toFixed(2)}`,
+                        style: 'total',
+                    }
+                    : {}),
+            }
+            ,
             {
-                text: `Monto Total: RD$${factura.total.toFixed(2)}`,
+                text: `Total: RD$${factura.total.toFixed(2)}`,
                 style: 'total',
             },
         ],
         footer: {
-            text: 'Este documento es una constancia de venta.',
+            text: 'Gracias por su compra.',
             style: 'footer',
         },
     };
