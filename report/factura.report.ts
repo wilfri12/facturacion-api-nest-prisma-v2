@@ -1,55 +1,57 @@
 import type { StyleDictionary, TDocumentDefinitions } from 'pdfmake';
+import { DateFormatter } from 'src/helpers';
+import { formatCurrency } from 'src/helpers/formatCurrency';
 import { FacturaInterface } from 'src/interface/factura.interface';
 
 const styles: StyleDictionary = {
     header: {
-        fontSize: 12,
+        fontSize: 14,
         bold: true,
         alignment: 'center',
-        margin: [0, 0, 0, 5],
+        margin: [0, 0, 0, 10],
     },
     details: {
-        fontSize: 8,
-        margin: [0, 3, 0, 3],
+        fontSize: 9,
+        margin: [0, 2, 0, 2],
     },
     tableHeader: {
         bold: true,
-        fontSize: 8,
-        fillColor: '#eeeeee',
+        fontSize: 9,
+        fillColor: '#f3f3f3',
         alignment: 'center',
+        margin: [0, 5, 0, 5],
     },
     tableContent: {
-        fontSize: 8,
-        margin: [0, 3, 0, 3],
+        fontSize: 9,
+        margin: [0, 4, 0, 4],
     },
     total: {
-        fontSize: 10,
+        fontSize: 11,
         bold: true,
         alignment: 'right',
-        margin: [0, 3, 0, 3],
+        margin: [0, 10, 0, 10],
     },
     footer: {
-        fontSize: 7,
+        fontSize: 8,
         alignment: 'center',
-        margin: [0, 10, 0, 0],
+        margin: [0, 20, 0, 0],
     },
 };
 
+
 export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions => {
-    // Prepara los detalles de los productos
     const productRows = factura.detallesFacturas.map(detalle => {
         const producto = detalle.producto;
         return [
             { text: producto.nombre, style: 'tableContent', alignment: 'left' },
             { text: `x${detalle.cantidad}`, style: 'tableContent', alignment: 'center' },
-            { text: `RD$${detalle.importe.toFixed(2)}`, style: 'tableContent', alignment: 'right' },
+            { text: `${formatCurrency(detalle.importe.toString())} `, style: 'tableContent', alignment: 'right' },
         ];
     });
 
-    // Definición del documento
     const docDefinition: TDocumentDefinitions = {
-        pageSize: { width: 200, height: 'auto' },  // Configuración para impresoras pequeñas
-        pageMargins: [10, 10, 10, 10],  // Márgenes pequeños
+        pageSize: 'A4',
+        pageMargins: [20, 20, 20, 30],  // Márgenes ajustados
         styles: styles,
         content: [
             {
@@ -61,11 +63,11 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'header',
             },
             {
-                text: `Factura: ${factura.codigo}`,
+                text: `Cliente: ${factura.clienteNombre || 'Cliente no registrado'}`,
                 style: 'details',
             },
             {
-                text: `Fecha: ${new Date(factura.createdAt).toLocaleDateString('es-ES')}`,
+                text: `Factura: ${factura.codigo}`,
                 style: 'details',
             },
             {
@@ -73,7 +75,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'details',
             },
             {
-                text: `Cliente: ${factura.clienteNombre || 'Cliente no registrado'}`,
+                text: `Fecha: ${DateFormatter.getDDMMYYYY(factura.createdAt)}`,
                 style: 'details',
             },
             {
@@ -85,23 +87,14 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                         ...productRows,
                     ],
                 },
-                layout: 'lightHorizontalLines',  // Líneas simples
+                layout: 'noBorders',  // Sin bordes para evitar problemas de impresión
             },
             {
-                text: `Subtotal: RD$${factura.subtotal.toFixed(2)}`,
+                text: `Subtotal: ${formatCurrency(factura.subtotal.toString())}`,
                 style: 'total',
             },
             {
-                ...(factura.itebisTotal.toNumber() !== 0
-                    ? {
-                        text: `ITBIS: RD$${factura.itebisTotal.toFixed(2)}`,
-                        style: 'total',
-                    }
-                    : {}),
-            }
-            ,
-            {
-                text: `Total: RD$${factura.total.toFixed(2)}`,
+                text: `Total: ${formatCurrency(factura.total.toString())}`,
                 style: 'total',
             },
         ],
