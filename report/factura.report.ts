@@ -5,36 +5,37 @@ import { FacturaInterface } from 'src/interface/factura.interface';
 
 const styles: StyleDictionary = {
     header: {
-        fontSize: 14,
+        fontSize: 12,  // Tamaño reducido para adaptarse a 80 mm
         bold: true,
         alignment: 'center',
-        margin: [0, 0, 0, 10],
+        margin: [0, 0, 0, 8],
     },
     details: {
         fontSize: 9,
-        margin: [0, 2, 0, 2],
+        margin: [0, 2, 0, 4],
+        alignment: 'left',  // Alineado a la izquierda
     },
     tableHeader: {
         bold: true,
-        fontSize: 9,
+        fontSize: 10,  // Tamaño reducido
         fillColor: '#f3f3f3',
         alignment: 'center',
-        margin: [0, 5, 0, 5],
+        margin: [0, 2, 0, 2],
     },
     tableContent: {
-        fontSize: 9,
-        margin: [0, 4, 0, 4],
+        fontSize: 10,  // Tamaño reducido
+        margin: [0, 2, 0, 2],
     },
     total: {
-        fontSize: 11,
+        fontSize: 10,  // Tamaño reducido
         bold: true,
         alignment: 'right',
-        margin: [0, 10, 0, 10],
+        margin: [0, 5, 0, 5],
     },
     footer: {
         fontSize: 8,
         alignment: 'center',
-        margin: [0, 20, 0, 0],
+        margin: [0, 10, 0, 10],  // Espacio en el pie de página
     },
 };
 
@@ -50,8 +51,8 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
     });
 
     const docDefinition: TDocumentDefinitions = {
-        pageSize: 'A4',
-        pageMargins: [20, 20, 20, 30],  // Márgenes ajustados
+        pageSize: { width: 203, height: 'auto' },
+        pageMargins: [5, 5, 5, 20],  // Márgenes ajustados
         styles: styles,
         content: [
             {
@@ -71,7 +72,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'details',
             },
             {
-                text: `Método de pago: ${factura.metodoPago}`,
+                text: `Pago: ${factura.metodoPago}`,
                 style: 'details',
             },
             {
@@ -83,7 +84,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                     headerRows: 1,
                     widths: ['*', 'auto', 'auto'],
                     body: [
-                        [{ text: 'Descripción', style: 'tableHeader' }, { text: 'Cant.', style: 'tableHeader' }, { text: 'Total', style: 'tableHeader' }],
+                        [{ text: 'Producto', style: 'tableHeader' }, { text: 'Cant.', style: 'tableHeader' }, { text: 'Impor.', style: 'tableHeader' }],
                         ...productRows,
                     ],
                 },
@@ -97,11 +98,13 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 text: `Total: ${formatCurrency(factura.total.toString())}`,
                 style: 'total',
             },
+            {
+                text: 'Gracias por su compra.',
+                style: 'footer',
+            },
         ],
-        footer: {
-            text: 'Gracias por su compra.',
-            style: 'footer',
-        },
+
+       
     };
 
     return docDefinition;
