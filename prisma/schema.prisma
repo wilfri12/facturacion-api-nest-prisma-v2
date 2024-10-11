@@ -137,7 +137,7 @@ model Producto {
 
 model Usuario {
   id                   Int                    @id @default(autoincrement())
-  nombreUsuario        String                 @db.VarChar(50)
+  nombreUsuario        String                 @unique @db.VarChar(50)
   password             String                 @db.VarChar(100)
   contactoId           Int                    @unique
   role                 Role                   @default(EMPLEADO)

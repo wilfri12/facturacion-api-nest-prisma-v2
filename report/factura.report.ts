@@ -8,7 +8,7 @@ const styles: StyleDictionary = {
         fontSize: 12,  // Tamaño reducido para adaptarse a 80 mm
         bold: true,
         alignment: 'center',
-        margin: [0, 0, 0, 8],
+        margin: [0, 0, 0, 12],
     },
     details: {
         fontSize: 9,
@@ -19,7 +19,7 @@ const styles: StyleDictionary = {
         bold: true,
         fontSize: 10,  // Tamaño reducido
         fillColor: '#f3f3f3',
-        alignment: 'center',
+        alignment: 'start',
         margin: [0, 2, 0, 2],
     },
     tableContent: {
@@ -35,7 +35,7 @@ const styles: StyleDictionary = {
     footer: {
         fontSize: 8,
         alignment: 'center',
-        margin: [0, 10, 0, 10],  // Espacio en el pie de página
+        margin: [0, 18, 0, 10],  // Espacio en el pie de página
     },
 };
 
@@ -52,7 +52,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
 
     const docDefinition: TDocumentDefinitions = {
         pageSize: { width: 203, height: 'auto' },
-        pageMargins: [5, 5, 5, 20],  // Márgenes ajustados
+        pageMargins: [5, 8, 5, 20],  // Márgenes ajustados
         styles: styles,
         content: [
             {
@@ -64,7 +64,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'header',
             },
             {
-                text: `Cliente: ${factura.clienteNombre || 'Cliente no registrado'}`,
+                text: `${factura.clienteNombre || 'Cliente no registrado'}`,
                 style: 'details',
             },
             {
@@ -76,7 +76,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'details',
             },
             {
-                text: `Fecha: ${DateFormatter.getDDMMYYYY(factura.createdAt)}`,
+                text: `${DateFormatter.getDDMMYYYY(factura.createdAt)}`,
                 style: 'details',
             },
             {
