@@ -16,9 +16,10 @@ import { LotesModule } from './lotes/lotes.module';
 import { CajaModule } from './caja/caja.module';
 import { PrinterModule } from './printer/printer.module';
 import { Auth2Module } from './auth2/auth2.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule, LotesModule, CajaModule, PrinterModule, Auth2Module],
+  imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule, LotesModule, CajaModule, PrinterModule, Auth2Module, AuthModule],
   controllers: [],
   providers: [],
 })
