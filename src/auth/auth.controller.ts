@@ -8,11 +8,10 @@ import { Role } from '@prisma/client';
 @Controller('api/v1/auth/login')
 export class AuthController {
     constructor(private authService: AuthService) {}
-
-   
-
     @Post()
     async login(@Body() authPayload: AuthPayLoadDTO) {
+        console.log(authPayload);
+        
         const user = await this.authService.validateUser(authPayload);
         if (!user) {
             throw new UnauthorizedException('Invalid username or password');
