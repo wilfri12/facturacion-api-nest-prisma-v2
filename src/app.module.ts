@@ -15,7 +15,7 @@ import { MovimientoModule } from './movimiento/movimiento.module';
 import { LotesModule } from './lotes/lotes.module';
 import { CajaModule } from './caja/caja.module';
 import { PrinterModule } from './printer/printer.module';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './auth/auth/auth.module';
 
 @Module({
   imports: [ProductoModule, CategoriaModule, UsuarioModule, EmpresaModule, FacturaModule, DetalleFacturaModule, ContactoModule, ProveedorModule, ClienteModule, DetalleOrdenCompraModule, CompraModule, SubcategoriaModule, MovimientoModule, LotesModule, CajaModule, PrinterModule, AuthModule],
