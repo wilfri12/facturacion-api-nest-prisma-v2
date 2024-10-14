@@ -48,4 +48,5 @@ export class UsuarioService {
             throw error;
         }
     }
+    
 }
