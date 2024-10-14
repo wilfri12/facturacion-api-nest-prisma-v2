@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
 import { Estado, Factura } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 import { Response } from 'express';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/factura')
 export class FacturaController {
@@ -23,6 +24,8 @@ export class FacturaController {
     }
   }
 
+
+  //@UseGuards(AuthGuard)
   @Get()
   async find(
     @Query('startDate') startDate?: string,
