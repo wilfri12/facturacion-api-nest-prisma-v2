@@ -99,22 +99,14 @@ model Proveedor {
 model Producto {
   id                   Int                    @id @default(autoincrement())
   codigo               String?                @db.VarChar(50)
-  codigoBarras         String?                @unique @db.VarChar(50) // Código de barras
   nombre               String                 @db.VarChar(50)
   precio               Decimal                @default(0.0) @db.Decimal(10, 2)
   stock                Int?                   @default(0)
   ubicacion            String?                @db.VarChar(40)
-  descripcion          String?                @db.VarChar(70)
-  color                String?                @db.VarChar(25)
-  marca                String?                @db.VarChar(25)
-  talla                String?                @db.VarChar(10) // Talla para ropa
-  genero               GeneroProducto         @default(UNISEX)
+  descripcion          String?                @db.VarChar(300)
   estado               EstadoProducto         @default(OUTOFSTOCK)
   categoriaId          Int
   subCategoriaId       Int?
-  volumen              String?                @db.VarChar(10) // Volumen para cosméticos
-  peso                 String?                @db.VarChar(10) // Peso para productos que lo necesiten
-  edadRecomendada      String?                @db.VarChar(10) // Edad recomendada para juguetes
   empresaId            Int
   detallesFacturas     DetalleFactura[]
   detallesCompras      DetalleCompra[]
@@ -131,8 +123,34 @@ model Producto {
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
   LoteProducto         LoteProducto[]
+  atributos            ProductoAtributo[]
 
-  @@index([nombre], map: "producto_nombre_idx")
+  @@index([codigo], map: "producto_codigo_idx")
+}
+
+model ProductoAtributo {
+  id         Int      @id @default(autoincrement())
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  atributoId      Int
+  valorAtributoId Int
+  valorAtributo   ValorAtributo @relation(fields: [valorAtributoId], references: [id])
+
+  @@unique([productoId, valorAtributoId]) // Para asegurar que un producto solo tiene un valor por atributo
+}
+
+model ValorAtributo {
+  id               Int                @id @default(autoincrement())
+  valor            String             @db.VarChar(50) // Ej. "Rojo", "Blanco", "40", "M"
+  atributoId       Int?
+  Atributo         Atributo?          @relation(fields: [atributoId], references: [id])
+  ProductoAtributo ProductoAtributo[]
+}
+
+model Atributo {
+  id      Int             @id @default(autoincrement())
+  nombre  String          @db.VarChar(50) // Ej. "color", "talla"
+  valores ValorAtributo[]
 }
 
 model Usuario {

@@ -37,7 +37,6 @@ export class LotesService {
             producto: {
               select: {
                 codigo: true,
-                codigoBarras: true,
                 nombre: true,
               }
             }

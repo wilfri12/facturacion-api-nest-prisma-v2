@@ -228,9 +228,6 @@ export class CompraService {
                                         select: {
                                             codigo: true,
                                             nombre: true,
-                                            marca: true,
-                                            color: true,
-                                            talla: true,
                                             precio: true,
                                             categoria: true,
                                             subCategoria: true,

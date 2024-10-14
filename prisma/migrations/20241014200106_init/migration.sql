@@ -30,7 +30,7 @@ CREATE TABLE `Empresa` (
 -- CreateTable
 CREATE TABLE `Categoria` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `nombre` VARCHAR(20) NOT NULL,
+    `nombre` VARCHAR(50) NOT NULL,
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -43,7 +43,7 @@ CREATE TABLE `Categoria` (
 -- CreateTable
 CREATE TABLE `SubCategoria` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `nombre` VARCHAR(20) NOT NULL,
+    `nombre` VARCHAR(50) NOT NULL,
     `categoriaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -69,29 +69,47 @@ CREATE TABLE `Proveedor` (
 CREATE TABLE `Producto` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `codigo` VARCHAR(50) NULL,
-    `codigoBarras` VARCHAR(50) NULL,
     `nombre` VARCHAR(50) NOT NULL,
     `precio` DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
     `stock` INTEGER NULL DEFAULT 0,
     `ubicacion` VARCHAR(40) NULL,
-    `descripcion` VARCHAR(70) NULL,
-    `color` VARCHAR(25) NULL,
-    `marca` VARCHAR(25) NULL,
-    `talla` VARCHAR(10) NULL,
-    `genero` ENUM('HOMBRE', 'MUJER', 'UNISEX') NOT NULL DEFAULT 'UNISEX',
-    `estado` ENUM('INSTOCK', 'OUTOFSTOCK', 'LOWSTOCK') NOT NULL DEFAULT 'INSTOCK',
+    `descripcion` VARCHAR(300) NULL,
+    `estado` ENUM('INSTOCK', 'OUTOFSTOCK', 'LOWSTOCK') NOT NULL DEFAULT 'OUTOFSTOCK',
     `categoriaId` INTEGER NOT NULL,
     `subCategoriaId` INTEGER NULL,
-    `proveedorId` INTEGER NULL,
-    `volumen` VARCHAR(10) NULL,
-    `peso` VARCHAR(10) NULL,
-    `edadRecomendada` VARCHAR(10) NULL,
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    UNIQUE INDEX `Producto_codigoBarras_key`(`codigoBarras`),
-    INDEX `producto_nombre_idx`(`nombre`),
+    INDEX `producto_codigo_idx`(`codigo`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ProductoAtributo` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `productoId` INTEGER NOT NULL,
+    `atributoId` INTEGER NOT NULL,
+    `valorAtributoId` INTEGER NOT NULL,
+
+    UNIQUE INDEX `ProductoAtributo_productoId_valorAtributoId_key`(`productoId`, `valorAtributoId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ValorAtributo` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `valor` VARCHAR(50) NOT NULL,
+    `atributoId` INTEGER NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Atributo` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `nombre` VARCHAR(50) NOT NULL,
+
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -108,6 +126,7 @@ CREATE TABLE `Usuario` (
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    UNIQUE INDEX `Usuario_nombreUsuario_key`(`nombreUsuario`),
     UNIQUE INDEX `Usuario_contactoId_key`(`contactoId`),
     UNIQUE INDEX `empresa_usuario_unique`(`empresaId`, `nombreUsuario`),
     PRIMARY KEY (`id`)
@@ -142,6 +161,7 @@ CREATE TABLE `Factura` (
     `clienteNombre` VARCHAR(50) NULL,
     `empresaId` INTEGER NOT NULL,
     `estado` ENUM('CANCELADA', 'PAGADA') NOT NULL DEFAULT 'PAGADA',
+    `cajaId` INTEGER NULL,
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -173,6 +193,7 @@ CREATE TABLE `Compra` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `total` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `usuarioId` INTEGER NOT NULL,
+    `proveedorId` INTEGER NOT NULL,
     `empresaId` INTEGER NOT NULL,
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -186,7 +207,8 @@ CREATE TABLE `DetalleCompra` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `productoId` INTEGER NULL,
     `cantidad` INTEGER NOT NULL,
-    `precioUnitario` DECIMAL(10, 2) NOT NULL,
+    `precioCompra` DECIMAL(10, 2) NOT NULL,
+    `precioVenta` DECIMAL(10, 2) NOT NULL,
     `subtotal` DECIMAL(10, 2) NOT NULL,
     `compraId` INTEGER NULL,
     `empresaId` INTEGER NOT NULL,
@@ -213,7 +235,7 @@ CREATE TABLE `Descuento` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Descuento_Producto` (
+CREATE TABLE `DescuentoProducto` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `descuentoId` INTEGER NOT NULL,
     `productoId` INTEGER NOT NULL,
@@ -225,7 +247,7 @@ CREATE TABLE `Descuento_Producto` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Descuento_Subcategoria` (
+CREATE TABLE `DescuentoSubcategoria` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `descuentoId` INTEGER NOT NULL,
     `subCategoriaId` INTEGER NOT NULL,
@@ -237,7 +259,7 @@ CREATE TABLE `Descuento_Subcategoria` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Descuento_Cliente` (
+CREATE TABLE `DescuentoCliente` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `descuentoId` INTEGER NOT NULL,
     `clienteId` INTEGER NOT NULL,
@@ -249,7 +271,7 @@ CREATE TABLE `Descuento_Cliente` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Historial_Descuentos` (
+CREATE TABLE `HistorialDescuentos` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `descuentoId` INTEGER NOT NULL,
     `productoId` INTEGER NOT NULL,
@@ -270,6 +292,7 @@ CREATE TABLE `Promocion` (
     `nombre` VARCHAR(191) NOT NULL,
     `descripcion` VARCHAR(191) NOT NULL,
     `fechaInicio` DATETIME(3) NOT NULL,
+    `fechaFin` DATETIME(3) NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `empresaId` INTEGER NOT NULL,
@@ -278,7 +301,7 @@ CREATE TABLE `Promocion` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Promocion_Detalle` (
+CREATE TABLE `PromocionDetalle` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `promocionId` INTEGER NOT NULL,
     `productoId` INTEGER NOT NULL,
@@ -316,6 +339,63 @@ CREATE TABLE `MovimientoInventario` (
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LoteProducto` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `productoId` INTEGER NOT NULL,
+    `cantidad` INTEGER NOT NULL,
+    `empresaId` INTEGER NOT NULL,
+    `precioVenta` DECIMAL(10, 2) NOT NULL,
+    `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Caja` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `nombre` VARCHAR(100) NOT NULL,
+    `estado` ENUM('ABIERTA', 'CERRADA') NOT NULL DEFAULT 'CERRADA',
+    `ubicacion` VARCHAR(255) NOT NULL,
+    `empresaId` INTEGER NOT NULL,
+    `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `HistorialCaja` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `cajaId` INTEGER NOT NULL,
+    `montoInicial` DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+    `montoFinal` DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+    `estado` ENUM('ABIERTA', 'CERRADA') NOT NULL DEFAULT 'ABIERTA',
+    `fechaApertura` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `fechaCierre` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `MovimientosCaja` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `historialCajaId` INTEGER NOT NULL,
+    `monto` DECIMAL(10, 2) NOT NULL DEFAULT 0.0,
+    `tipo` ENUM('INGRESO', 'EGRESO', 'VENTA', 'INICIAL', 'CIERRE') NOT NULL,
+    `descripcion` VARCHAR(191) NULL,
+    `usuarioId` INTEGER NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NULL,
+
+    INDEX `MovimientosCaja_historialCajaId_idx`(`historialCajaId`),
+    INDEX `MovimientosCaja_usuarioId_idx`(`usuarioId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -423,7 +503,13 @@ ALTER TABLE `Producto` ADD CONSTRAINT `Producto_categoriaId_fkey` FOREIGN KEY (`
 ALTER TABLE `Producto` ADD CONSTRAINT `Producto_subCategoriaId_fkey` FOREIGN KEY (`subCategoriaId`) REFERENCES `SubCategoria`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Producto` ADD CONSTRAINT `Producto_proveedorId_fkey` FOREIGN KEY (`proveedorId`) REFERENCES `Proveedor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `ProductoAtributo` ADD CONSTRAINT `ProductoAtributo_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ProductoAtributo` ADD CONSTRAINT `ProductoAtributo_valorAtributoId_fkey` FOREIGN KEY (`valorAtributoId`) REFERENCES `ValorAtributo`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ValorAtributo` ADD CONSTRAINT `ValorAtributo_atributoId_fkey` FOREIGN KEY (`atributoId`) REFERENCES `Atributo`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Usuario` ADD CONSTRAINT `Usuario_contactoId_fkey` FOREIGN KEY (`contactoId`) REFERENCES `Contacto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -447,6 +533,9 @@ ALTER TABLE `Factura` ADD CONSTRAINT `Factura_usuarioId_fkey` FOREIGN KEY (`usua
 ALTER TABLE `Factura` ADD CONSTRAINT `Factura_clienteId_fkey` FOREIGN KEY (`clienteId`) REFERENCES `Cliente`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Factura` ADD CONSTRAINT `Factura_cajaId_fkey` FOREIGN KEY (`cajaId`) REFERENCES `Caja`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `DetalleFactura` ADD CONSTRAINT `DetalleFactura_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -462,6 +551,9 @@ ALTER TABLE `Compra` ADD CONSTRAINT `Compra_usuarioId_fkey` FOREIGN KEY (`usuari
 ALTER TABLE `Compra` ADD CONSTRAINT `Compra_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Compra` ADD CONSTRAINT `Compra_proveedorId_fkey` FOREIGN KEY (`proveedorId`) REFERENCES `Proveedor`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -474,58 +566,58 @@ ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_empresaId_fkey` FOREIG
 ALTER TABLE `Descuento` ADD CONSTRAINT `Descuento_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Producto` ADD CONSTRAINT `Descuento_Producto_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoProducto` ADD CONSTRAINT `DescuentoProducto_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Producto` ADD CONSTRAINT `Descuento_Producto_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoProducto` ADD CONSTRAINT `DescuentoProducto_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Producto` ADD CONSTRAINT `Descuento_Producto_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoProducto` ADD CONSTRAINT `DescuentoProducto_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Subcategoria` ADD CONSTRAINT `Descuento_Subcategoria_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoSubcategoria` ADD CONSTRAINT `DescuentoSubcategoria_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Subcategoria` ADD CONSTRAINT `Descuento_Subcategoria_subCategoriaId_fkey` FOREIGN KEY (`subCategoriaId`) REFERENCES `SubCategoria`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoSubcategoria` ADD CONSTRAINT `DescuentoSubcategoria_subCategoriaId_fkey` FOREIGN KEY (`subCategoriaId`) REFERENCES `SubCategoria`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Subcategoria` ADD CONSTRAINT `Descuento_Subcategoria_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoSubcategoria` ADD CONSTRAINT `DescuentoSubcategoria_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Cliente` ADD CONSTRAINT `Descuento_Cliente_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoCliente` ADD CONSTRAINT `DescuentoCliente_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Cliente` ADD CONSTRAINT `Descuento_Cliente_clienteId_fkey` FOREIGN KEY (`clienteId`) REFERENCES `Cliente`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoCliente` ADD CONSTRAINT `DescuentoCliente_clienteId_fkey` FOREIGN KEY (`clienteId`) REFERENCES `Cliente`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Descuento_Cliente` ADD CONSTRAINT `Descuento_Cliente_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `DescuentoCliente` ADD CONSTRAINT `DescuentoCliente_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Historial_Descuentos` ADD CONSTRAINT `Historial_Descuentos_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `HistorialDescuentos` ADD CONSTRAINT `HistorialDescuentos_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Historial_Descuentos` ADD CONSTRAINT `Historial_Descuentos_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `HistorialDescuentos` ADD CONSTRAINT `HistorialDescuentos_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Historial_Descuentos` ADD CONSTRAINT `Historial_Descuentos_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `HistorialDescuentos` ADD CONSTRAINT `HistorialDescuentos_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Historial_Descuentos` ADD CONSTRAINT `Historial_Descuentos_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `HistorialDescuentos` ADD CONSTRAINT `HistorialDescuentos_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Promocion` ADD CONSTRAINT `Promocion_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Promocion_Detalle` ADD CONSTRAINT `Promocion_Detalle_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `PromocionDetalle` ADD CONSTRAINT `PromocionDetalle_descuentoId_fkey` FOREIGN KEY (`descuentoId`) REFERENCES `Descuento`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Promocion_Detalle` ADD CONSTRAINT `Promocion_Detalle_promocionId_fkey` FOREIGN KEY (`promocionId`) REFERENCES `Promocion`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `PromocionDetalle` ADD CONSTRAINT `PromocionDetalle_promocionId_fkey` FOREIGN KEY (`promocionId`) REFERENCES `Promocion`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Promocion_Detalle` ADD CONSTRAINT `Promocion_Detalle_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `PromocionDetalle` ADD CONSTRAINT `PromocionDetalle_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Promocion_Detalle` ADD CONSTRAINT `Promocion_Detalle_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `PromocionDetalle` ADD CONSTRAINT `PromocionDetalle_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `HistorialPrecio` ADD CONSTRAINT `HistorialPrecio_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -541,6 +633,24 @@ ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_empresaI
 
 -- AddForeignKey
 ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Caja` ADD CONSTRAINT `Caja_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `HistorialCaja` ADD CONSTRAINT `HistorialCaja_cajaId_fkey` FOREIGN KEY (`cajaId`) REFERENCES `Caja`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MovimientosCaja` ADD CONSTRAINT `MovimientosCaja_historialCajaId_fkey` FOREIGN KEY (`historialCajaId`) REFERENCES `HistorialCaja`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MovimientosCaja` ADD CONSTRAINT `MovimientosCaja_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Notificacion` ADD CONSTRAINT `Notificacion_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

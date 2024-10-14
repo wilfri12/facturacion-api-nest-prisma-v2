@@ -43,11 +43,7 @@ export interface Producto {
   id:          number;
   nombre:      string;
   precio:      Decimal;
-  color:       string;
   descripcion: string;
-  marca:       string;
-  talla:       string;
-  genero:      string;
   codigo:      string;
   categoria:   Categoria;
 }

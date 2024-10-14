@@ -17,42 +17,26 @@ export class ProductoService {
             categoriaId,
             empresaId,
             estado,
-            genero,
             nombre,
             precio,
             stock,
             codigo,
-            codigoBarras,
-            color,
             descripcion,
-            edadRecomendada,
-            marca,
-            peso,
             subCategoriaId,
-            talla,
             ubicacion,
-            volumen,
         } = data;
 
         const productoData = {
             categoriaId: parseInt(categoriaId.toString()),
             empresaId: parseInt(empresaId.toString()),
             estado,
-            genero,
             nombre,
             precio,
             stock,
             codigo,
-            codigoBarras,
-            color,
             descripcion,
-            edadRecomendada,
-            marca,
-            peso,
             subCategoriaId: parseInt(subCategoriaId.toString()),
-            talla,
             ubicacion,
-            volumen,
             createdAt: GetLocalDate(),
             updatedAt: GetLocalDate(),
         };
@@ -104,8 +88,8 @@ export class ProductoService {
 
     async findAllProducto(params: { page?: number, pageSize?: number, filtro?: string }): Promise<ApiResponse<{ productos: Producto[], totalRecords: number, currentPage: number, totalPages: number }>> {
         try {
-            const { page = 1, pageSize = 10, filtro= '' } = params;
-            
+            const { page = 1, pageSize = 10, filtro = '' } = params;
+
 
             // Validación: evita páginas negativas o tamaños de página demasiado pequeños
             const pageNumber = Math.max(1, parseInt(page.toString()));
@@ -191,11 +175,7 @@ export class ProductoService {
                                 contains: nombreOCodigo,
                             },
                         },
-                        {
-                            codigoBarras: {
-                                contains: nombreOCodigo,
-                            },
-                        },
+
                     ],
                 },
                 take: 10, // Limitar a un máximo de 10 productos
@@ -242,12 +222,39 @@ export class ProductoService {
     async findByCodigo(codigo: string): Promise<ApiResponse<Producto>> {
 
         try {
-            const productos = await this.prisma.producto.findFirst({ where: { codigo } });
+            const productos = await this.prisma.producto.findFirst({
+                where: { codigo },
+                include:{
+                    categoria: {
+                        select:{
+                            id: true,
+                            nombre: true,
+                        }
+                    },
+
+                    subCategoria:{
+                        select:{
+                            id: true,
+                            nombre: true,
+                        }
+                    },
+
+                    ProductoAtributo: true,
+
+                    LoteProducto: {
+                        select:{
+                            id: true,
+                            fechaEntrada: true,                         
+
+                        }
+                    }
+                }
+            });
             return { success: true, data: productos };
         } catch (error: any) {
             throw error;
         }
 
     }
-    
+
 }

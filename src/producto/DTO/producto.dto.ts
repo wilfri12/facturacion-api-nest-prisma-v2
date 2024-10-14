@@ -1,4 +1,4 @@
-import { EstadoProducto, GeneroProducto } from "@prisma/client";
+import { EstadoProducto } from "@prisma/client";
 import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateProductoDto {
@@ -18,33 +18,6 @@ export class CreateProductoDto {
     @IsString()
     codigo?: string;
 
-    @IsOptional()
-    @IsString()
-    codigoBarras?: string;
-
-    @IsOptional()
-    @IsString()
-    talla?: string;
-
-    @IsOptional()
-    @IsString()
-    volumen?: string;
-
-    @IsOptional()
-    @IsString()
-    peso?: string;
-
-    @IsOptional()
-    @IsString()
-    edadRecomendada?: string;
-
-    @IsOptional()
-    @IsString()
-    color?: string;
-
-    @IsOptional()
-    @IsString()
-    marca?: string;
 
     @IsOptional()
     @IsString()
@@ -54,10 +27,6 @@ export class CreateProductoDto {
     @IsEnum(EstadoProducto)
     estado: EstadoProducto;
     
-    @IsNotEmpty()
-    @IsEnum(GeneroProducto)
-    genero: GeneroProducto;
-        
 
     @IsNotEmpty()
     @IsNumber()
@@ -96,44 +65,12 @@ export class UpdateProductoDto {
 
     @IsOptional()
     @IsString()
-    codigoBarras?: string;
-
-    @IsOptional()
-    @IsString()
-    talla?: string;
-
-    @IsOptional()
-    @IsString()
-    volumen?: string;
-
-    @IsOptional()
-    @IsString()
-    peso?: string;
-
-    @IsOptional()
-    @IsString()
-    edadRecomendada?: string;
-
-    @IsOptional()
-    @IsString()
-    color?: string;
-
-    @IsOptional()
-    @IsString()
-    marca?: string;
-
-    @IsOptional()
-    @IsString()
     ubicacion?: string;
 
     @IsOptional()
     @IsEnum(EstadoProducto)
     estado: EstadoProducto;
     
-    @IsOptional()
-    @IsEnum(GeneroProducto)
-    genero?: GeneroProducto;
-        
 
     @IsOptional()
     @IsNumber()
