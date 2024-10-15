@@ -17,7 +17,6 @@ model Contacto {
   empresa   Empresa?
   usuario   Usuario?
   cliente   Cliente?
-  proveedor Proveedor?
   createdAt DateTime?  @default(now())
   updatedAt DateTime?  @default(now()) @updatedAt
 }
@@ -33,7 +32,6 @@ model Empresa {
   productos             Producto[]
   facturas              Factura[]
   detallesFacturas      DetalleFactura[]
-  proveedores           Proveedor[]
   clientes              Cliente[]
   detallesCompras       DetalleCompra[]
   Compras               Compra[]
@@ -48,7 +46,6 @@ model Empresa {
   MovimientoInventario  MovimientoInventario[]
   Notificacion          Notificacion[]
   DevolucionCliente     DevolucionCliente[]
-  DevolucionProveedor   DevolucionProveedor[]
   Reporte               Reporte[]
   createdAt             DateTime?               @default(now())
   updatedAt             DateTime?               @default(now()) @updatedAt
@@ -84,18 +81,6 @@ model SubCategoria {
   @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
 }
 
-model Proveedor {
-  id         Int       @id @default(autoincrement())
-  nombre     String    @db.VarChar(50)
-  contactoId Int?      @unique
-  empresaId  Int
-  empresa    Empresa   @relation(fields: [empresaId], references: [id])
-  contacto   Contacto? @relation(fields: [contactoId], references: [id])
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @default(now()) @updatedAt
-  Compra     Compra[]
-}
-
 model Producto {
   id                   Int                    @id @default(autoincrement())
   codigo               String?                @db.VarChar(50)
@@ -119,7 +104,6 @@ model Producto {
   HistorialPrecio      HistorialPrecio[]
   MovimientoInventario MovimientoInventario[]
   DevolucionCliente    DevolucionCliente[]
-  DevolucionProveedor  DevolucionProveedor[]
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
   LoteProducto         LoteProducto[]
@@ -171,7 +155,6 @@ model Usuario {
   updatedAt            DateTime?              @default(now()) @updatedAt
   MovimientoInventario MovimientoInventario[]
   DevolucionCliente    DevolucionCliente[]
-  DevolucionProveedor  DevolucionProveedor[]
   MovimientosCaja      MovimientosCaja[]
 
   @@unique([empresaId, nombreUsuario], map: "empresa_usuario_unique")
@@ -241,14 +224,11 @@ model Compra {
   id                  Int                   @id @default(autoincrement())
   total               Decimal               @default(0.00) @db.Decimal(10, 2)
   usuarioId           Int
-  proveedorId         Int
   empresaId           Int
   moneda              TipoMoneda            @default(DOP)
   usuario             Usuario               @relation(fields: [usuarioId], references: [id])
   empresa             Empresa               @relation(fields: [empresaId], references: [id])
-  proveedor           Proveedor?            @relation(fields: [proveedorId], references: [id])
   detallesCompras     DetalleCompra[]
-  DevolucionProveedor DevolucionProveedor[]
   createdAt           DateTime?             @default(now())
   updatedAt           DateTime?             @default(now()) @updatedAt
 
@@ -516,22 +496,6 @@ model DevolucionCliente {
   updatedAt  DateTime? @default(now()) @updatedAt
 }
 
-model DevolucionProveedor {
-  id         Int       @id @default(autoincrement())
-  compraId   Int
-  productoId Int
-  cantidad   Int
-  motivo     String    @db.VarChar(100)
-  fecha      DateTime  @default(now())
-  compra     Compra    @relation(fields: [compraId], references: [id])
-  usuarioId  Int
-  producto   Producto  @relation(fields: [productoId], references: [id])
-  empresaId  Int
-  empresa    Empresa   @relation(fields: [empresaId], references: [id])
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @default(now()) @updatedAt
-}
 
 //Manejo de Usuarios y Permisos
 //Agregar un modelo para permisos más detallados.
@@ -572,7 +536,6 @@ enum TipoReporte {
   COMPRAS
   INVENTARIO
   CLIENTES
-  PROVEEDORES
 }
 
 enum TipoMovimiento {
@@ -628,6 +591,7 @@ enum MetodoPago {
   EFECTIVO
   TRANSFERENCIA
   TARJETA
+  CREDITO
 }
 
 enum TipoMoneda {
@@ -639,6 +603,7 @@ enum TipoMoneda {
 enum Estado {
   CANCELADA
   PAGADA
+  PENDIENTE
 }
 
 enum EstadoCaja {

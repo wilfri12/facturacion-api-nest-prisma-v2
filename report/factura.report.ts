@@ -56,7 +56,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
         styles: styles,
         content: [
             {
-                text: 'Kamila Shop',
+                text: `${factura.empresa.nombre }`,
                 style: 'header',
             },
             {

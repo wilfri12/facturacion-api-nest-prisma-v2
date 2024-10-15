@@ -11,13 +11,11 @@ export class CompraService {
 
     async createCompra(data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
 
-
-        const { empresaId, moneda, proveedorId, usuarioId, detalles } = data;
+        const { empresaId, moneda,  usuarioId, detalles } = data;
         let montoTotalCompra = 0;
 
         // Convert necessary fields to the correct type once at the start
         const parsedEmpresaId = parseInt(empresaId.toString());
-        const parsedProveedorId = parseInt(proveedorId.toString());
         const parsedUsuarioId = parseInt(usuarioId.toString());
         const createdAt = GetLocalDate();
         const updatedAt = GetLocalDate();
@@ -25,7 +23,6 @@ export class CompraService {
         const CompraData = {
             empresaId: parsedEmpresaId,
             moneda,
-            proveedorId: parsedProveedorId,
             usuarioId: parsedUsuarioId,
             total: 0,
             createdAt,
@@ -37,22 +34,22 @@ export class CompraService {
                 const compraCreated = await prisma.compra.create({ data: CompraData });
 
                 if (compraCreated) {
+                    
                     const detallePromises = detalles.map(async (detalle) => {
                         const producto = await prisma.producto.findUnique({
                             where: { id: detalle.productoId },
                         });
+
                         if (!producto) {
-                            throw new Error(`Producto con id ${detalle.productoId} no encontrado`);
+                            throw new Error(`Estás intentando registrar una compra que no contiene productos en su detalle`);
                         }
 
                         const precioCompra = parseFloat(detalle.precioCompra.toString());
                         const parsedCantidad = parseInt(detalle.cantidad.toString());
                         const parsedPrecioVenta = parseFloat(detalle.precioVenta.toString())
 
-
                         const importe = parsedCantidad * precioCompra;
                         montoTotalCompra += importe;
-
 
                         const detalleCompraData = {
                             productoId: detalle.productoId,
@@ -65,9 +62,6 @@ export class CompraService {
                         };
 
                         await prisma.detalleCompra.create({ data: detalleCompraData });
-
-                        console.log('Se creó el detalle.');
-
 
                         // Crear el movimiento de inventario
                         await prisma.movimientoInventario.create({
@@ -83,10 +77,6 @@ export class CompraService {
                             },
                         });
 
-                        console.log('Se creó el movimiento de inventario.');
-
-
-
                         // Registrar el nuevo lote de producto
                         await prisma.loteProducto.create({
                             data: {
@@ -99,16 +89,11 @@ export class CompraService {
                             },
                         });
 
-                        console.log('Se creó el lote.');
-
                         // Obtener lotes de productos existentes
                         const lotes = await prisma.loteProducto.findMany({
                             where: { productoId: detalle.productoId },
                             orderBy: { fechaEntrada: 'asc' },
                         });
-
-                        console.log('Lostes encontrados.:', lotes);
-
 
                         let nuevoStock = producto.stock + parsedCantidad;
                         let estadoProducto: EstadoProducto = 'INSTOCK';
@@ -122,20 +107,8 @@ export class CompraService {
                             estadoProducto = 'INSTOCK';
                         }
 
-                        console.log('nuevoStock <= 0: ', nuevoStock <= 0);
-                        console.log('producto.stock > 0: ', producto.stock > 0);
-
-
-
                         // Si el producto tenía stock previo, no actualizar el precio
                         if (producto.stock > 0) {
-                            console.log('Lo siguiente que hará es actualizar el producto. ');
-
-                            console.log('Datos relevantes: ');
-                            console.log('  detalle.productoId: ', detalle.productoId);
-                            console.log('  GetLocalDate: ', GetLocalDate());
-                            console.log('  estadoProducto: ', estadoProducto);
-
 
                             await prisma.producto.update({
                                 where: { id: detalle.productoId },
@@ -145,8 +118,6 @@ export class CompraService {
                                     estado: estadoProducto,
                                 },
                             });
-
-                            console.log('se actualizo el producto. ');
 
                         } else {
                             // Si no había stock previo, actualizar el precio con el del nuevo lote
@@ -165,6 +136,9 @@ export class CompraService {
                     // Espera a que se completen todas las operaciones de detalle
                     await Promise.all(detallePromises);
 
+                    if (montoTotalCompra < 1) {
+                        throw new Error(`No es posible registrar una compra con un monto total de $${montoTotalCompra}`);
+                    }
                     // Actualiza la compra con los totales calculados
                     await prisma.compra.update({
                         where: { id: compraCreated.id },
@@ -176,8 +150,11 @@ export class CompraService {
 
                     return compraCreated;
                 }
+                
 
-                throw new Error('No se pudo registrar la compra');
+                    throw new Error('No se pudo registrar la compra');
+                
+
             });
 
             return { success: true, data: compra };
@@ -209,12 +186,7 @@ export class CompraService {
                             ]
                         },
                         include: {
-                            proveedor: {
-                                select: {
-                                    id: true,
-                                    nombre: true
-                                }
-                            },
+                            
                             usuario: {
                                 select: {
                                     nombreUsuario: true,

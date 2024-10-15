@@ -42,6 +42,8 @@ export class ProductoService {
         };
         try {
             const producto = await this.prisma.producto.create({ data: productoData });
+            
+
             if (producto) {
 
                 await this.prisma.producto.update({
@@ -49,7 +51,7 @@ export class ProductoService {
                         id: producto.id,
                     },
                     data: {
-                        codigo: codigo + producto.id,
+                        codigo: codigo  + producto.id,
                     },
                 });
 
@@ -219,7 +221,7 @@ export class ProductoService {
     }
 
 
-    async findByCodigo(codigo: string): Promise<ApiResponse<Producto>> {
+    async findByCodigo(codigo: string): Promise<Producto> {
 
         try {
             const productos = await this.prisma.producto.findFirst({
@@ -239,7 +241,6 @@ export class ProductoService {
                         }
                     },
 
-                    ProductoAtributo: true,
 
                     LoteProducto: {
                         select:{
@@ -250,7 +251,7 @@ export class ProductoService {
                     }
                 }
             });
-            return { success: true, data: productos };
+            return productos;
         } catch (error: any) {
             throw error;
         }

@@ -6,9 +6,7 @@ export class CompraDto {
     @IsNumber()
     usuarioId: number;
 
-    @IsOptional()
-    @IsNumber()
-    proveedorId: number;   
+     
 
     @IsNotEmpty()
     @IsNumber()
