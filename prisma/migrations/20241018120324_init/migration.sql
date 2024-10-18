@@ -53,19 +53,6 @@ CREATE TABLE `SubCategoria` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Proveedor` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `nombre` VARCHAR(50) NOT NULL,
-    `contactoId` INTEGER NULL,
-    `empresaId` INTEGER NOT NULL,
-    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    UNIQUE INDEX `Proveedor_contactoId_key`(`contactoId`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `Producto` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `codigo` VARCHAR(50) NULL,
@@ -155,12 +142,12 @@ CREATE TABLE `Factura` (
     `subtotal` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `total` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `itebisTotal` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    `metodoPago` ENUM('EFECTIVO', 'TRANSFERENCIA', 'TARJETA') NOT NULL DEFAULT 'EFECTIVO',
+    `metodoPago` ENUM('EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'CREDITO') NOT NULL DEFAULT 'EFECTIVO',
     `usuarioId` INTEGER NOT NULL,
     `clienteId` INTEGER NULL,
     `clienteNombre` VARCHAR(50) NULL,
     `empresaId` INTEGER NOT NULL,
-    `estado` ENUM('CANCELADA', 'PAGADA') NOT NULL DEFAULT 'PAGADA',
+    `estado` ENUM('CANCELADA', 'PAGADA', 'PENDIENTE') NOT NULL DEFAULT 'PAGADA',
     `cajaId` INTEGER NULL,
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -193,7 +180,6 @@ CREATE TABLE `Compra` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `total` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `usuarioId` INTEGER NOT NULL,
-    `proveedorId` INTEGER NOT NULL,
     `empresaId` INTEGER NOT NULL,
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -431,22 +417,6 @@ CREATE TABLE `DevolucionCliente` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `DevolucionProveedor` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `compraId` INTEGER NOT NULL,
-    `productoId` INTEGER NOT NULL,
-    `cantidad` INTEGER NOT NULL,
-    `motivo` VARCHAR(100) NOT NULL,
-    `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `usuarioId` INTEGER NOT NULL,
-    `empresaId` INTEGER NOT NULL,
-    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `Permiso` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nombre` VARCHAR(50) NOT NULL,
@@ -468,7 +438,7 @@ CREATE TABLE `RolPermiso` (
 -- CreateTable
 CREATE TABLE `Reporte` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `tipo` ENUM('VENTAS', 'COMPRAS', 'INVENTARIO', 'CLIENTES', 'PROVEEDORES') NOT NULL,
+    `tipo` ENUM('VENTAS', 'COMPRAS', 'INVENTARIO', 'CLIENTES') NOT NULL,
     `titulo` VARCHAR(100) NOT NULL,
     `descripcion` TEXT NULL,
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -486,12 +456,6 @@ ALTER TABLE `Categoria` ADD CONSTRAINT `Categoria_empresaId_fkey` FOREIGN KEY (`
 
 -- AddForeignKey
 ALTER TABLE `SubCategoria` ADD CONSTRAINT `SubCategoria_categoriaId_fkey` FOREIGN KEY (`categoriaId`) REFERENCES `Categoria`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `Proveedor` ADD CONSTRAINT `Proveedor_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `Proveedor` ADD CONSTRAINT `Proveedor_contactoId_fkey` FOREIGN KEY (`contactoId`) REFERENCES `Contacto`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Producto` ADD CONSTRAINT `Producto_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -549,9 +513,6 @@ ALTER TABLE `Compra` ADD CONSTRAINT `Compra_usuarioId_fkey` FOREIGN KEY (`usuari
 
 -- AddForeignKey
 ALTER TABLE `Compra` ADD CONSTRAINT `Compra_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `Compra` ADD CONSTRAINT `Compra_proveedorId_fkey` FOREIGN KEY (`proveedorId`) REFERENCES `Proveedor`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
@@ -669,18 +630,6 @@ ALTER TABLE `DevolucionCliente` ADD CONSTRAINT `DevolucionCliente_empresaId_fkey
 
 -- AddForeignKey
 ALTER TABLE `DevolucionCliente` ADD CONSTRAINT `DevolucionCliente_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `DevolucionProveedor` ADD CONSTRAINT `DevolucionProveedor_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `DevolucionProveedor` ADD CONSTRAINT `DevolucionProveedor_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `DevolucionProveedor` ADD CONSTRAINT `DevolucionProveedor_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `DevolucionProveedor` ADD CONSTRAINT `DevolucionProveedor_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `RolPermiso` ADD CONSTRAINT `RolPermiso_permisoId_fkey` FOREIGN KEY (`permisoId`) REFERENCES `Permiso`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
