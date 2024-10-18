@@ -78,10 +78,6 @@ export class FacturaService {
         updatedAt,
       };
 
-      console.log('Datos de la factura: ', facturaData);
-
-
-
       // Creación de la factura y sus detalles dentro de una transacción
       const factura = await this.prisma.$transaction(async (prisma) => {
         // Crea la factura inicial
@@ -132,17 +128,11 @@ export class FacturaService {
               updatedAt,
             };
 
-            console.log("detalleFacturaData: ", detalleFacturaData);
-
-
-
             // Crea el detalle de la factura
             await prisma.detalleFactura.create({ data: detalleFacturaData });
 
             // Maneja la reducción de stock y la gestión de lotes
             let cantidadRestante = cantidadNumber;
-
-            console.log(`Cantidad solicitada: ${cantidadRestante}`);
 
             const lotes = await prisma.loteProducto.findMany({
               where: {
@@ -156,8 +146,6 @@ export class FacturaService {
               throw new Error(`No hay lotes disponibles para el producto ${detalle.productoId}`);
             }
 
-            console.log(`Lotes disponibles para el producto ${detalle.productoId}:`, lotes);
-
             for (const [index, lote] of lotes.entries()) {
               if (cantidadRestante <= 0) break;
 
@@ -168,14 +156,9 @@ export class FacturaService {
                 );
               }
 
-              console.log(`Trabajando con el lote ${lote.id} que tiene ${lote.cantidad} unidades y un precio de ${lote.precioVenta}`);
-
               if (lote.cantidad <= cantidadRestante) {
                 // Si el lote se consume completamente
-                console.log(`El lote ${lote.id} será consumido completamente.`);
                 cantidadRestante -= lote.cantidad;
-                console.log(`Cantidad restante después de consumir el lote ${lote.id}: ${cantidadRestante}`);
-
                 await prisma.loteProducto.update({
                   where: { id: lote.id },
                   data: { cantidad: 0 },
@@ -184,7 +167,6 @@ export class FacturaService {
                 // Si existe un siguiente lote, actualiza el precio del producto al del siguiente lote
                 const siguienteLote = lotes[index + 1];
                 if (siguienteLote) {
-                  console.log(`Actualizando el precio del producto al precio del siguiente lote ${siguienteLote.id} que es ${siguienteLote.precioVenta}`);
                   await prisma.producto.update({
                     where: { id: detalle.productoId },
                     data: {
@@ -203,13 +185,9 @@ export class FacturaService {
                   where: { id: lote.id },
                   data: { cantidad: lote.cantidad - cantidadRestante },
                 });
-                console.log(`Cantidad restante después de actualizar el lote ${lote.id}: 0 (Lote reducido a ${lote.cantidad - cantidadRestante} unidades)`);
-
                 cantidadRestante = 0;
               }
             }
-
-            console.log(`Proceso de reducción de stock y gestión de lotes completado para el producto ${detalle.productoId}`);
 
             const historialCajaActivo = await prisma.historialCaja.findFirst({
               where: {
@@ -220,8 +198,6 @@ export class FacturaService {
                 fechaApertura: 'desc', //  obtener el historial más reciente si hay más de uno.
               },
             });
-            console.log('LLego aqui 1');
-
             await this.prisma.movimientosCaja.create({
               data: {
                 tipo: 'VENTA',
@@ -233,8 +209,6 @@ export class FacturaService {
                 usuarioId: usuarioIdNumber,
               }
             })
-            console.log('LLego aqui 2');
-
             // Crea el movimiento de inventario asociado a la venta
             await prisma.movimientoInventario.create({
               data: {
@@ -248,16 +222,12 @@ export class FacturaService {
                 updatedAt,
               },
             });
-            console.log('LLego aqui 3');
-
             // Verifica y actualiza el estado del producto basado en el nuevo stock
             let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
             const nuevoStock = producto.stock - cantidadNumber;
-
             if (nuevoStock > 0) {
               estadoProducto = nuevoStock < 10 ? 'LOWSTOCK' : 'INSTOCK';
             }
-
             await prisma.producto.update({
               where: { id: detalle.productoId },
               data: {
@@ -266,7 +236,6 @@ export class FacturaService {
                 estado: estadoProducto,
               },
             });
-
             // Si el lote más antiguo se agotó, actualiza el precio del producto con el próximo lote
             if (lotes.length > 0 && lotes[0].cantidad === 0) {
               const siguienteLote = lotes.find(lote => lote.cantidad > 0);
@@ -281,10 +250,8 @@ export class FacturaService {
               }
             }
           });
-
           // Espera a que se completen todas las operaciones de detalle
           await Promise.all(detallePromises);
-
           // Actualiza la factura con los totales calculados
           await prisma.factura.update({
             where: { id: createdFactura.id },
@@ -296,7 +263,6 @@ export class FacturaService {
               updatedAt: GetLocalDate(),
             },
           });
-
           return createdFactura;
         }
 
@@ -454,7 +420,6 @@ export class FacturaService {
         }
 
       })
-      console.log('factura', factura);
       return { success: true, data: factura }
     } catch (error: any) {
       throw error;
@@ -507,9 +472,6 @@ export class FacturaService {
                 },
             },
         });
-
-        console.log('factura', factura);
-        
         if (!factura) {
             throw new Error(`Factura with ID ${idFactura} not found`);
         }
