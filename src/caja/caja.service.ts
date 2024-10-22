@@ -13,11 +13,11 @@ export class CajaService {
 
   async createCaja(data: CreateCajaDto): Promise<ApiResponse<Caja>> {
     const { empresaId, nombre, ubicacion } = data;
-  
+
     if (!empresaId || !nombre) {
       return { success: false, error: 'El ID de la empresa y el nombre de la caja son obligatorios.' };
     }
-  
+
     const cajaData = {
       empresaId,
       nombre,
@@ -25,7 +25,7 @@ export class CajaService {
       createdAt: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-  
+
     try {
       const caja = await this.prisma.caja.create({ data: cajaData });
       return { success: true, data: caja };
@@ -34,8 +34,6 @@ export class CajaService {
       return { success: false, error: 'Error al crear la caja. Por favor, intente de nuevo.' };
     }
   }
-  
-
 
   async findAllCajaCerrada(): Promise<ApiResponse<Caja[]>> {
     try {
@@ -46,10 +44,9 @@ export class CajaService {
     }
   }
 
-
   async createHistorialCaja(data: CreateHistorialCajaDto): Promise<ApiResponse<HistorialCaja>> {
     const { cajaId, montoInicial } = data;
-    
+
     const historialData = {
       cajaId,
       montoInicial: parseFloat(montoInicial.toString()),
@@ -57,15 +54,15 @@ export class CajaService {
       createdAt: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-  
+
     try {
       const historial = await this.prisma.$transaction(async (prisma) => {
         // Crear el historial de caja
         const historialCreated = await prisma.historialCaja.create({ data: historialData });
 
         // Convertir montoInicial de Decimal a number
-      const montoInicialNumber = historialCreated.montoInicial.toNumber();
-  
+        const montoInicialNumber = historialCreated.montoInicial.toNumber();
+
         // Crear el movimiento de caja relacionado con la apertura
         const movimientoData: CreateMovimientosCajaDto = {
           usuarioId: 1, // Asegúrate de que el usuarioId se pase correctamente
@@ -76,18 +73,18 @@ export class CajaService {
           createdAt: GetLocalDate(),
           updatedAt: GetLocalDate(),
         };
-  
+
         await prisma.movimientosCaja.create({ data: movimientoData });
-  
+
         // Actualizar el estado de la caja a 'ABIERTA'
         await prisma.caja.update({
           where: { id: cajaId },
           data: { estado: EstadoCaja.ABIERTA, updatedAt: GetLocalDate() },
         });
-  
+
         return historialCreated;
       });
-  
+
       return { success: true, data: historial };
     } catch (error) {
       console.error('Error al crear historial de caja:', error);
@@ -100,35 +97,35 @@ export class CajaService {
     try {
 
       const historial = await this.prisma.historialCaja.findMany({
-        orderBy:{
+        orderBy: {
           createdAt: 'desc',
         }
       });
 
-      return {success: true, data: historial}
-      
+      return { success: true, data: historial }
+
     } catch (error) {
-      
+
     }
 
-    
+
   }
 
   async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Partial<Caja>>> {
     const { cajaId, montoFinal, usuarioId } = data;
-  
+
     const cajaData = {
       estado: EstadoCaja.CERRADA,
       updatedAt: GetLocalDate(),
     };
-  
+
     const historialCajaData = {
       montoFinal: parseFloat(montoFinal.toString()),
       estado: EstadoCaja.CERRADA,
       fechaCierre: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-  
+
     try {
       // Creación transacción
       const response = await this.prisma.$transaction(async (prisma) => {
@@ -137,7 +134,7 @@ export class CajaService {
           where: { id: cajaId },
           data: cajaData,
         });
-  
+
         // Buscar el historial de caja abierta más reciente
         const historial = await prisma.historialCaja.findFirst({
           where: {
@@ -148,17 +145,17 @@ export class CajaService {
             createdAt: 'desc', // Ordenar por la fecha más reciente
           },
         });
-  
+
         if (!historial) {
           throw new Error('No se encontró un historial de caja abierta.');
         }
-  
+
         // Actualizar el historial de caja con los datos de cierre
         const historialUpdated = await prisma.historialCaja.update({
           where: { id: historial.id },
           data: historialCajaData,
         });
-  
+
         // Crear el movimiento de caja para el cierre
         const montoFloat = parseFloat(montoFinal.toString())
         const usuarioIdInt = parseInt(usuarioId.toString())
@@ -174,17 +171,32 @@ export class CajaService {
             usuarioId: usuarioIdInt,
           },
         });
-  
+
         return cajaUpdated;
       });
-  
+
       return { success: true, data: response };
     } catch (error) {
       console.error('Error al cerrar la caja:', error);
       return { success: false, error: error.message };
     }
   }
-  
+
+  async cajaAbierta(usuarioId: number): Promise<Caja | null> {
+    try {
+      return await this.prisma.caja.findFirst({
+        where: {
+          usuarioId,
+          estado: EstadoCaja.ABIERTA,
+        },
+      });
+    } catch (error) {
+      console.error('Error al buscar la caja abierta:', error);
+      throw new Error('No se pudo obtener el estado de la caja.'); // Puedes lanzar un error específico
+    }
+  }
+
+
 
   remove(id: number) {
     return `This action removes a #${id} caja`;

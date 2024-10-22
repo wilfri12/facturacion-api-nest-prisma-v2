@@ -448,6 +448,17 @@ CREATE TABLE `Reporte` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `Secuencias` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `nombre` VARCHAR(10) NOT NULL,
+    `valor` INTEGER NOT NULL,
+
+    UNIQUE INDEX `Secuencias_id_key`(`id`),
+    UNIQUE INDEX `Secuencias_nombre_key`(`nombre`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Empresa` ADD CONSTRAINT `Empresa_contactoId_fkey` FOREIGN KEY (`contactoId`) REFERENCES `Contacto`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 

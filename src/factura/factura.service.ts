@@ -3,7 +3,7 @@ import { DetalleFacturaService } from 'src/shop/detalle-factura/detalle-factura.
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
-import { Estado, EstadoProducto, Factura } from '@prisma/client';
+import { Estado, EstadoProducto, Factura, MetodoPago } from '@prisma/client';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 import { GetLocalDate } from 'src/utility/getLocalDate';
 import { PrinterService } from 'src/printer/printer.service';
@@ -52,19 +52,22 @@ export class FacturaService {
       }
 
 
+
+
       const empresaIdNumber = parseInt(empresaId.toString());
       const usuarioIdNumber = parseInt(usuarioId.toString());
       const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
       const cajaIdNumber = cajaId ? cajaId : 1; //Aqui si el id de la caja no se envia, se pone la caja uno por defecto.
       const createdAt = GetLocalDate();
       const updatedAt = GetLocalDate();
+      const estadoFactura = metodoPago  === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
 
 
       // Datos base para la creación de la factura
       const facturaData = {
         codigo: 'FACT-', // El código se completará después con el ID de la factura
         empresaId: empresaIdNumber,
-        estado,
+        estado: estadoFactura,
         itebisTotal: 0, // Se calculará después
         metodoPago,
         moneda,

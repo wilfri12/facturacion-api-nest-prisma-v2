@@ -11,6 +11,10 @@ export class AuthService {
 
   async validatedUser(username: string, pass: string): Promise<any> {
 
+    console.log(username);
+    console.log(pass);
+    
+
     const user = await this.prisma.usuario.findFirst({
        where: { nombreUsuario: username },
        include:{

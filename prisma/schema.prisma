@@ -8,17 +8,17 @@ generator client {
 }
 
 model Contacto {
-  id        Int        @id @default(autoincrement())
-  email     String?    @unique @db.VarChar(50)
-  telefono  String?    @db.VarChar(15)
-  whatsapp  String?    @db.VarChar(15)
-  instagram String?    @db.VarChar(30)
-  direccion String     @db.VarChar(50)
+  id        Int       @id @default(autoincrement())
+  email     String?   @unique @db.VarChar(50)
+  telefono  String?   @db.VarChar(15)
+  whatsapp  String?   @db.VarChar(15)
+  instagram String?   @db.VarChar(30)
+  direccion String    @db.VarChar(50)
   empresa   Empresa?
   usuario   Usuario?
   cliente   Cliente?
-  createdAt DateTime?  @default(now())
-  updatedAt DateTime?  @default(now()) @updatedAt
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @default(now()) @updatedAt
 }
 
 model Empresa {
@@ -113,9 +113,9 @@ model Producto {
 }
 
 model ProductoAtributo {
-  id         Int      @id @default(autoincrement())
-  productoId Int
-  producto   Producto @relation(fields: [productoId], references: [id])
+  id              Int           @id @default(autoincrement())
+  productoId      Int
+  producto        Producto      @relation(fields: [productoId], references: [id])
   atributoId      Int
   valorAtributoId Int
   valorAtributo   ValorAtributo @relation(fields: [valorAtributoId], references: [id])
@@ -156,6 +156,7 @@ model Usuario {
   MovimientoInventario MovimientoInventario[]
   DevolucionCliente    DevolucionCliente[]
   MovimientosCaja      MovimientosCaja[]
+  Cajas                Caja[]
 
   @@unique([empresaId, nombreUsuario], map: "empresa_usuario_unique")
 }
@@ -221,16 +222,16 @@ model DetalleFactura {
 }
 
 model Compra {
-  id                  Int                   @id @default(autoincrement())
-  total               Decimal               @default(0.00) @db.Decimal(10, 2)
-  usuarioId           Int
-  empresaId           Int
-  moneda              TipoMoneda            @default(DOP)
-  usuario             Usuario               @relation(fields: [usuarioId], references: [id])
-  empresa             Empresa               @relation(fields: [empresaId], references: [id])
-  detallesCompras     DetalleCompra[]
-  createdAt           DateTime?             @default(now())
-  updatedAt           DateTime?             @default(now()) @updatedAt
+  id              Int             @id @default(autoincrement())
+  total           Decimal         @default(0.00) @db.Decimal(10, 2)
+  usuarioId       Int
+  empresaId       Int
+  moneda          TipoMoneda      @default(DOP)
+  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
+  empresa         Empresa         @relation(fields: [empresaId], references: [id])
+  detallesCompras DetalleCompra[]
+  createdAt       DateTime?       @default(now())
+  updatedAt       DateTime?       @default(now()) @updatedAt
 
   @@map("Compra")
 }
@@ -419,6 +420,7 @@ model LoteProducto {
 //Sstema de Cajas
 model Caja {
   id             Int             @id @default(autoincrement())
+  usuarioId      Int?
   nombre         String          @db.VarChar(100) // Ejemplo de restricción de longitud
   estado         EstadoCaja      @default(CERRADA)
   ubicacion      String          @db.VarChar(255)
@@ -428,6 +430,7 @@ model Caja {
   updatedAt      DateTime        @updatedAt
   historialCajas HistorialCaja[]
   facturas       Factura[]
+  Usuario        Usuario?        @relation(fields: [usuarioId], references: [id])
 }
 
 model HistorialCaja {
@@ -496,7 +499,6 @@ model DevolucionCliente {
   updatedAt  DateTime? @default(now()) @updatedAt
 }
 
-
 //Manejo de Usuarios y Permisos
 //Agregar un modelo para permisos más detallados.
 
@@ -527,6 +529,12 @@ model Reporte {
   datos       Json // Aquí se almacenan los datos del reporte en formato JSON
   empresaId   Int
   empresa     Empresa     @relation(fields: [empresaId], references: [id])
+}
+
+model Secuencias {
+  id     Int    @id @unique @default(autoincrement())
+  nombre String @unique @db.VarChar(10)
+  valor  Int
 }
 
 //enums
