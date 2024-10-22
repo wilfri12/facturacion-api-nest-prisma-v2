@@ -5,7 +5,7 @@ import { UpdateCajaDto } from './dto/update-caja.dto';
 
 @Controller('api/v1/caja')
 export class CajaController {
-  constructor(private readonly cajaService: CajaService) {}
+  constructor(private readonly cajaService: CajaService) { }
 
   @Post()
   create(@Body() createCajaDto: CreateCajaDto) {
@@ -27,9 +27,29 @@ export class CajaController {
     return this.cajaService.finsHistorialCaja();
   }
 
+  @Get('/estado/:usuarioId')
+  async findCajaAbierta(@Param('usuarioId') usuarioId: string) {
+    const caja = await this.cajaService.cajaAbierta(+usuarioId);
+
+    if (!caja) {
+      return {
+        success: false,
+        message: 'No hay caja abierta para este usuario.',
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Caja abierta encontrada.',
+      data: caja,
+    };
+  }
+
+
   @Put()
-  cerrarCaja( @Body() data: UpdateCajaDto) {
-    return this.cajaService.cerrarCaja( data);
+  cerrarCaja(@Body() data: UpdateCajaDto) {
+    return this.cajaService.cerrarCaja(data);
   }
 
   @Delete(':id')
