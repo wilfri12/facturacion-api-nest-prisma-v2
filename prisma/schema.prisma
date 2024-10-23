@@ -46,11 +46,13 @@ model Empresa {
   MovimientoInventario  MovimientoInventario[]
   Notificacion          Notificacion[]
   DevolucionCliente     DevolucionCliente[]
-  Reporte               Reporte[]
   createdAt             DateTime?               @default(now())
   updatedAt             DateTime?               @default(now()) @updatedAt
   LoteProducto          LoteProducto[]
   Caja                  Caja[]
+  Transaccion           Transaccion[]
+  ReporteFinanciero     ReporteFinanciero[]
+  GastosOperativos      GastosOperativos[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
@@ -64,6 +66,7 @@ model Categoria {
   SubCategoria SubCategoria[]
   createdAt    DateTime?      @default(now())
   updatedAt    DateTime?      @default(now()) @updatedAt
+  Transaccion  Transaccion[]
 
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
 }
@@ -520,15 +523,47 @@ model RolPermiso {
 
 //Reporte de Ventas y Compras
 //Agregar un modelo para almacenar reportes generados de ventas y compras.
-model Reporte {
-  id          Int         @id @default(autoincrement())
-  tipo        TipoReporte
-  titulo      String      @db.VarChar(100)
-  descripcion String?     @db.Text
-  fecha       DateTime    @default(now())
-  datos       Json // Aquí se almacenan los datos del reporte en formato JSON
+
+
+model Transaccion {
+  id          Int             @id @default(autoincrement())
+  tipo        TipoTransaccion
+  fecha       DateTime        @default(now())
+  monto       Float // Total de la transacción
+  detalles    Json? // Detalles en JSON para flexibilidad
   empresaId   Int
-  empresa     Empresa     @relation(fields: [empresaId], references: [id])
+  empresa     Empresa         @relation(fields: [empresaId], references: [id])
+  categoria   Categoria?      @relation(fields: [categoriaId], references: [id]) // Categoría de productos (opcional)
+  categoriaId Int?
+}
+
+model ReporteFinanciero {
+  id           Int      @id @default(autoincrement())
+  fechaInicio  DateTime
+  fechaFin     DateTime
+  totalVentas  Float    @default(0.0)
+  totalCompras Float    @default(0.0)
+  ganancia     Float    @default(0.0)
+  detalles     Json? // Desglose adicional
+  empresaId    Int
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
+}
+
+// Registrar costos fijos y variables: Este modelo es útil para capturar todos los gastos necesarios para operar el negocio, como:
+
+// Alquiler de oficinas o locales.
+// Sueldos y salarios del personal.
+// Servicios públicos (agua, electricidad, internet).
+// Publicidad y marketing.
+// Mantenimiento, transporte, o cualquier otro gasto no directamente relacionado con la compra o venta de productos.
+
+model GastosOperativos {
+  id        Int      @id @default(autoincrement())
+  concepto  String   @db.VarChar(100)
+  monto     Float
+  fecha     DateTime @default(now())
+  empresaId Int
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
 }
 
 model Secuencias {
@@ -539,7 +574,7 @@ model Secuencias {
 
 //enums
 
-enum TipoReporte {
+enum TipoTransaccion {
   VENTAS
   COMPRAS
   INVENTARIO
