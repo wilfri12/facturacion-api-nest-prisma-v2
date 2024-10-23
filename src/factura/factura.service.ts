@@ -266,6 +266,17 @@ export class FacturaService {
               updatedAt: GetLocalDate(),
             },
           });
+
+          await prisma.transaccion.create({
+            data:{
+              tipo: 'VENTAS',
+              monto: subtotalTotal + totalItebis,
+              empresaId,
+              fecha: createdAt
+            }
+          })
+
+          
           return createdFactura;
         }
 

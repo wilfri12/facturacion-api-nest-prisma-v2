@@ -66,8 +66,6 @@ model Categoria {
   SubCategoria SubCategoria[]
   createdAt    DateTime?      @default(now())
   updatedAt    DateTime?      @default(now()) @updatedAt
-  Transaccion  Transaccion[]
-
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
 }
 
@@ -202,6 +200,7 @@ model Factura {
   createdAt           DateTime?             @default(now())
   updatedAt           DateTime?             @default(now()) @updatedAt
   Caja                Caja?                 @relation(fields: [cajaId], references: [id])
+  Transaccion         Transaccion[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
 }
@@ -235,6 +234,7 @@ model Compra {
   detallesCompras DetalleCompra[]
   createdAt       DateTime?       @default(now())
   updatedAt       DateTime?       @default(now()) @updatedAt
+  Transaccion     Transaccion[]
 
   @@map("Compra")
 }
@@ -524,17 +524,18 @@ model RolPermiso {
 //Reporte de Ventas y Compras
 //Agregar un modelo para almacenar reportes generados de ventas y compras.
 
-
 model Transaccion {
   id          Int             @id @default(autoincrement())
+  empresaId   Int
+  compraId    Int?
+  facturaId   Int?
   tipo        TipoTransaccion
   fecha       DateTime        @default(now())
   monto       Float // Total de la transacción
-  detalles    Json? // Detalles en JSON para flexibilidad
-  empresaId   Int
   empresa     Empresa         @relation(fields: [empresaId], references: [id])
-  categoria   Categoria?      @relation(fields: [categoriaId], references: [id]) // Categoría de productos (opcional)
-  categoriaId Int?
+  compra      Compra?         @relation(fields: [compraId], references: [id])
+  factura     Factura?        @relation(fields: [facturaId], references: [id])
+ 
 }
 
 model ReporteFinanciero {
@@ -575,8 +576,8 @@ model Secuencias {
 //enums
 
 enum TipoTransaccion {
-  VENTAS
-  COMPRAS
+  VENTA
+  COMPRA
   INVENTARIO
   CLIENTES
 }
