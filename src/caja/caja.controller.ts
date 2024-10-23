@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Put, Param, Delete } from '@nestjs/common';
 import { CajaService } from './caja.service';
-import { CreateCajaDto, CreateHistorialCajaDto } from './dto/create-caja.dto';
+import { CreateCajaDto, AbrirCajaDTO } from './dto/create-caja.dto';
 import { UpdateCajaDto } from './dto/update-caja.dto';
 
 @Controller('api/v1/caja')
@@ -13,8 +13,8 @@ export class CajaController {
   }
 
   @Post('/historial')
-  createHistorial(@Body() data: CreateHistorialCajaDto) {
-    return this.cajaService.createHistorialCaja(data);
+  createHistorial(@Body() data: AbrirCajaDTO) {
+    return this.cajaService.abrirCaja(data);
   }
 
   @Get()
