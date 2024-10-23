@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateCajaDto, CreateHistorialCajaDto, CreateMovimientosCajaDto } from './dto/create-caja.dto';
+import { CreateCajaDto, AbrirCajaDTO, CreateMovimientosCajaDto } from './dto/create-caja.dto';
 import { ApiResponse } from 'src/interface';
 import { Caja, EstadoCaja, HistorialCaja, MovimientosCaja, tipoMovimientoCaja } from '@prisma/client';
 import { GetLocalDate } from 'src/utility/getLocalDate';
@@ -44,8 +44,8 @@ export class CajaService {
     }
   }
 
-  async createHistorialCaja(data: CreateHistorialCajaDto): Promise<ApiResponse<HistorialCaja>> {
-    const { cajaId, montoInicial } = data;
+  async abrirCaja(data: AbrirCajaDTO): Promise<ApiResponse<HistorialCaja>> {
+    const { cajaId, montoInicial, usuarioId } = data;
 
     const historialData = {
       cajaId,
@@ -57,6 +57,25 @@ export class CajaService {
 
     try {
       const historial = await this.prisma.$transaction(async (prisma) => {
+
+        const caja = await this.prisma.caja.findUnique({
+          where: {
+            id: cajaId
+          },
+          include:{
+            Usuario: {
+              select:{
+                nombreUsuario: true
+              }
+            }
+
+          }
+
+        })
+
+        if (caja.estado === EstadoCaja.ABIERTA) {
+          throw new Error(`El usuario ${caja.Usuario.nombreUsuario} tiene esta caja abierta actualmente`)
+        }
         // Crear el historial de caja
         const historialCreated = await prisma.historialCaja.create({ data: historialData });
 
@@ -65,7 +84,7 @@ export class CajaService {
 
         // Crear el movimiento de caja relacionado con la apertura
         const movimientoData: CreateMovimientosCajaDto = {
-          usuarioId: 1, // Asegúrate de que el usuarioId se pase correctamente
+          usuarioId: usuarioId, // Asegúrate de que el usuarioId se pase correctamente
           descripcion: 'Inicio de caja',
           historialCajaId: historialCreated.id,
           monto: montoInicialNumber,
@@ -79,7 +98,7 @@ export class CajaService {
         // Actualizar el estado de la caja a 'ABIERTA'
         await prisma.caja.update({
           where: { id: cajaId },
-          data: { estado: EstadoCaja.ABIERTA, updatedAt: GetLocalDate() },
+          data: { estado: EstadoCaja.ABIERTA, usuarioId: usuarioId, updatedAt: GetLocalDate() },
         });
 
         return historialCreated;
@@ -87,7 +106,7 @@ export class CajaService {
 
       return { success: true, data: historial };
     } catch (error) {
-      console.error('Error al crear historial de caja:', error);
+      console.error( error);
       return { success: false, error: error.message };
     }
   }
@@ -117,6 +136,7 @@ export class CajaService {
     const cajaData = {
       estado: EstadoCaja.CERRADA,
       updatedAt: GetLocalDate(),
+      usuarioId: null
     };
 
     const historialCajaData = {
