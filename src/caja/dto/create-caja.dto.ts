@@ -15,13 +15,16 @@ export class CreateCajaDto {
 }
 
 
-export class CreateHistorialCajaDto {
+export class AbrirCajaDTO {
 
     @IsNumber()
     cajaId: number;
 
     @IsDecimal()
     montoInicial: number;
+
+    @IsNumber()
+    usuarioId: number;
 }
 
 
