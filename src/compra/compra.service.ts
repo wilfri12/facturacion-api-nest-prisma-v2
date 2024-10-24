@@ -14,6 +14,9 @@ export class CompraService {
         const { empresaId, moneda,  usuarioId, detalles } = data;
         let montoTotalCompra = 0;
 
+        console.log(data);
+        
+
         // Convert necessary fields to the correct type once at the start
         const parsedEmpresaId = parseInt(empresaId.toString());
         const parsedUsuarioId = parseInt(usuarioId.toString());
@@ -39,6 +42,9 @@ export class CompraService {
                         const producto = await prisma.producto.findUnique({
                             where: { id: detalle.productoId },
                         });
+
+                        console.log(producto);
+                        
 
                         if (!producto) {
                             throw new Error(`Estás intentando registrar una compra que no contiene productos en su detalle`);
@@ -82,6 +88,7 @@ export class CompraService {
                             data: {
                                 productoId: detalle.productoId,
                                 cantidad: parsedCantidad,
+                                cantidadRestante: parsedCantidad,
                                 empresaId: parsedEmpresaId,
                                 precioVenta: parsedPrecioVenta,
                                 fechaEntrada: createdAt,
@@ -147,6 +154,16 @@ export class CompraService {
                             updatedAt,
                         },
                     });
+
+                    await prisma.transaccion.create({
+                        data: {
+                          tipo: 'COMPRA',
+                          monto: montoTotalCompra,
+                          empresaId,
+                          fecha: createdAt,
+                          compraId: compraCreated.id
+                        }
+                      })
 
                     return compraCreated;
                 }
