@@ -63,16 +63,17 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 text: 'FACTURA DE VENTA',
                 style: 'header',
             },
+           
+            {
+                text: `${factura.codigo}`,
+                style: 'details',
+            },
             {
                 text: `${factura.clienteNombre || 'Cliente no registrado'}`,
                 style: 'details',
             },
             {
-                text: `Factura: ${factura.codigo}`,
-                style: 'details',
-            },
-            {
-                text: `Pago: ${factura.metodoPago}`,
+                text: `${factura.metodoPago}`,
                 style: 'details',
             },
             {
@@ -84,7 +85,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                     headerRows: 1,
                     widths: ['*', 'auto', 'auto'],
                     body: [
-                        [{ text: 'Producto', style: 'tableHeader' }, { text: 'Cant.', style: 'tableHeader' }, { text: 'Impor.', style: 'tableHeader' }],
+                        [{ text: 'Producto', style: 'tableHeader' }, { text: 'Cant.', style: 'tableHeader' }, { text: 'Importe', style: 'tableHeader' }],
                         ...productRows,
                     ],
                 },
@@ -99,7 +100,7 @@ export const facturaReport = (factura: FacturaInterface): TDocumentDefinitions =
                 style: 'total',
             },
             {
-                text: 'Gracias por su compra.',
+                text: '¡Gracias por su compra!',
                 style: 'footer',
             },
         ],
