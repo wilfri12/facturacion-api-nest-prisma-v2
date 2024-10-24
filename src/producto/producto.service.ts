@@ -25,7 +25,8 @@ export class ProductoService {
             subCategoriaId,
             ubicacion,
         } = data;
-
+    
+        const currentDate = GetLocalDate();  // Centraliza la fecha para consistencia
         const productoData = {
             categoriaId: parseInt(categoriaId.toString()),
             empresaId: parseInt(empresaId.toString()),
@@ -37,56 +38,58 @@ export class ProductoService {
             descripcion,
             subCategoriaId: parseInt(subCategoriaId.toString()),
             ubicacion,
-            createdAt: GetLocalDate(),
-            updatedAt: GetLocalDate(),
+            createdAt: currentDate,
+            updatedAt: currentDate,
         };
+    
         try {
-            const producto = await this.prisma.producto.create({ data: productoData });
-            
-
-            if (producto) {
-
-                await this.prisma.producto.update({
-                    where: {
-                        id: producto.id,
-                    },
-                    data: {
-                        codigo: codigo  + producto.id,
-                    },
+            const producto = await this.prisma.$transaction(async (prisma) => {
+                const secuencia = await prisma.secuencias.findUnique({
+                    where: { nombre: 'producto' },
                 });
-
-            }
-
-
-            return { success: true, data: producto };
-
-
+    
+                const secuenciaProducto = (secuencia?.valor || 0) + 1;
+    
+                await prisma.secuencias.update({
+                    where: { nombre: 'producto' },
+                    data: { valor: secuenciaProducto },
+                });
+    
+                const productoCreated = await prisma.producto.create({
+                    data: productoData,
+                });
+    
+                // Actualiza el código del producto con la secuencia
+                await prisma.producto.update({
+                    where: { id: productoCreated.id },
+                    data: { codigo: codigo + secuenciaProducto },
+                });
+    
+                // Retornar el producto creado
+                return productoCreated;
+            });
+    
+            return { success: true, data: producto };  // Asegura que devuelves el producto
+    
         } catch (error) {
             if (error instanceof PrismaClientKnownRequestError) {
-                // Manejo específico de errores basado en el código de error
-                switch (error.code) {
-                    case 'P2002': // Violación de restricción única
-                        console.log('Error de duplicidad:', error);
-                        return { success: false, error: `Error de duplicidad (${error.meta.target})` };
-                    case 'P2004': // Campo nulo no permitido
-                        console.log('Campo nulo no permitido:', error);
-                        return { success: false, error: 'Campo nulo no permitido.' };
-                    case 'P2006': // Tipo de datos incorrecto
-                        console.log('Tipo de datos incorrecto:', error);
-                        return { success: false, error: 'Tipo de datos incorrecto.' };
-                    case 'P2027': // Error de conexión a la base de datos
-                        console.log('Error de conexión a la base de datos:', error);
-                        return { success: false, error: 'Error de conexión a la base de datos.' };
-                    default: // Otros errores de Prisma
-                        console.log('Error inesperado:', error);
-                        return { success: false, error: 'Error inesperado en la base de datos.' };
-                }
+                const errorMap = {
+                    'P2002': `Error de duplicidad (${error.meta.target})`,
+                    'P2004': 'Campo nulo no permitido.',
+                    'P2006': 'Tipo de datos incorrecto.',
+                    'P2027': 'Error de conexión a la base de datos.',
+                };
+    
+                const errorMessage = errorMap[error.code] || 'Error inesperado en la base de datos.';
+                console.log(errorMessage, error);
+                return { success: false, error: errorMessage };
             }
-            // Manejo de errores no relacionados con Prisma
+    
             console.log('Error inesperado:', error);
             return { success: false, error: 'Ocurrió un error inesperado. Por favor, intente nuevamente más tarde.' };
         }
     }
+    
 
     async findAllProducto(params: { page?: number, pageSize?: number, filtro?: string }): Promise<ApiResponse<{ productos: Producto[], totalRecords: number, currentPage: number, totalPages: number }>> {
         try {
@@ -226,16 +229,16 @@ export class ProductoService {
         try {
             const productos = await this.prisma.producto.findFirst({
                 where: { codigo },
-                include:{
+                include: {
                     categoria: {
-                        select:{
+                        select: {
                             id: true,
                             nombre: true,
                         }
                     },
 
-                    subCategoria:{
-                        select:{
+                    subCategoria: {
+                        select: {
                             id: true,
                             nombre: true,
                         }
@@ -243,9 +246,9 @@ export class ProductoService {
 
 
                     LoteProducto: {
-                        select:{
+                        select: {
                             id: true,
-                            fechaEntrada: true,                         
+                            fechaEntrada: true,
 
                         }
                     }
