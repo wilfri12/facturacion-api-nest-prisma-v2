@@ -60,7 +60,7 @@ export class FacturaService {
       const cajaIdNumber = cajaId ? cajaId : 1; //Aqui si el id de la caja no se envia, se pone la caja uno por defecto.
       const createdAt = GetLocalDate();
       const updatedAt = GetLocalDate();
-      const estadoFactura = metodoPago  === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
+      const estadoFactura = metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
 
 
       // Datos base para la creación de la factura
@@ -83,6 +83,15 @@ export class FacturaService {
 
       // Creación de la factura y sus detalles dentro de una transacción
       const factura = await this.prisma.$transaction(async (prisma) => {
+        const secuencia = await prisma.secuencias.findUnique({ where: { nombre: 'factura' } });
+
+        const secuenciaFactura = (secuencia?.valor || 0) + 1;
+        await prisma.secuencias.update({
+          where: { nombre: 'factura' },
+          data: { valor: secuenciaFactura },
+        });
+
+
         // Crea la factura inicial
         const createdFactura = await prisma.factura.create({
           data: facturaData,
@@ -135,12 +144,12 @@ export class FacturaService {
             await prisma.detalleFactura.create({ data: detalleFacturaData });
 
             // Maneja la reducción de stock y la gestión de lotes
-            let cantidadRestante = cantidadNumber;
+            let _cantidadRestante = cantidadNumber;
 
             const lotes = await prisma.loteProducto.findMany({
               where: {
                 productoId: detalle.productoId,
-                cantidad: { gt: 0 } // Solo obtener lotes con cantidad > 0
+                cantidadRestante: { gt: 0 } // Solo obtener lotes con cantidadRestante > 0
               },
               orderBy: { fechaEntrada: 'asc' }, // FIFO: Primero en entrar, primero en salir
             });
@@ -150,21 +159,21 @@ export class FacturaService {
             }
 
             for (const [index, lote] of lotes.entries()) {
-              if (cantidadRestante <= 0) break;
+              if (_cantidadRestante <= 0) break;
 
-              // Verificar si la cantidad solicitada es mayor que la cantidad disponible en el lote más antiguo
-              if (detalle.cantidad > lote.cantidad) {
+              // Verificar si la cantidad solicitada es mayor que la cantidadRestante disponible en el lote más antiguo
+              if (detalle.cantidad > lote.cantidadRestante) {
                 throw new Error(
-                  `Solo se pueden comprar hasta ${lote.cantidad} unidades del producto ${producto.nombre} debido a limitaciones de inventario en el lote actual. Por favor, ajuste la cantidad o genere una nueva factura para el lote siguiente, teniendo en cuenta que los precios pueden variar entre lotes.`
+                  `Solo se pueden comprar hasta ${lote.cantidadRestante} unidades del producto ${producto.nombre} debido a limitaciones de inventario en el lote actual. Por favor, ajuste la cantidad o genere una nueva factura para el lote siguiente, teniendo en cuenta que los precios pueden variar entre lotes.`
                 );
               }
 
-              if (lote.cantidad <= cantidadRestante) {
+              if (lote.cantidadRestante <= _cantidadRestante) {
                 // Si el lote se consume completamente
-                cantidadRestante -= lote.cantidad;
+                _cantidadRestante -= lote.cantidadRestante;
                 await prisma.loteProducto.update({
                   where: { id: lote.id },
-                  data: { cantidad: 0 },
+                  data: { cantidadRestante: 0 },
                 });
 
                 // Si existe un siguiente lote, actualiza el precio del producto al del siguiente lote
@@ -183,12 +192,12 @@ export class FacturaService {
 
               } else {
                 // Si solo se consume parte del lote
-                console.log(`El lote ${lote.id} no será consumido completamente. Cantidad restante antes de consumir: ${cantidadRestante}`);
+                console.log(`El lote ${lote.id} no será consumido completamente. Cantidad restante antes de consumir: ${_cantidadRestante}`);
                 await prisma.loteProducto.update({
                   where: { id: lote.id },
-                  data: { cantidad: lote.cantidad - cantidadRestante },
+                  data: { cantidadRestante: lote.cantidadRestante - _cantidadRestante },
                 });
-                cantidadRestante = 0;
+                _cantidadRestante = 0;
               }
             }
 
@@ -262,21 +271,23 @@ export class FacturaService {
               subtotal: subtotalTotal,
               total: subtotalTotal + totalItebis,
               itebisTotal: totalItebis,
-              codigo: `FACT-${createdFactura.id}`, // Actualiza el código de la factura con su ID
+              codigo: `FACT-${secuenciaFactura}`, // Actualiza el código de la factura con su ID
+              estado: metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA,
               updatedAt: GetLocalDate(),
             },
           });
 
           await prisma.transaccion.create({
-            data:{
-              tipo: 'VENTAS',
+            data: {
+              tipo: 'VENTA',
               monto: subtotalTotal + totalItebis,
               empresaId,
-              fecha: createdAt
+              fecha: createdAt,
+              facturaId: createdFactura.id
             }
           })
 
-          
+
           return createdFactura;
         }
 
@@ -442,62 +453,62 @@ export class FacturaService {
 
   async facturaReportById(idFactura: number) {
     try {
-        const factura = await this.prisma.factura.findUnique({
-            where: { id: idFactura },
-            include: {
-                detallesFacturas: {
+      const factura = await this.prisma.factura.findUnique({
+        where: { id: idFactura },
+        include: {
+          detallesFacturas: {
+            select: {
+              id: true,
+              producto: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  precio: true,
+                  descripcion: true,
+                  codigo: true,
+                  categoria: {
                     select: {
-                        id: true,
-                        producto: {
-                            select: {
-                                id: true,
-                                nombre: true,
-                                precio: true,
-                                descripcion: true,
-                                codigo: true,
-                                categoria: {
-                                    select: {
-                                        nombre: true,
-                                    },
-                                },
-                            },
-                        },
-                        cantidad: true,
-                        importe: true,
+                      nombre: true,
                     },
+                  },
                 },
-                Caja: {
-                    select: {
-                        id: true,
-                        nombre: true,
-                    },
-                },
-                usuario: {
-                    select: {
-                        id: true,
-                        nombreUsuario: true,
-                    },
-                },
-                empresa: {
-                    select: {
-                        id: true,
-                        nombre: true,
-                    },
-                },
+              },
+              cantidad: true,
+              importe: true,
             },
-        });
-        if (!factura) {
-            throw new Error(`Factura with ID ${idFactura} not found`);
-        }
+          },
+          Caja: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+          usuario: {
+            select: {
+              id: true,
+              nombreUsuario: true,
+            },
+          },
+          empresa: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+        },
+      });
+      if (!factura) {
+        throw new Error(`Factura with ID ${idFactura} not found`);
+      }
 
-        const docDefinition = facturaReport(factura); // Ensure 'factura' is passed here
-        const pdfDoc = await this.printerService.createPdf(docDefinition);
-        return pdfDoc;
+      const docDefinition = facturaReport(factura); // Ensure 'factura' is passed here
+      const pdfDoc = await this.printerService.createPdf(docDefinition);
+      return pdfDoc;
     } catch (error: any) {
-        console.error('Error generating factura report:', error);
-        throw error; // Rethrow or handle accordingly
+      console.error('Error generating factura report:', error);
+      throw error; // Rethrow or handle accordingly
     }
-}
+  }
 
 
 }
