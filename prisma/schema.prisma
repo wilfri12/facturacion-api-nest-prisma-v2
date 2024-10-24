@@ -67,6 +67,7 @@ model Categoria {
   createdAt    DateTime?      @default(now())
   updatedAt    DateTime?      @default(now()) @updatedAt
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
+  @@index([nombre])
 }
 
 model SubCategoria {
@@ -80,6 +81,8 @@ model SubCategoria {
   updatedAt             DateTime?               @default(now()) @updatedAt
 
   @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
+  @@index([nombre])
+
 }
 
 model Producto {
@@ -111,6 +114,8 @@ model Producto {
   atributos            ProductoAtributo[]
 
   @@index([codigo], map: "producto_codigo_idx")
+  @@index([nombre])
+
 }
 
 model ProductoAtributo {
@@ -203,6 +208,7 @@ model Factura {
   Transaccion         Transaccion[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
+  @@index([createdAt])
 }
 
 model DetalleFactura {
@@ -237,6 +243,7 @@ model Compra {
   Transaccion     Transaccion[]
 
   @@map("Compra")
+  @@index([createdAt])
 }
 
 model DetalleCompra {
@@ -412,6 +419,7 @@ model LoteProducto {
   id           Int       @id @default(autoincrement())
   productoId   Int
   cantidad     Int
+  cantidadRestante     Int?
   empresaId    Int
   precioVenta  Decimal   @db.Decimal(10, 2)
   fechaEntrada DateTime  @default(now())
@@ -434,6 +442,7 @@ model Caja {
   historialCajas HistorialCaja[]
   facturas       Factura[]
   Usuario        Usuario?        @relation(fields: [usuarioId], references: [id])
+  @@index([nombre])
 }
 
 model HistorialCaja {
@@ -535,6 +544,10 @@ model Transaccion {
   empresa     Empresa         @relation(fields: [empresaId], references: [id])
   compra      Compra?         @relation(fields: [compraId], references: [id])
   factura     Factura?        @relation(fields: [facturaId], references: [id])
+  createdAt  DateTime? @default(now())
+
+  @@index([empresaId, fecha])
+  @@index([tipo])
  
 }
 
@@ -548,6 +561,9 @@ model ReporteFinanciero {
   detalles     Json? // Desglose adicional
   empresaId    Int
   empresa      Empresa  @relation(fields: [empresaId], references: [id])
+  createdAt  DateTime? @default(now())
+
+  @@index([empresaId, fechaInicio, fechaFin])
 }
 
 // Registrar costos fijos y variables: Este modelo es útil para capturar todos los gastos necesarios para operar el negocio, como:
@@ -579,7 +595,6 @@ enum TipoTransaccion {
   VENTA
   COMPRA
   INVENTARIO
-  CLIENTES
 }
 
 enum TipoMovimiento {
