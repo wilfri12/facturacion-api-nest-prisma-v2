@@ -36,6 +36,7 @@ CREATE TABLE `Categoria` (
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Categoria_nombre_key`(`nombre`),
+    INDEX `Categoria_nombre_idx`(`nombre`),
     UNIQUE INDEX `empresa_categoria_unique`(`empresaId`, `nombre`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -48,6 +49,7 @@ CREATE TABLE `SubCategoria` (
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `SubCategoria_nombre_idx`(`nombre`),
     UNIQUE INDEX `categoria_subcategoria_unique`(`categoriaId`, `nombre`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -69,6 +71,7 @@ CREATE TABLE `Producto` (
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     INDEX `producto_codigo_idx`(`codigo`),
+    INDEX `Producto_nombre_idx`(`nombre`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -155,6 +158,7 @@ CREATE TABLE `Factura` (
 
     UNIQUE INDEX `Factura_codigo_key`(`codigo`),
     INDEX `factura_cliente_idx`(`clienteNombre`),
+    INDEX `Factura_createdAt_idx`(`createdAt`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -185,6 +189,7 @@ CREATE TABLE `Compra` (
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `Compra_createdAt_idx`(`createdAt`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -333,6 +338,7 @@ CREATE TABLE `LoteProducto` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `productoId` INTEGER NOT NULL,
     `cantidad` INTEGER NOT NULL,
+    `cantidadRestante` INTEGER NULL,
     `empresaId` INTEGER NOT NULL,
     `precioVenta` DECIMAL(10, 2) NOT NULL,
     `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -344,6 +350,7 @@ CREATE TABLE `LoteProducto` (
 -- CreateTable
 CREATE TABLE `Caja` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `usuarioId` INTEGER NULL,
     `nombre` VARCHAR(100) NOT NULL,
     `estado` ENUM('ABIERTA', 'CERRADA') NOT NULL DEFAULT 'CERRADA',
     `ubicacion` VARCHAR(255) NOT NULL,
@@ -351,6 +358,7 @@ CREATE TABLE `Caja` (
     `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Caja_nombre_idx`(`nombre`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -436,13 +444,43 @@ CREATE TABLE `RolPermiso` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `Reporte` (
+CREATE TABLE `Transaccion` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `tipo` ENUM('VENTAS', 'COMPRAS', 'INVENTARIO', 'CLIENTES') NOT NULL,
-    `titulo` VARCHAR(100) NOT NULL,
-    `descripcion` TEXT NULL,
+    `empresaId` INTEGER NOT NULL,
+    `compraId` INTEGER NULL,
+    `facturaId` INTEGER NULL,
+    `tipo` ENUM('VENTA', 'COMPRA', 'INVENTARIO') NOT NULL,
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `datos` JSON NOT NULL,
+    `monto` DOUBLE NOT NULL,
+    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `Transaccion_empresaId_fecha_idx`(`empresaId`, `fecha`),
+    INDEX `Transaccion_tipo_idx`(`tipo`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ReporteFinanciero` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `fechaInicio` DATETIME(3) NOT NULL,
+    `fechaFin` DATETIME(3) NOT NULL,
+    `totalVentas` DOUBLE NOT NULL DEFAULT 0.0,
+    `totalCompras` DOUBLE NOT NULL DEFAULT 0.0,
+    `ganancia` DOUBLE NOT NULL DEFAULT 0.0,
+    `detalles` JSON NULL,
+    `empresaId` INTEGER NOT NULL,
+    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `ReporteFinanciero_empresaId_fechaInicio_fechaFin_idx`(`empresaId`, `fechaInicio`, `fechaFin`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `GastosOperativos` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `concepto` VARCHAR(100) NOT NULL,
+    `monto` DOUBLE NOT NULL,
+    `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `empresaId` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -616,6 +654,9 @@ ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_empresaId_fkey` FOREIGN 
 ALTER TABLE `Caja` ADD CONSTRAINT `Caja_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Caja` ADD CONSTRAINT `Caja_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `HistorialCaja` ADD CONSTRAINT `HistorialCaja_cajaId_fkey` FOREIGN KEY (`cajaId`) REFERENCES `Caja`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -646,4 +687,16 @@ ALTER TABLE `DevolucionCliente` ADD CONSTRAINT `DevolucionCliente_usuarioId_fkey
 ALTER TABLE `RolPermiso` ADD CONSTRAINT `RolPermiso_permisoId_fkey` FOREIGN KEY (`permisoId`) REFERENCES `Permiso`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Reporte` ADD CONSTRAINT `Reporte_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Transaccion` ADD CONSTRAINT `Transaccion_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Transaccion` ADD CONSTRAINT `Transaccion_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Transaccion` ADD CONSTRAINT `Transaccion_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReporteFinanciero` ADD CONSTRAINT `ReporteFinanciero_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `GastosOperativos` ADD CONSTRAINT `GastosOperativos_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
