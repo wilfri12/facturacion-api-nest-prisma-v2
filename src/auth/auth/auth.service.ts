@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma.service';
 import { AuthPayLoadDTO } from './dto';
+import { EstadoUsuario } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +12,7 @@ export class AuthService {
   async validatedUser(authPayload: AuthPayLoadDTO): Promise<any> {
     const {nombreUsuario,  password } = authPayload;
     const user = await this.prisma.usuario.findFirst({
-       where: { nombreUsuario},
+       where: { nombreUsuario, estado: EstadoUsuario.HABILITADO},
        include:{
         empresa:{
           select: {
