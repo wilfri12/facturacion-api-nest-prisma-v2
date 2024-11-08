@@ -263,8 +263,6 @@ export class ProductoService {
 
     async update(id: number, updateProductoDto: UpdateProductoDto): Promise<ApiResponse<Producto>> {
         try {
-            console.log(updateProductoDto);
-            
           const producto = await this.prisma.producto.findUnique({ where: { id } });
     
           if (!producto) {
