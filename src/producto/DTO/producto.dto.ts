@@ -1,3 +1,4 @@
+import { PartialType } from "@nestjs/mapped-types";
 import { EstadoProducto } from "@prisma/client";
 import { IsDecimal, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
@@ -45,8 +46,7 @@ export class CreateProductoDto {
     categoriaId: number;
 
 }
-
-export class UpdateProductoDto {
+export class UpdateProductoDto extends PartialType(CreateProductoDto) {
     @IsOptional()
     @IsString()
     nombre?: string;
@@ -68,17 +68,8 @@ export class UpdateProductoDto {
     ubicacion?: string;
 
     @IsOptional()
-    @IsEnum(EstadoProducto)
-    estado: EstadoProducto;
-    
-
-    @IsOptional()
     @IsNumber()
     stock?: number;
-
-    @IsOptional()
-    @IsNumber()
-    empresaId?: number;
 
     @IsOptional()
     @IsNumber()

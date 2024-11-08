@@ -38,8 +38,11 @@ export class FacturaController {
       // Convertir las fechas de string a Date si están presentes
       const start = startDate ? new Date(startDate) : undefined;
       const end = endDate ? new Date(endDate) : undefined;
-      console.log(start);
-      console.log(end);
+      console.log('start: ', start);
+      console.log('end: ', end);
+
+      console.log('startDate: ', startDate);
+      console.log('endDate: ', endDate);
 
       if ((startDate && !endDate) || (!startDate && endDate)) {
         return
