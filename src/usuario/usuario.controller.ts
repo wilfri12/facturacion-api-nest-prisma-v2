@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UnauthorizedException } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { Usuario } from '@prisma/client';
-import { UsuarioDto } from './DTO/usuario.dto';
+import { UpdateUsuarioDto, UsuarioDto } from './DTO/usuario.dto';
 import { ApiResponse } from 'src/interface';
 
 @Controller('api/v1/usuario')
@@ -29,5 +29,15 @@ export class UsuarioController {
   }
 
 
-  
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() UpdateUsuarioDto: UpdateUsuarioDto,
+  ) {
+    const response = await this.usuarioService.update(+id, UpdateUsuarioDto);
+    return response;
+  }
+
+
+
 }
