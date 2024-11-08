@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Usuario } from '@prisma/client';
-import { UsuarioDto } from './DTO/usuario.dto';
+import { UpdateUsuarioDto, UsuarioDto } from './DTO/usuario.dto';
 import { ApiResponse } from 'src/interface';
 import * as bcrypt from 'bcrypt';
 import { EncryptionService } from 'src/utility/bcrypt/bcrypt.service';
@@ -48,5 +48,30 @@ export class UsuarioService {
             throw error;
         }
     }
+
+    async update(id: number, updateUsuarioDto: UpdateUsuarioDto): Promise<ApiResponse<Usuario>> {
+        try {
+            const usuario = await this.pisma.usuario.findUnique({ where: { id } });
+    
+            if (!usuario) {
+                throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+            }
+    
+            // Si updateUsuarioDto contiene una contraseña, encripta antes de actualizar
+            if (updateUsuarioDto.password) {
+                updateUsuarioDto.password = await this.encryptionService.encryptPassword(updateUsuarioDto.password);
+            }
+    
+            const usuarioUpdated = await this.pisma.usuario.update({
+                where: { id },
+                data: updateUsuarioDto,
+            });
+            
+            return { success: true, data: usuarioUpdated };
+        } catch (error) {
+            return { success: false, error: error };
+        }
+    }
+    
     
 }
