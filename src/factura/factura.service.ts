@@ -511,4 +511,38 @@ export class FacturaService {
   }
 
 
+  async pagarFactura(id: number): Promise<ApiResponse<Factura>> {
+    try {
+        // Busca la factura por ID
+        const factura = await this.prisma.factura.findUnique({
+            where: { id }
+        });
+
+        // Verifica si la factura existe
+        if (!factura) {
+            throw new Error('Factura no encontrada');
+        }
+
+        // Actualiza el estado de la factura a PAGADA y guarda la fecha de actualización
+        const facturaActualizada = await this.prisma.factura.update({
+            data: { 
+                estado: Estado.PAGADA, 
+                updatedAt: GetLocalDate() 
+            },
+            where: { id }
+        });
+
+        // Retorna la respuesta de éxito junto con la factura actualizada
+        return { success: true, data: facturaActualizada };
+
+    } catch (error) {
+        console.error("Error al pagar la factura:", error);
+
+        // Retorna una respuesta de error con el mensaje de error específico
+        return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+}
+
+
+
 }
