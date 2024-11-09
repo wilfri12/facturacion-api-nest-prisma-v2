@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
 import { Estado, Factura } from '@prisma/client';
@@ -105,5 +105,29 @@ export class FacturaController {
          response.status(500).send('Error al generar el reporte PDF');
        }
      }*/
+  }
+
+
+  @Patch('pagar/:id')
+  async pagarFactura(@Param('id') id: string) {
+    try {
+      // Convierte el ID a número y llama al servicio para pagar la factura
+      const response: ApiResponse<Factura> = await this.facturaService.pagarFactura(Number(+id));
+
+      if (response.success) {
+        // Retorna la factura actualizada en caso de éxito
+        return {
+          success: true,
+          message: 'Factura marcada como pagada exitosamente',
+          data: response.data,
+        };
+      } else {
+        // Lanza una excepción en caso de error
+        throw new HttpException(response.error || 'Error al pagar la factura', HttpStatus.BAD_REQUEST);
+      }
+    } catch (error) {
+      // Captura errores inesperados y responde con estado 500
+      throw new HttpException(error.message || 'Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
