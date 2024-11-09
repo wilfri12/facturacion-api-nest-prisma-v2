@@ -192,7 +192,6 @@ export class FacturaService {
 
               } else {
                 // Si solo se consume parte del lote
-                console.log(`El lote ${lote.id} no será consumido completamente. Cantidad restante antes de consumir: ${_cantidadRestante}`);
                 await prisma.loteProducto.update({
                   where: { id: lote.id },
                   data: { cantidadRestante: lote.cantidadRestante - _cantidadRestante },

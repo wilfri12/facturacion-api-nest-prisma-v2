@@ -15,7 +15,6 @@ export class CompraController {
             return compra;
 
         } catch (error) {
-            console.log(error);
             return { success: false, error: error.message }
         }
     }

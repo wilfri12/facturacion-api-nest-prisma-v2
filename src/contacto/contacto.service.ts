@@ -34,7 +34,9 @@ export class ContactoService {
 
   async findAllContacto(): Promise<ApiResponse<Contacto[]>> {
     try {
-      const contactos = await this.prisma.contacto.findMany();
+      const contactos = await this.prisma.contacto.findMany({
+        orderBy:{id: 'desc'}
+      });
       return { success: true, data: contactos };
     } catch (error: any) {
       throw error;

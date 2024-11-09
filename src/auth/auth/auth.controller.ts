@@ -9,8 +9,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() authPayload: AuthPayLoadDTO) {
-    console.log(authPayload);
-    
     return this.authService.validatedUser(authPayload);
   }
 }

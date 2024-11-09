@@ -21,8 +21,6 @@ export class ClienteController {
   @Get('/:identificacion')
   async findByDocumento(@Param('identificacion') identificacion: string): Promise<ApiResponse<Cliente>> {
     try {
-      console.log(identificacion);
-      
       const cliente = await this.clienteService.findAllCliente(identificacion);
       return cliente;
     } catch (error) {

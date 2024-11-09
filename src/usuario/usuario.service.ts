@@ -42,7 +42,11 @@ export class UsuarioService {
 
     async findAllUsuario(): Promise<ApiResponse<Usuario[]>> {
         try {
-            const usuarios = await this.pisma.usuario.findMany();
+            const usuarios = await this.pisma.usuario.findMany(
+                {
+                    orderBy:{id: 'desc'}
+                }
+            );
             return { success: true, data: usuarios };
         } catch (error: any) {
             throw error;
@@ -69,7 +73,11 @@ export class UsuarioService {
             
             return { success: true, data: usuarioUpdated };
         } catch (error) {
-            return { success: false, error: error };
+
+            console.error("Error al crear el usuario:", error);
+
+        // Retorna una respuesta de error con el mensaje de error específico
+        return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
         }
     }
     

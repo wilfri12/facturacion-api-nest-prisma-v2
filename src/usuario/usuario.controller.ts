@@ -11,8 +11,14 @@ export class UsuarioController {
   @Post()
   async create(@Body() data: UsuarioDto): Promise<ApiResponse<Usuario>> {
     try {
-      const usuario = await this.usuarioService.createUsuario(data);
-      return usuario;
+      const response = await this.usuarioService.createUsuario(data);
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+        };
+        
+      }
     } catch (error) {
       return { success: false, error: error.message }
     }
@@ -28,7 +34,6 @@ export class UsuarioController {
     }
   }
 
-
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -37,7 +42,4 @@ export class UsuarioController {
     const response = await this.usuarioService.update(+id, UpdateUsuarioDto);
     return response;
   }
-
-
-
 }
