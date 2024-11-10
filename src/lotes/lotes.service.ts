@@ -41,7 +41,7 @@ export class LotesService {
               }
             }
           }, orderBy: {
-            fechaEntrada: 'desc',
+            id: 'desc',
           }, skip: (pageNumber - 1) * pageSizeNumber,
           take: pageSizeNumber,
         }),

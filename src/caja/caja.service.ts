@@ -117,7 +117,7 @@ export class CajaService {
 
       const historial = await this.prisma.historialCaja.findMany({
         orderBy: {
-          createdAt: 'desc',
+          id: 'desc',
         }
       });
 
@@ -162,7 +162,7 @@ export class CajaService {
             estado: EstadoCaja.ABIERTA,
           },
           orderBy: {
-            createdAt: 'desc', // Ordenar por la fecha más reciente
+            id: 'desc', // Ordenar por la fecha más reciente
           },
         });
 

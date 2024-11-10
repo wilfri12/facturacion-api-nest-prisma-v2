@@ -22,7 +22,7 @@ export class MovimientoService {
             }
           }
         }, orderBy: {
-          createdAt: ('desc')
+          id: ('desc')
         }
         
       });

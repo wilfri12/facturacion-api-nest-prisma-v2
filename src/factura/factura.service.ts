@@ -365,7 +365,7 @@ export class FacturaService {
             },
           },
           orderBy: {
-            createdAt: 'desc'
+            id: 'desc'
           },
           skip: (pageNumber - 1) * pageSizeNumber,
           take: pageSizeNumber,
