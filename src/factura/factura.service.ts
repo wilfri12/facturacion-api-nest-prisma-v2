@@ -5,7 +5,7 @@ import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
 import { Estado, EstadoProducto, Factura, MetodoPago } from '@prisma/client';
 import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
-import { GetLocalDate } from 'src/utility/getLocalDate';
+import { GetLocalDate, GetLocalDate2 } from 'src/utility/getLocalDate';
 import { PrinterService } from 'src/printer/printer.service';
 import { facturaReport } from 'report/factura.report';
 import { FacturaInterface } from 'src/interface/factura.interface';
@@ -58,8 +58,8 @@ export class FacturaService {
       const usuarioIdNumber = parseInt(usuarioId.toString());
       const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
       const cajaIdNumber = cajaId ? cajaId : 1; //Aqui si el id de la caja no se envia, se pone la caja uno por defecto.
-      const createdAt = GetLocalDate();
-      const updatedAt = GetLocalDate();
+      const createdAt = GetLocalDate2();
+      const updatedAt = GetLocalDate2();
       const estadoFactura = metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
 
 
@@ -183,7 +183,7 @@ export class FacturaService {
                     where: { id: detalle.productoId },
                     data: {
                       precio: siguienteLote.precioVenta,
-                      updatedAt: GetLocalDate(),
+                      updatedAt: GetLocalDate2(),
                     },
                   });
                 } else {
@@ -243,7 +243,7 @@ export class FacturaService {
               where: { id: detalle.productoId },
               data: {
                 stock: nuevoStock,
-                updatedAt: GetLocalDate(),
+                updatedAt: GetLocalDate2(),
                 estado: estadoProducto,
               },
             });
@@ -255,7 +255,7 @@ export class FacturaService {
                   where: { id: detalle.productoId },
                   data: {
                     precio: siguienteLote.precioVenta,
-                    updatedAt: GetLocalDate(),
+                    updatedAt: GetLocalDate2(),
                   },
                 });
               }
@@ -272,7 +272,7 @@ export class FacturaService {
               itebisTotal: totalItebis,
               codigo: `FACT-${secuenciaFactura}`, // Actualiza el código de la factura con su ID
               estado: metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA,
-              updatedAt: GetLocalDate(),
+              updatedAt: GetLocalDate2(),
             },
           });
 
@@ -526,7 +526,7 @@ export class FacturaService {
         const facturaActualizada = await this.prisma.factura.update({
             data: { 
                 estado: Estado.PAGADA, 
-                updatedAt: GetLocalDate() 
+                updatedAt: GetLocalDate2() 
             },
             where: { id }
         });
