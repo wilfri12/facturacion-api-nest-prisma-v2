@@ -108,7 +108,7 @@ CREATE TABLE `Usuario` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nombreUsuario` VARCHAR(50) NOT NULL,
     `password` VARCHAR(100) NOT NULL,
-    `contactoId` INTEGER NOT NULL,
+    `contactoId` INTEGER NULL,
     `role` ENUM('ADMIN', 'EMPLEADO', 'USUARIO', 'GERENTE') NOT NULL DEFAULT 'EMPLEADO',
     `genero` ENUM('MASCULINO', 'FEMENINO') NOT NULL,
     `empresaId` INTEGER NOT NULL,
@@ -188,6 +188,7 @@ CREATE TABLE `Compra` (
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     INDEX `Compra_createdAt_idx`(`createdAt`),
     PRIMARY KEY (`id`)
@@ -205,6 +206,7 @@ CREATE TABLE `DetalleCompra` (
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -322,13 +324,14 @@ CREATE TABLE `HistorialPrecio` (
 CREATE TABLE `MovimientoInventario` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `productoId` INTEGER NOT NULL,
-    `tipo` ENUM('ENTRADA', 'SALIDA') NOT NULL DEFAULT 'ENTRADA',
+    `tipo` ENUM('ENTRADA', 'SALIDA', 'AJUSTE') NOT NULL DEFAULT 'ENTRADA',
     `cantidad` INTEGER NOT NULL,
     `descripcion` VARCHAR(100) NULL,
     `usuarioId` INTEGER NOT NULL,
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -343,6 +346,7 @@ CREATE TABLE `LoteProducto` (
     `precioVenta` DECIMAL(10, 2) NOT NULL,
     `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -453,6 +457,7 @@ CREATE TABLE `Transaccion` (
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `monto` DOUBLE NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     INDEX `Transaccion_empresaId_fecha_idx`(`empresaId`, `fecha`),
     INDEX `Transaccion_tipo_idx`(`tipo`),
@@ -470,6 +475,7 @@ CREATE TABLE `ReporteFinanciero` (
     `detalles` JSON NULL,
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `delete` BOOLEAN NOT NULL DEFAULT false,
 
     INDEX `ReporteFinanciero_empresaId_fechaInicio_fechaFin_idx`(`empresaId`, `fechaInicio`, `fechaFin`),
     PRIMARY KEY (`id`)
@@ -525,7 +531,7 @@ ALTER TABLE `ProductoAtributo` ADD CONSTRAINT `ProductoAtributo_valorAtributoId_
 ALTER TABLE `ValorAtributo` ADD CONSTRAINT `ValorAtributo_atributoId_fkey` FOREIGN KEY (`atributoId`) REFERENCES `Atributo`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Usuario` ADD CONSTRAINT `Usuario_contactoId_fkey` FOREIGN KEY (`contactoId`) REFERENCES `Contacto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Usuario` ADD CONSTRAINT `Usuario_contactoId_fkey` FOREIGN KEY (`contactoId`) REFERENCES `Contacto`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Usuario` ADD CONSTRAINT `Usuario_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
