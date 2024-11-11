@@ -253,4 +253,134 @@ export class CompraService {
         }
 
     }
+
+
+    async softDeleteCompra(compraId: number): Promise<{success?: boolean, error?: string, messaje?: string}> {
+        try {
+            await this.prisma.$transaction(async (prisma) => {
+                console.log(`Iniciando proceso de eliminado suave para la compra con ID: ${compraId}`);
+    
+                // 1. Buscar la compra para obtener información adicional (como usuarioId y empresaId)
+                const compra = await prisma.compra.findUnique({ where: { id: compraId } });
+                if (!compra) {
+                    console.log(`Compra con ID ${compraId} no encontrada`);
+                    throw new Error("Compra no encontrada");
+                }
+    
+                // 2. Marcar la compra y sus detalles como eliminados
+                console.log(`Marcando la compra con ID ${compraId} y sus detalles como eliminados`);
+                await prisma.compra.update({
+                    where: { id: compraId },
+                    data: { delete: true, updatedAt: GetLocalDate() },
+                });
+    
+                await prisma.detalleCompra.updateMany({
+                    where: { compraId },
+                    data: { delete: true, updatedAt: GetLocalDate() },
+                });
+    
+                // 3. Obtener los detalles de la compra para revertir los efectos en inventario y lotes
+                console.log(`Obteniendo detalles de la compra para revertir efectos en inventario y lotes`);
+                const detalles = await prisma.detalleCompra.findMany({
+                    where: { compraId },
+                    include: { producto: true },
+                });
+    
+                for (const detalle of detalles) {
+                    const { productoId, cantidad } = detalle;
+                    console.log(`Procesando detalle de compra: ProductoID ${productoId}, Cantidad ${cantidad}`);
+    
+                    // 4. Ajustar el stock del producto
+                    const producto = detalle.producto;
+                    const nuevoStock = producto.stock - cantidad;
+                    console.log(`Nuevo stock para ProductoID ${productoId}: ${nuevoStock}`);
+    
+                    // 5. Determinar el estado actualizado del producto
+                    let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
+                    if (nuevoStock > 0 && nuevoStock <= 10) {
+                        estadoProducto = 'LOWSTOCK';
+                    } else if (nuevoStock > 10) {
+                        estadoProducto = 'INSTOCK';
+                    }
+                    console.log(`Nuevo estado para ProductoID ${productoId}: ${estadoProducto}`);
+    
+                    await prisma.producto.update({
+                        where: { id: productoId },
+                        data: {
+                            stock: nuevoStock,
+                            estado: estadoProducto,
+                            updatedAt: GetLocalDate(),
+                        },
+                    });
+    
+                    // 6. Ajustar o eliminar los lotes creados por esta compra
+                    console.log(`Ajustando o eliminando lotes para ProductoID ${productoId}`);
+                    const lotes = await prisma.loteProducto.findMany({
+                        where: { productoId },
+                        orderBy: { fechaEntrada: 'desc' },
+                    });
+    
+                    let cantidadARevertir = cantidad;
+                    for (const lote of lotes) {
+                        if (cantidadARevertir <= 0) break;
+    
+                        if (lote.fechaEntrada.getTime() === detalle.createdAt.getTime()) {
+                            const ajuste = Math.min(lote.cantidadRestante, cantidadARevertir);
+                            console.log(`Ajustando loteID ${lote.id}: Cantidad a revertir ${ajuste}`);
+    
+                            if (ajuste === lote.cantidadRestante) {
+                                console.log(`Marcando loteID ${lote.id} como eliminado`);
+                                await prisma.loteProducto.update({
+                                    where: { id: lote.id },
+                                    data: { delete: true, updatedAt: GetLocalDate() },
+                                });
+                            } else {
+                                console.log(`Reduciendo cantidad restante en loteID ${lote.id} en ${ajuste}`);
+                                await prisma.loteProducto.update({
+                                    where: { id: lote.id },
+                                    data: {
+                                        cantidadRestante: lote.cantidadRestante - ajuste,
+                                        updatedAt: GetLocalDate(),
+                                    },
+                                });
+                            }
+    
+                            cantidadARevertir -= ajuste;
+                        }
+                    }
+    
+                    // 7. Registrar movimiento de ajuste en inventario para documentar el cambio
+                    console.log(`Registrando movimiento de ajuste en inventario para ProductoID ${productoId}`);
+                    await prisma.movimientoInventario.create({
+                        data: {
+                            productoId,
+                            tipo: 'AJUSTE',
+                            cantidad: -cantidad,
+                            descripcion: 'Ajuste por eliminación de compra',
+                            usuarioId: compra.usuarioId,
+                            empresaId: compra.empresaId,
+                            createdAt: GetLocalDate(),
+                            updatedAt: GetLocalDate(),
+                        },
+                    });
+                }
+    
+                // 8. Anular la transacción financiera asociada
+                console.log(`Anulando la transacción financiera asociada a la compra con ID ${compraId}`);
+                await prisma.transaccion.updateMany({
+                    where: { compraId },
+                    data: { delete: true },
+                });
+    
+                console.log(`Proceso de eliminado suave completado para la compra con ID ${compraId}`);
+            });
+    
+            return { success: true };
+        } catch (error) {
+            console.error("Error al realizar el eliminado suave de la compra:", error);
+            throw new Error("No se pudo completar el proceso de eliminación de la compra");
+        }
+    }
+    
+    
 }

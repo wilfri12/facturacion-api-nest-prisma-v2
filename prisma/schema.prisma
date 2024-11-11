@@ -66,6 +66,7 @@ model Categoria {
   SubCategoria SubCategoria[]
   createdAt    DateTime?      @default(now())
   updatedAt    DateTime?      @default(now()) @updatedAt
+
   @@unique([empresaId, nombre], map: "empresa_categoria_unique")
   @@index([nombre])
 }
@@ -82,7 +83,6 @@ model SubCategoria {
 
   @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
   @@index([nombre])
-
 }
 
 model Producto {
@@ -115,7 +115,6 @@ model Producto {
 
   @@index([codigo], map: "producto_codigo_idx")
   @@index([nombre])
-
 }
 
 model ProductoAtributo {
@@ -147,7 +146,7 @@ model Usuario {
   id                   Int                    @id @default(autoincrement())
   nombreUsuario        String                 @unique @db.VarChar(50)
   password             String                 @db.VarChar(100)
-  contactoId           Int                    @unique
+  contactoId           Int?                   @unique
   role                 Role                   @default(EMPLEADO)
   genero               GeneroPersona
   empresaId            Int
@@ -241,9 +240,10 @@ model Compra {
   createdAt       DateTime?       @default(now())
   updatedAt       DateTime?       @default(now()) @updatedAt
   Transaccion     Transaccion[]
+  delete          Boolean         @default(false)
 
-  @@map("Compra")
   @@index([createdAt])
+  @@map("Compra")
 }
 
 model DetalleCompra {
@@ -260,6 +260,7 @@ model DetalleCompra {
   empresa      Empresa   @relation(fields: [empresaId], references: [id])
   createdAt    DateTime? @default(now())
   updatedAt    DateTime? @default(now()) @updatedAt
+  delete       Boolean   @default(false)
 
   @@map("DetalleCompra")
 }
@@ -412,20 +413,22 @@ model MovimientoInventario {
   usuario     Usuario        @relation(fields: [usuarioId], references: [id])
   createdAt   DateTime?      @default(now())
   updatedAt   DateTime?      @default(now()) @updatedAt
+  delete      Boolean        @default(false)
 }
 
 //Este modelo contendrá los datos del lote, como la cantidad y el precio de compra
 model LoteProducto {
-  id           Int       @id @default(autoincrement())
-  productoId   Int
-  cantidad     Int
-  cantidadRestante     Int?
-  empresaId    Int
-  precioVenta  Decimal   @db.Decimal(10, 2)
-  fechaEntrada DateTime  @default(now())
-  updatedAt    DateTime? @default(now()) @updatedAt
-  producto     Producto  @relation(fields: [productoId], references: [id])
-  empresa      Empresa   @relation(fields: [empresaId], references: [id])
+  id               Int       @id @default(autoincrement())
+  productoId       Int
+  cantidad         Int
+  cantidadRestante Int?
+  empresaId        Int
+  precioVenta      Decimal   @db.Decimal(10, 2)
+  fechaEntrada     DateTime  @default(now())
+  updatedAt        DateTime? @default(now()) @updatedAt
+  producto         Producto  @relation(fields: [productoId], references: [id])
+  empresa          Empresa   @relation(fields: [empresaId], references: [id])
+  delete           Boolean   @default(false)
 }
 
 //Sstema de Cajas
@@ -442,6 +445,7 @@ model Caja {
   historialCajas HistorialCaja[]
   facturas       Factura[]
   Usuario        Usuario?        @relation(fields: [usuarioId], references: [id])
+
   @@index([nombre])
 }
 
@@ -534,34 +538,37 @@ model RolPermiso {
 //Agregar un modelo para almacenar reportes generados de ventas y compras.
 
 model Transaccion {
-  id          Int             @id @default(autoincrement())
-  empresaId   Int
-  compraId    Int?
-  facturaId   Int?
-  tipo        TipoTransaccion
-  fecha       DateTime        @default(now())
-  monto       Float // Total de la transacción
-  empresa     Empresa         @relation(fields: [empresaId], references: [id])
-  compra      Compra?         @relation(fields: [compraId], references: [id])
-  factura     Factura?        @relation(fields: [facturaId], references: [id])
-  createdAt  DateTime? @default(now())
+  id        Int             @id @default(autoincrement())
+  empresaId Int
+  compraId  Int?
+  facturaId Int?
+  tipo      TipoTransaccion
+  fecha     DateTime        @default(now())
+  monto     Float // Total de la transacción
+  empresa   Empresa         @relation(fields: [empresaId], references: [id])
+  compra    Compra?         @relation(fields: [compraId], references: [id])
+  factura   Factura?        @relation(fields: [facturaId], references: [id])
+  createdAt DateTime?       @default(now())
+  delete           Boolean   @default(false)
+
 
   @@index([empresaId, fecha])
   @@index([tipo])
- 
 }
 
 model ReporteFinanciero {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   fechaInicio  DateTime
   fechaFin     DateTime
-  totalVentas  Float    @default(0.0)
-  totalCompras Float    @default(0.0)
-  ganancia     Float    @default(0.0)
+  totalVentas  Float     @default(0.0)
+  totalCompras Float     @default(0.0)
+  ganancia     Float     @default(0.0)
   detalles     Json? // Desglose adicional
   empresaId    Int
-  empresa      Empresa  @relation(fields: [empresaId], references: [id])
-  createdAt  DateTime? @default(now())
+  empresa      Empresa   @relation(fields: [empresaId], references: [id])
+  createdAt    DateTime? @default(now())
+  delete           Boolean   @default(false)
+
 
   @@index([empresaId, fechaInicio, fechaFin])
 }
@@ -600,6 +607,7 @@ enum TipoTransaccion {
 enum TipoMovimiento {
   ENTRADA
   SALIDA
+  AJUSTE
 }
 
 enum TipoDescuento {

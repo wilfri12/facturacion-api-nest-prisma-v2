@@ -8,8 +8,13 @@ export class SubcategoriaController {
   constructor(private readonly subcategoriaService: SubcategoriaService) {}
 
   @Post()
-  create(@Body() createSubcategoriaDto: CreateSubcategoriaDto) {
-    return this.subcategoriaService.create(createSubcategoriaDto);
+  async create(@Body() data: CreateSubcategoriaDto[]) {
+    try {
+      const subcategorias = await this.subcategoriaService.create(data);
+      return subcategorias;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   @Get()

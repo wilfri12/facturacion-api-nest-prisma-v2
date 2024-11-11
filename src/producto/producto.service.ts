@@ -62,7 +62,7 @@ export class ProductoService {
                 // Actualiza el código del producto con la secuencia
                 await prisma.producto.update({
                     where: { id: productoCreated.id },
-                    data: { codigo: codigo + secuenciaProducto },
+                    data: { codigo: (codigo + secuenciaProducto).toUpperCase() },
                 });
     
                 // Retornar el producto creado

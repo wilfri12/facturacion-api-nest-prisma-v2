@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ContactoService } from './contacto.service';
 import { Contacto } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
-import { ContactoDto } from './DTO/contacto.dto';
+import { ContactoDto, UpdateContactoDto } from './DTO/contacto.dto';
 
 @Controller('api/v1/contacto')
 export class ContactoController {
@@ -25,6 +25,19 @@ export class ContactoController {
       return contactos;
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateContactoDto: UpdateContactoDto,
+  ) {
+    try {
+      const response = await this.contactoService.update(+id, updateContactoDto);
+    return response;
+    } catch (error) {
+      return {success: false, error: error}
     }
   }
 }

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ContactoDto } from './DTO/contacto.dto';
+import { ContactoDto, UpdateContactoDto } from './DTO/contacto.dto';
 import { ApiResponse } from 'src/interface';
 import { Contacto } from '@prisma/client';
 import { GetLocalDate } from 'src/utility/getLocalDate';
@@ -40,6 +40,25 @@ export class ContactoService {
       return { success: true, data: contactos };
     } catch (error: any) {
       throw error;
+    }
+  }
+
+
+  async update(id: number, updateContactoDto: UpdateContactoDto): Promise<ApiResponse<Contacto>> {
+    try {
+      const contacto = await this.prisma.contacto.findUnique({ where: { id } });
+
+      if (!contacto) {
+        throw new NotFoundException(`Contacto con ID ${id} no encontrado`);
+      }
+
+      const updatedContacto = await this.prisma.contacto.update({
+        where: { id },
+        data: updateContactoDto,
+      });
+      return { success: true, data: updatedContacto };
+    } catch (error) {
+        throw error;
     }
   }
 }

@@ -11,7 +11,7 @@ export class UsuarioDto {
     @IsEnum(GeneroPersona)
     genero: GeneroPersona;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
     contactoId: number;
 

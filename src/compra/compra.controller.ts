@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { Compra } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { CompraService } from './compra.service';
@@ -47,4 +47,31 @@ export class CompraController {
             return { success: false, error: error.message }
         }
     }
+
+    @Delete(':compraId')
+  async softDeleteCompra(
+    @Param('compraId') compraId: string
+  ) {
+    try {
+      console.log(`Iniciando proceso de eliminación suave para la compra con ID: ${compraId}`);
+      
+      // Llamamos al servicio que maneja la lógica de eliminación suave
+      const result = await this.compraService.softDeleteCompra(+compraId);
+
+      console.log(`Eliminación suave de compra con ID ${compraId} completada exitosamente`);
+      return {
+        success: true,
+        messaje: `Compra con ID ${compraId} eliminada suavemente.`,
+      };
+    } catch (error) {
+      console.error(`Error al eliminar la compra con ID ${compraId}:`, error);
+      
+      // En caso de error, retornar una respuesta con código 500
+      return {
+        success: false,
+        error: error,
+        message: `No se pudo completar el proceso de eliminación suave de la compra con ID ${compraId}.`,
+      };
+    }
+  }
 }

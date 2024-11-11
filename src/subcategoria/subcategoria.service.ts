@@ -11,21 +11,21 @@ export class SubcategoriaService {
   constructor(private readonly prisma: PrismaService){}
  
 
-  async create(data: CreateSubcategoriaDto): Promise<ApiResponse<SubCategoria>> {
-    const {categoriaId, nombre} = data;
-
-    const subcategoriaData = {
+  async create(data: CreateSubcategoriaDto[]) {
+    // Supongo que 'data' es un array de categorías
+    const subcategoriasData = data.map(({ categoriaId, nombre }) => ({
       categoriaId,
       nombre,
       createdAt: GetLocalDate(),
       updatedAt: GetLocalDate(),
-    };
+    }));
 
     try {
-      const subcategoria = await this.prisma.subCategoria.create({
-        data: subcategoriaData,
+      // Usamos createMany correctamente con un array de datos
+      const subcategorias = await this.prisma.subCategoria.createMany({
+        data: subcategoriasData,
       });
-      return { success: true, data: subcategoria };
+      return { success: true, data: subcategorias };
     } catch (error: any) {
       throw error;
     }
