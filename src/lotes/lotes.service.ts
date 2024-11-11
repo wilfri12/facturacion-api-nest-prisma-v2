@@ -31,7 +31,9 @@ export class LotesService {
             AND: [
                 startDateTime ? { fechaEntrada: { gte: startDateTime } } : {},
                 endDateTime ? { fechaEntrada: { lte: endDateTime } } : {},
-            ]
+            ],
+            
+            delete:false,
         },
           include: {
             producto: {

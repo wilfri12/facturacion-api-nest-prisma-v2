@@ -194,7 +194,8 @@ export class CompraService {
                             AND: [
                                 startDateTime ? { createdAt: { gte: startDateTime } } : {},
                                 endDateTime ? { createdAt: { lte: endDateTime } } : {},
-                            ]
+                            ],
+                            delete: false,
                         },
                         include: {
                             

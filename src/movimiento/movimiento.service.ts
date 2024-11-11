@@ -9,6 +9,7 @@ export class MovimientoService {
   async findAll(): Promise<ApiResponse<Movimiento[]>> {
     try {
       const movimientos = await this.prisma.movimientoInventario.findMany({
+        where: {delete: false},
         include:{
           producto:{
             select:{
