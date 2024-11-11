@@ -9,27 +9,31 @@ import { GetLocalDate } from 'src/utility/getLocalDate';
 export class CategoriaService {
   constructor(private prisma: PrismaService) { }
 
-  async createCategoria(data: CategoriaDto): Promise<ApiResponse<Categoria>> {
-    const { empresaId, nombre } = data;
-    const categoriaData = {
+  async createCategoria(data: CategoriaDto[]) {
+    // Supongo que 'data' es un array de categorías
+    const categoriasData = data.map(({ empresaId, nombre }) => ({
       empresaId,
       nombre,
       createdAt: GetLocalDate(),
       updatedAt: GetLocalDate(),
-    };
+    }));
 
     try {
-      const categoria = await this.prisma.categoria.create({ data: categoriaData });
-      return { success: true, data: categoria };
+      // Usamos createMany correctamente con un array de datos
+      const categorias = await this.prisma.categoria.createMany({
+        data: categoriasData,
+      });
+      return { success: true, data: categorias };
     } catch (error: any) {
       throw error;
     }
   }
 
+
   async findAllCategoria(): Promise<ApiResponse<Categoria[]>> {
     try {
       const categorias = await this.prisma.categoria.findMany({
-        include:{
+        include: {
           SubCategoria: true
         }
       });

@@ -6,13 +6,13 @@ import { ApiResponse } from 'src/interface';
 
 @Controller('api/v1/categoria')
 export class CategoriaController {
-  constructor(private readonly categoriaService: CategoriaService) {}
+  constructor(private readonly categoriaService: CategoriaService) { }
 
   @Post()
-  async create(@Body() data: CategoriaDto): Promise<ApiResponse<Categoria>> {
+  async create(@Body() data: CategoriaDto[]) {
     try {
-      const categoria = await this.categoriaService.createCategoria(data);
-      return categoria;
+      const categorias = await this.categoriaService.createCategoria(data);
+      return categorias;
     } catch (error) {
       return { success: false, error: error.message };
     }
