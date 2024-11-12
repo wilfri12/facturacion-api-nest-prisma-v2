@@ -1,10 +1,8 @@
 import { Injectable, NotAcceptableException } from '@nestjs/common';
-import { DetalleFacturaService } from 'src/shop/detalle-factura/detalle-factura.service';
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
-import { Estado, EstadoProducto, Factura, MetodoPago } from '@prisma/client';
-import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
+import { DetalleFactura, Estado, EstadoProducto, Factura, MetodoPago } from '@prisma/client';
 import { PrinterService } from 'src/printer/printer.service';
 import { facturaReport } from 'report/factura.report';
 import { FacturaInterface } from 'src/interface/factura.interface';
@@ -25,7 +23,7 @@ export class FacturaService {
  * @returns Una respuesta que indica si la factura se creó correctamente o si ocurrió un error.
  */
   async createFactura(
-    data: FacturaDto & { detalles: DetalleFacturaDto[] },
+    data: FacturaDto & { detalles: DetalleFactura[] },
   ): Promise<ApiResponse<Factura>> {
     try {
       let subtotalTotal = 0;

@@ -1,9 +1,8 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
-import { Estado, Factura } from '@prisma/client';
+import { DetalleFactura, Estado, Factura } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
-import { DetalleFacturaDto } from 'src/shop/detalle-factura/DTO/detalle-factura.dto';
 import { Response } from 'express';
 import { AuthGuard } from 'src/auth/auth/auth.guard';
 
@@ -12,7 +11,7 @@ export class FacturaController {
   constructor(private readonly facturaService: FacturaService) { }
 
   @Post()
-  async create(@Body() data: FacturaDto & { detalles: DetalleFacturaDto[] }): Promise<ApiResponse<Factura>> {
+  async create(@Body() data: FacturaDto & { detalles: DetalleFactura[] }): Promise<ApiResponse<Factura>> {
     try {
       const factura = await this.facturaService.createFactura(data);
       return factura;
