@@ -48,29 +48,30 @@ export class CompraController {
         }
     }
 
-    @Delete(':compraId')
+    @Delete('transaccion/:id')
   async softDeleteCompra(
-    @Param('compraId') compraId: string
+    @Param('id') id: string
   ) {
     try {
-      console.log(`Iniciando proceso de eliminación suave para la compra con ID: ${compraId}`);
+      console.log(`Iniciando proceso de eliminación suave para la compra con ID: ${id}`);
       
       // Llamamos al servicio que maneja la lógica de eliminación suave
-      const result = await this.compraService.softDeleteCompra(+compraId);
+      const result = await this.compraService.deleteTransaccionCompra(+id);
 
-      console.log(`Eliminación suave de compra con ID ${compraId} completada exitosamente`);
+      console.log(`Eliminación suave de compra con ID ${id} completada exitosamente`);
       return {
         success: true,
-        messaje: `Compra con ID ${compraId} eliminada suavemente.`,
+        messaje: `Compra con ID ${id} eliminada suavemente.`,
+        response: result
       };
     } catch (error) {
-      console.error(`Error al eliminar la compra con ID ${compraId}:`, error);
+      console.error(`Error al eliminar la compra con ID ${id}:`, error);
       
       // En caso de error, retornar una respuesta con código 500
       return {
         success: false,
         error: error,
-        message: `No se pudo completar el proceso de eliminación suave de la compra con ID ${compraId}.`,
+        message: `No se pudo completar el proceso de eliminación suave de la compra con ID ${id}.`,
       };
     }
   }

@@ -50,9 +50,11 @@ model Empresa {
   updatedAt             DateTime?               @default(now()) @updatedAt
   LoteProducto          LoteProducto[]
   Caja                  Caja[]
-  Transaccion           Transaccion[]
   ReporteFinanciero     ReporteFinanciero[]
   GastosOperativos      GastosOperativos[]
+  TransaccionCompra     TransaccionCompra[]
+  TransaccionVenta      TransaccionVenta[]
+  Transaccion           Transaccion[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
@@ -162,6 +164,8 @@ model Usuario {
   DevolucionCliente    DevolucionCliente[]
   MovimientosCaja      MovimientosCaja[]
   Cajas                Caja[]
+  TransaccionCompra    TransaccionCompra[]
+  TransaccionVenta     TransaccionVenta[]
 
   @@unique([empresaId, nombreUsuario], map: "empresa_usuario_unique")
 }
@@ -204,6 +208,7 @@ model Factura {
   createdAt           DateTime?             @default(now())
   updatedAt           DateTime?             @default(now()) @updatedAt
   Caja                Caja?                 @relation(fields: [cajaId], references: [id])
+  TransaccionVenta    TransaccionVenta[]
   Transaccion         Transaccion[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
@@ -211,56 +216,62 @@ model Factura {
 }
 
 model DetalleFactura {
-  id             Int       @id @default(autoincrement())
-  facturaId      Int
-  productoId     Int
-  cantidad       Int
-  precioUnitario Decimal?  @default(0.00) @db.Decimal(10, 2)
-  importe        Decimal   @default(0.00) @db.Decimal(10, 2)
-  itebis         Decimal   @default(0.00) @db.Decimal(10, 2)
-  empresaId      Int
-  factura        Factura   @relation(fields: [facturaId], references: [id])
-  empresa        Empresa   @relation(fields: [empresaId], references: [id])
-  producto       Producto  @relation(fields: [productoId], references: [id])
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @default(now()) @updatedAt
+  id                 Int               @id @default(autoincrement())
+  facturaId          Int
+  productoId         Int
+  cantidad           Int
+  precioUnitario     Decimal?          @default(0.00) @db.Decimal(10, 2)
+  importe            Decimal           @default(0.00) @db.Decimal(10, 2)
+  itebis             Decimal           @default(0.00) @db.Decimal(10, 2)
+  empresaId          Int
+  factura            Factura           @relation(fields: [facturaId], references: [id])
+  empresa            Empresa           @relation(fields: [empresaId], references: [id])
+  producto           Producto          @relation(fields: [productoId], references: [id])
+  createdAt          DateTime?         @default(now())
+  updatedAt          DateTime?         @default(now()) @updatedAt
+  TransaccionVenta   TransaccionVenta? @relation(fields: [transaccionVentaId], references: [id])
+  transaccionVentaId Int?
 
   @@index([facturaId, productoId], map: "detalle_factura_idx")
 }
 
 model Compra {
-  id              Int             @id @default(autoincrement())
-  total           Decimal         @default(0.00) @db.Decimal(10, 2)
-  usuarioId       Int
-  empresaId       Int
-  moneda          TipoMoneda      @default(DOP)
-  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
-  empresa         Empresa         @relation(fields: [empresaId], references: [id])
-  detallesCompras DetalleCompra[]
-  createdAt       DateTime?       @default(now())
-  updatedAt       DateTime?       @default(now()) @updatedAt
-  Transaccion     Transaccion[]
-  delete          Boolean         @default(false)
+  id                Int                 @id @default(autoincrement())
+  total             Decimal             @default(0.00) @db.Decimal(10, 2)
+  usuarioId         Int
+  empresaId         Int
+  moneda            TipoMoneda          @default(DOP)
+  usuario           Usuario             @relation(fields: [usuarioId], references: [id])
+  empresa           Empresa             @relation(fields: [empresaId], references: [id])
+  detallesCompras   DetalleCompra[]
+  createdAt         DateTime?           @default(now())
+  updatedAt         DateTime?           @default(now()) @updatedAt
+  delete            Boolean             @default(false)
+  TransaccionCompra TransaccionCompra[]
+  Transaccion       Transaccion[]
+  LoteProducto      LoteProducto[]
 
   @@index([createdAt])
   @@map("Compra")
 }
 
 model DetalleCompra {
-  id           Int       @id @default(autoincrement())
-  productoId   Int?
-  cantidad     Int
-  precioCompra Decimal   @db.Decimal(10, 2)
-  precioVenta  Decimal   @db.Decimal(10, 2)
-  subtotal     Decimal   @db.Decimal(10, 2)
-  compraId     Int?
-  empresaId    Int
-  Compra       Compra?   @relation(fields: [compraId], references: [id])
-  producto     Producto? @relation(fields: [productoId], references: [id])
-  empresa      Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt    DateTime? @default(now())
-  updatedAt    DateTime? @default(now()) @updatedAt
-  delete       Boolean   @default(false)
+  id                  Int                @id @default(autoincrement())
+  productoId          Int?
+  cantidad            Int
+  precioCompra        Decimal            @db.Decimal(10, 2)
+  precioVenta         Decimal            @db.Decimal(10, 2)
+  subtotal            Decimal            @db.Decimal(10, 2)
+  compraId            Int?
+  empresaId           Int
+  Compra              Compra?            @relation(fields: [compraId], references: [id])
+  producto            Producto?          @relation(fields: [productoId], references: [id])
+  empresa             Empresa            @relation(fields: [empresaId], references: [id])
+  createdAt           DateTime?          @default(now())
+  updatedAt           DateTime?          @default(now()) @updatedAt
+  delete              Boolean            @default(false)
+  TransaccionCompra   TransaccionCompra? @relation(fields: [transaccionCompraId], references: [id])
+  transaccionCompraId Int?
 
   @@map("DetalleCompra")
 }
@@ -418,17 +429,24 @@ model MovimientoInventario {
 
 //Este modelo contendrá los datos del lote, como la cantidad y el precio de compra
 model LoteProducto {
-  id               Int       @id @default(autoincrement())
-  productoId       Int
-  cantidad         Int
-  cantidadRestante Int?
-  empresaId        Int
-  precioVenta      Decimal   @db.Decimal(10, 2)
-  fechaEntrada     DateTime  @default(now())
-  updatedAt        DateTime? @default(now()) @updatedAt
-  producto         Producto  @relation(fields: [productoId], references: [id])
-  empresa          Empresa   @relation(fields: [empresaId], references: [id])
-  delete           Boolean   @default(false)
+  id                  Int                @id @default(autoincrement())
+  productoId          Int
+  cantidad            Int
+  cantidadRestante    Int?
+  empresaId           Int
+  compraId            Int
+  compra              Compra             @relation(fields: [compraId], references: [id])
+  precioVenta         Decimal            @db.Decimal(10, 2)
+  fechaEntrada        DateTime           @default(now())
+  updatedAt           DateTime?          @default(now()) @updatedAt
+  producto            Producto           @relation(fields: [productoId], references: [id])
+  empresa             Empresa            @relation(fields: [empresaId], references: [id])
+  estado              EstadoLote @default(PENDIENTE)
+  delete              Boolean            @default(false)
+  TransaccionCompra   TransaccionCompra? @relation(fields: [transaccionCompraId], references: [id])
+  transaccionCompraId Int?
+  TransaccionVenta    TransaccionVenta?  @relation(fields: [transaccionVentaId], references: [id])
+  transaccionVentaId  Int?
 }
 
 //Sstema de Cajas
@@ -534,9 +552,6 @@ model RolPermiso {
   @@unique([rol, permisoId], map: "rol_permiso_unique")
 }
 
-//Reporte de Ventas y Compras
-//Agregar un modelo para almacenar reportes generados de ventas y compras.
-
 model Transaccion {
   id        Int             @id @default(autoincrement())
   empresaId Int
@@ -549,11 +564,46 @@ model Transaccion {
   compra    Compra?         @relation(fields: [compraId], references: [id])
   factura   Factura?        @relation(fields: [facturaId], references: [id])
   createdAt DateTime?       @default(now())
-  delete           Boolean   @default(false)
-
+  delete    Boolean         @default(false)
 
   @@index([empresaId, fecha])
   @@index([tipo])
+}
+
+model TransaccionCompra {
+  id                   Int               @id @default(autoincrement())
+  compra               Compra            @relation(fields: [compraId], references: [id])
+  compraId             Int
+  detallesCompra       DetalleCompra[]
+  lotes                LoteProducto[]
+  usuario              Usuario           @relation(fields: [usuarioId], references: [id])
+  usuarioId            Int
+  empresa              Empresa           @relation(fields: [empresaId], references: [id])
+  empresaId            Int
+  estado               EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
+  motivoAnulacion      String? // Razón de la anulación (si aplica)
+  fechaAnulacion       DateTime? // Fecha en que se anuló la transacción
+  idTransaccionAnulada Int? // ID de la transacción original que está anulada (si aplica)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+}
+
+model TransaccionVenta {
+  id                   Int               @id @default(autoincrement())
+  factura              Factura           @relation(fields: [facturaId], references: [id])
+  facturaId            Int
+  detalleFactura       DetalleFactura[]
+  lotes                LoteProducto[]
+  usuario              Usuario           @relation(fields: [usuarioId], references: [id])
+  usuarioId            Int
+  empresa              Empresa           @relation(fields: [empresaId], references: [id])
+  empresaId            Int
+  estado               EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
+  motivoAnulacion      String? // Razón de la anulación (si aplica)
+  fechaAnulacion       DateTime? // Fecha en que se anuló la transacción
+  idTransaccionAnulada Int? // ID de la transacción original que está anulada (si aplica)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 }
 
 model ReporteFinanciero {
@@ -567,8 +617,7 @@ model ReporteFinanciero {
   empresaId    Int
   empresa      Empresa   @relation(fields: [empresaId], references: [id])
   createdAt    DateTime? @default(now())
-  delete           Boolean   @default(false)
-
+  delete       Boolean   @default(false)
 
   @@index([empresaId, fechaInicio, fechaFin])
 }
@@ -684,4 +733,17 @@ enum tipoMovimientoCaja {
   VENTA
   INICIAL
   CIERRE
+}
+
+// Enum para el estado de las transacciones
+enum EstadoTransaccion {
+  ACTIVA
+  ANULADA
+  PENDIENTE
+}
+
+
+enum EstadoLote {
+  PENDIENTE
+  ACTIVO
 }

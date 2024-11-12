@@ -174,6 +174,7 @@ CREATE TABLE `DetalleFactura` (
     `empresaId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `transaccionVentaId` INTEGER NULL,
 
     INDEX `detalle_factura_idx`(`facturaId`, `productoId`),
     PRIMARY KEY (`id`)
@@ -207,6 +208,7 @@ CREATE TABLE `DetalleCompra` (
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `delete` BOOLEAN NOT NULL DEFAULT false,
+    `transaccionCompraId` INTEGER NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -343,10 +345,14 @@ CREATE TABLE `LoteProducto` (
     `cantidad` INTEGER NOT NULL,
     `cantidadRestante` INTEGER NULL,
     `empresaId` INTEGER NOT NULL,
+    `compraId` INTEGER NOT NULL,
     `precioVenta` DECIMAL(10, 2) NOT NULL,
     `fechaEntrada` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `estado` ENUM('PENDIENTE', 'ACTIVO') NOT NULL DEFAULT 'PENDIENTE',
     `delete` BOOLEAN NOT NULL DEFAULT false,
+    `transaccionCompraId` INTEGER NULL,
+    `transaccionVentaId` INTEGER NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -465,6 +471,38 @@ CREATE TABLE `Transaccion` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `TransaccionCompra` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `compraId` INTEGER NOT NULL,
+    `usuarioId` INTEGER NOT NULL,
+    `empresaId` INTEGER NOT NULL,
+    `estado` ENUM('ACTIVA', 'ANULADA', 'PENDIENTE') NOT NULL DEFAULT 'ACTIVA',
+    `motivoAnulacion` VARCHAR(191) NULL,
+    `fechaAnulacion` DATETIME(3) NULL,
+    `idTransaccionAnulada` INTEGER NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TransaccionVenta` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `facturaId` INTEGER NOT NULL,
+    `usuarioId` INTEGER NOT NULL,
+    `empresaId` INTEGER NOT NULL,
+    `estado` ENUM('ACTIVA', 'ANULADA', 'PENDIENTE') NOT NULL DEFAULT 'ACTIVA',
+    `motivoAnulacion` VARCHAR(191) NULL,
+    `fechaAnulacion` DATETIME(3) NULL,
+    `idTransaccionAnulada` INTEGER NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `ReporteFinanciero` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `fechaInicio` DATETIME(3) NOT NULL,
@@ -564,6 +602,9 @@ ALTER TABLE `DetalleFactura` ADD CONSTRAINT `DetalleFactura_empresaId_fkey` FORE
 ALTER TABLE `DetalleFactura` ADD CONSTRAINT `DetalleFactura_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `DetalleFactura` ADD CONSTRAINT `DetalleFactura_transaccionVentaId_fkey` FOREIGN KEY (`transaccionVentaId`) REFERENCES `TransaccionVenta`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Compra` ADD CONSTRAINT `Compra_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -577,6 +618,9 @@ ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_productoId_fkey` FOREI
 
 -- AddForeignKey
 ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `DetalleCompra` ADD CONSTRAINT `DetalleCompra_transaccionCompraId_fkey` FOREIGN KEY (`transaccionCompraId`) REFERENCES `TransaccionCompra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Descuento` ADD CONSTRAINT `Descuento_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -651,10 +695,19 @@ ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_empresaI
 ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_productoId_fkey` FOREIGN KEY (`productoId`) REFERENCES `Producto`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_transaccionCompraId_fkey` FOREIGN KEY (`transaccionCompraId`) REFERENCES `TransaccionCompra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_transaccionVentaId_fkey` FOREIGN KEY (`transaccionVentaId`) REFERENCES `TransaccionVenta`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Caja` ADD CONSTRAINT `Caja_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -700,6 +753,24 @@ ALTER TABLE `Transaccion` ADD CONSTRAINT `Transaccion_compraId_fkey` FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE `Transaccion` ADD CONSTRAINT `Transaccion_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionCompra` ADD CONSTRAINT `TransaccionCompra_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionCompra` ADD CONSTRAINT `TransaccionCompra_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionCompra` ADD CONSTRAINT `TransaccionCompra_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionVenta` ADD CONSTRAINT `TransaccionVenta_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionVenta` ADD CONSTRAINT `TransaccionVenta_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransaccionVenta` ADD CONSTRAINT `TransaccionVenta_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `ReporteFinanciero` ADD CONSTRAINT `ReporteFinanciero_empresaId_fkey` FOREIGN KEY (`empresaId`) REFERENCES `Empresa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

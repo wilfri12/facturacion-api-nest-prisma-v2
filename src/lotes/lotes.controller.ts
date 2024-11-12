@@ -43,24 +43,38 @@ export class LotesController {
           pageSize
         }
       );
-      
+
     } catch (error) {
       return { success: false, error: error.message }
     }
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.lotesService.findOne(+id);
+  @Get('activar/:id')
+  async activarLote(@Param('id') id: string) {
+    try {
+      // Llamada al servicio para activar el lote
+      const result = await this.lotesService.activarLote(+id);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: result.message,
+        };
+      } else {
+        return {
+          success: false,
+          message: result.message || result.error,
+        };
+      }
+    } catch (error) {
+      console.error('Error al activar el lote:', error);
+      return {
+        success: false,
+        message: 'Ocurrió un error al activar el lote.',
+        error: error.message || error,
+      };
+    }
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLoteDto: UpdateLoteDto) {
-    return this.lotesService.update(+id, updateLoteDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.lotesService.remove(+id);
-  }
 }

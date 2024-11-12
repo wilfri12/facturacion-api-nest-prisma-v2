@@ -3,7 +3,8 @@ import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
-import { LoteProducto } from '@prisma/client';
+import { EstadoLote, EstadoProducto, LoteProducto } from '@prisma/client';
+import { GetLocalDate } from 'src/utility/getLocalDate';
 
 @Injectable()
 export class LotesService {
@@ -72,6 +73,80 @@ export class LotesService {
       throw error;
     }
   }
+
+
+  async activarLote(id: number): Promise<{ success?: boolean; message?: string; error?: string }> {
+    try {
+        const transaction = await this.prisma.$transaction(async (prisma) => {
+            // Intentamos encontrar el lote pendiente con el producto asociado
+            const lote = await prisma.loteProducto.findUnique({
+                where: { id, estado: EstadoLote.PENDIENTE },
+                include: { producto: true },
+            });
+
+            if (!lote) {
+                return { success: false, message: `Lote con ID: ${id} no encontrado o ya está activado.` };
+            }
+
+            if (lote.cantidad <= 0) {
+                return { success: false, message: `La cantidad del lote no es válida.` };
+            }
+
+            const producto = lote.producto;
+            if (!producto) {
+                return { success: false, message: 'Producto asociado al lote no encontrado.' };
+            }
+
+            // Validamos si el producto tiene stock existente con un precio distinto al del lote
+            if (producto.stock > 0 && Math.abs(producto.precio.toNumber() - lote.precioVenta.toNumber()) > 0.01) {
+              return {
+                  success: false,
+                  message: `No es posible activar el lote. El producto con código ${producto.codigo} aún tiene stock disponible (${producto.stock}), y el precio de venta del nuevo lote (${lote.precioVenta}) es diferente al precio actual del producto (${producto.precio}). Para activar este lote, el stock del producto debe estar en 0, o los precios deben coincidir.`,
+              };
+          }
+          
+
+            // Activamos el lote y actualizamos su estado y fecha de actualización
+            await prisma.loteProducto.update({
+                where: { id },
+                data: { estado: EstadoLote.ACTIVO, updatedAt: GetLocalDate() },
+            });
+
+            // Calculamos el nuevo stock del producto
+            const nuevoStock = producto.stock + lote.cantidad;
+
+            // Definimos el estado del producto según el nuevo stock
+            let productoEstado: EstadoProducto = EstadoProducto.INSTOCK;
+            if (nuevoStock <= 0) {
+                productoEstado = EstadoProducto.OUTOFSTOCK;
+            } else if (nuevoStock < 10) {
+                productoEstado = EstadoProducto.LOWSTOCK;
+            }
+
+            // Actualizamos el producto con el nuevo stock, precio y estado
+            await prisma.producto.update({
+                where: { id: lote.productoId },
+                data: {
+                    stock: nuevoStock,
+                    precio: lote.precioVenta,
+                    updatedAt: GetLocalDate(),
+                    estado: productoEstado,
+                },
+            });
+
+            return { success: true, message: 'Lote activado correctamente, stock y precio actualizados.' };
+        });
+
+        return transaction;
+    } catch (error) {
+        console.error('Error al activar el lote:', error);
+        return { success: false, error: `Ocurrió un error al activar el lote: ${error.message || error}` };
+    }
+}
+
+
+
+
 
   findOne(id: number) {
     return `This action returns a #${id} lote`;
