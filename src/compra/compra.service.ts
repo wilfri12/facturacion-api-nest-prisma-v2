@@ -315,24 +315,7 @@ export class CompraService {
               });
               console.log(`Movimiento de ajuste creado para ProductoID: ${productoId}`);
       
-              // Recalcular el stock del producto
-              const nuevoStock = detalle.producto.stock - cantidad;
-              let estadoProducto: EstadoProducto = 'OUTOFSTOCK';
-              if (nuevoStock > 0 && nuevoStock <= 10) {
-                estadoProducto = 'LOWSTOCK';
-              } else if (nuevoStock > 10) {
-                estadoProducto = 'INSTOCK';
-              }
-      
-              await prisma.producto.update({
-                where: { id: productoId },
-                data: {
-                  stock: nuevoStock,
-                  estado: estadoProducto,
-                  updatedAt: GetLocalDate(),
-                },
-              });
-              console.log(`Stock actualizado para ProductoID: ${productoId}, Nuevo Stock: ${nuevoStock}, Estado: ${estadoProducto}`);
+             
       
               // Ajustar o eliminar los lotes de la compra
               let cantidadARevertir = cantidad;
