@@ -28,15 +28,15 @@ export class ProductoService {
     
         const currentDate = GetLocalDate();  // Centraliza la fecha para consistencia
         const productoData = {
-            categoriaId: parseInt(categoriaId.toString()),
-            empresaId: parseInt(empresaId.toString()),
+            categoriaId,
+            empresaId,
             estado,
             nombre,
             precio,
             stock,
             codigo,
             descripcion,
-            subCategoriaId: parseInt(subCategoriaId.toString()),
+            subCategoriaId: subCategoriaId || null,
             ubicacion,
             createdAt: currentDate,
             updatedAt: currentDate,
