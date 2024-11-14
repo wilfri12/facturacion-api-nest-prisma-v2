@@ -67,15 +67,15 @@ Planificación Financiera y de Compras: obtenerDatosVentasComprasMensuales y cal
 Cada uno de estos servicios responde a necesidades comunes en la gestión de ventas e inventario, haciéndolos coherentes y útiles para la toma de decisiones. ¿Te gustaría revisar algún servicio en detalle o necesitas ejemplos adicionales de cómo integrarlos?
 
 
+ VENTAS_DIARIAS: /ventas-diarias
+ USUARIO: /productos-sin-stock
+ USUARIO: /productos-bajo-stock
+ USUARIO: /resumen-ventas-categoria
+ USUARIO: /valor-inventario-total
+ USUARIO: /utilidad-bruta
+ USUARIO: /productos-mas-vendidos
+ USUARIO: /resumen-facturas-estado
+ USUARIO: /ventas-compras-mensuales
 
-http://localhost:8080/api/v1/reportes/ventas-diarias
-http://localhost:8080/api/v1/reportes/productos-sin-stock?pagina=1&limite=10
-http://localhost:8080/api/v1/reportes/productos-bajo-stock?umbral=5&pagina=1&limite=10
-http://localhost:8080/api/v1/reportes/resumen-ventas-categoria?periodo=semana&umbral=10
-http://localhost:8080/api/v1/reportes/valor-inventario-total
-http://localhost:8080/api/v1/reportes/utilidad-bruta?periodo=mes
-http://localhost:8080/api/v1/reportes/productos-mas-vendidos?periodo=semana&limite=5
-http://localhost:8080/api/v1/reportes/resumen-facturas-estado?year=2024
-http://localhost:8080/api/v1/reportes/ventas-compras-mensuales?year=2024
 
-
+ USUARIO: '/usuario',

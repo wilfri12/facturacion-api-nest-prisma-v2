@@ -11,6 +11,7 @@ export class ReportesService {
   // Servicio que compara ventas diarias de hoy y ayer
   async compararVentasDiarias(): Promise<ApiResponse<{ totalVentasHoy: number; cantidadVentasHoy: number; totalAyer: number; cantidadAyer: number; variacion: string }>> {
     const hoy = GetLocalDate();
+    console.log('Se ejecuto el service de comprar ventas diarias:', new Date(GetLocalDate().getTime()));
     hoy.setHours(0, 0, 0, 0);
     const ayer = new Date(hoy);
     ayer.setDate(hoy.getDate() - 1);
@@ -36,7 +37,7 @@ export class ReportesService {
         cantidadVentasHoy: ventasHoy._count.id || 0,
         totalAyer:  Number(ventasAyer._sum.total) || 0,
         cantidadAyer: ventasAyer._count.id || 0,
-        variacion: `${variacion}%`
+        variacion: `${Number(variacion.toFixed(2))}%`
       }
     };
   }
@@ -45,6 +46,9 @@ export class ReportesService {
   async obtenerProductosSinStock(page: number = 1, limit: number = 10) {
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.max(1, limit);
+
+    console.log('Se ejecuto el:', new Date(GetLocalDate().getTime()));
+    
 
     try {
       const [productos, totalRecords] = await Promise.all([
