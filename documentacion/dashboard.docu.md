@@ -1,122 +1,81 @@
-# Estructura del Dashboard
+Análisis de cada Servicio y su Objetivo
+compararVentasDiarias:
 
-## Inventario
-**DONE**
-### Productos sin Stock
-- **Descripción:** Lista breve de productos agotados.
-- **Visualización:** Tarjeta simple con un enlace para ver el listado completo si la lista es larga.
+Objetivo: Comparar las ventas del día actual con las del día anterior.
+Funcionamiento: Obtiene el total y la cantidad de ventas para hoy y ayer, calculando la variación porcentual.
+Aplicación: Útil para mostrar en un dashboard la comparación de ventas diarias, lo cual permite observar cambios en el rendimiento de un día a otro y ajustar estrategias rápidamente.
+obtenerProductosSinStock:
 
-**DONE**
-### Productos con Bajo Stock
-- **Descripción:** Tarjeta con un resumen rápido del número de productos con bajo stock, y un enlace para ver detalles.
-- **Visualización:** Gráfico de barras o circular para ver categorías de productos con más artículos en bajo stock.
+Objetivo: Listar productos que están agotados.
+Funcionamiento: Realiza una búsqueda paginada de productos con stock igual a 0.
+Aplicación: Este servicio permite identificar rápidamente los productos que necesitan reabastecimiento, facilitando la gestión de inventario y evitando la venta de productos sin existencia.
+obtenerProductosBajoStock:
 
----
+Objetivo: Listar productos con bajo stock según un umbral especificado.
+Funcionamiento: Busca productos cuyo stock es igual o menor que el umbral establecido. El resultado también está paginado.
+Aplicación: Al identificar productos con bajo stock, permite tomar decisiones de compra antes de que se agoten, ayudando a mantener niveles óptimos de inventario.
+resumenVentasPorCategoria:
 
-## Ventas
-**DONE**
-### Total de Ventas del Día
-- **Descripción:** Resumen inmediato de las ventas acumuladas del día.
-- **Visualización:** Tarjeta con el monto total y comparación con el día anterior (por ejemplo, "+15%" en verde si hubo aumento).
-**DONE**
-# Resumen de Ventas por Categoría
+Objetivo: Proporcionar un resumen de ventas por categoría en un período determinado.
+Funcionamiento: Agrupa las ventas por categoría y suma el importe total, contando también el número de ventas, y filtra según el umbral establecido.
+Aplicación: Útil para analizar el rendimiento de diferentes categorías de productos. Este servicio es ideal para entender qué categorías están generando más ingresos o ventas y optimizar la estrategia de marketing o inventario.
+calcularValorInventarioTotal:
 
-- **Descripción**:  
-  Visualización de las ventas acumuladas por categoría en el último mes o semana, permitiendo identificar las categorías más populares. La visualización incluye el porcentaje de variación de ventas respecto al período anterior, facilitando el análisis de tendencias en cada categoría.
+Objetivo: Calcular el valor total del inventario y el valor de inventario por categoría.
+Funcionamiento: Agrupa los productos por categoría y multiplica el precio unitario por el stock para obtener el valor total.
+Aplicación: Proporciona una visión del valor económico del inventario actual, lo cual es esencial para la planificación financiera y la valoración del negocio.
+calcularUtilidadBruta:
 
-- **Visualización**:  
-  Gráfico circular que muestra:
-  - **Porción por categoría**: Tamaño proporcional al total de ventas de cada categoría en el período actual.
-  - **Datos adicionales**: Variación porcentual en cada categoría comparada con el período anterior, junto con las fechas de inicio y fin del período evaluado.
+Objetivo: Calcular la utilidad bruta en un período específico.
+Funcionamiento: Obtiene el total de ventas y calcula el costo del inventario en función del precio y el stock. La utilidad bruta se obtiene restando el costo total de las ventas.
+Aplicación: Esta métrica es crucial para evaluar la rentabilidad del negocio en períodos como una semana o un mes, ayudando en la toma de decisiones financieras.
+obtenerProductosMasVendidos:
 
-Este diseño ofrece una visión rápida de las categorías que generan mayor actividad y su crecimiento o disminución reciente.
+Objetivo: Listar los productos más vendidos en un período.
+Funcionamiento: Agrupa las ventas en detalleFactura por productoId, ordenando por la cantidad de ventas para mostrar los productos más vendidos.
+Aplicación: Permite ver los productos más populares y puede ser útil para promocionar o mantener en stock suficiente estos productos para satisfacer la demanda.
+resumenFacturasPorEstado:
+
+Objetivo: Proporcionar un resumen de las facturas emitidas, pagadas y pendientes para un año específico.
+Funcionamiento: Calcula la cantidad de facturas y el total de ventas por estado (emitidas, pagadas, y pendientes), restando los montos de las pendientes de las emitidas.
+Aplicación: Este resumen es ideal para la gestión de cuentas por cobrar, ayudando a monitorear el flujo de efectivo y a identificar facturas que requieren seguimiento para el pago.
+obtenerDatosVentasComprasMensuales:
+
+Objetivo: Obtener datos de ventas y compras por mes en un año específico.
+Funcionamiento: Agrupa los datos de ventas y compras por mes, generando un resumen mensual de cada uno.
+Aplicación: Proporciona una vista de tendencias mensuales, útil para planificar compras y prever la demanda. Estos datos son importantes para realizar análisis estacionales o para el presupuesto.
+calcularVariacion (Función auxiliar):
+
+Objetivo: Calcular la variación porcentual entre dos valores.
+Funcionamiento: Calcula la variación porcentual entre el total de ventas de hoy y ayer.
+Aplicación: Aunque es una función auxiliar, es esencial para compararVentasDiarias, permitiendo interpretar de manera rápida el cambio en el rendimiento.
+calcularFechaInicio (Función auxiliar):
+
+Objetivo: Calcular la fecha de inicio según el período especificado (día, semana, mes).
+Funcionamiento: Restablece la fecha de hoy en función del período y devuelve la fecha de inicio para el cálculo.
+Aplicación: Esta función permite obtener una fecha precisa para calcular métricas en períodos de tiempo estándar, como semana o mes.
+Coherencia y Uso de los Servicios
+Los servicios están bien estructurados y cada uno tiene un propósito claro, orientado a responder preguntas clave sobre el estado de ventas, inventario, y rendimiento de la empresa. Cada servicio es independiente y modular, lo cual permite que puedas usarlos en el dashboard o en reportes específicos.
+
+Aplicaciones Prácticas
+Dashboard en Tiempo Real: Puedes utilizar compararVentasDiarias, obtenerProductosSinStock, obtenerProductosBajoStock, y calcularUtilidadBruta para presentar información en tiempo real en un dashboard de resumen de operaciones diarias.
+
+Reportes de Inventario y Ventas: calcularValorInventarioTotal, resumenVentasPorCategoria, obtenerProductosMasVendidos, y resumenFacturasPorEstado son ideales para generar reportes mensuales, proporcionando una visión general del inventario y el rendimiento de ventas.
+
+Planificación Financiera y de Compras: obtenerDatosVentasComprasMensuales y calcularUtilidadBruta ayudan en la planificación financiera y en la gestión de compras, permitiendo analizar tendencias de gasto e ingreso por mes y calcular la rentabilidad en diferentes períodos.
+
+Cada uno de estos servicios responde a necesidades comunes en la gestión de ventas e inventario, haciéndolos coherentes y útiles para la toma de decisiones. ¿Te gustaría revisar algún servicio en detalle o necesitas ejemplos adicionales de cómo integrarlos?
 
 
-### Comparación de Ventas Diarias/Semanales
-- **Descripción:** Gráfico de líneas o barras que muestre la tendencia de ventas por día o semana del último mes, ideal para notar patrones rápidamente.
-- **Visualización:** Gráfico de líneas o barras.
 
-**DONE**
-### Top Productos Vendidos
-- **Descripción:** Lista de los productos más vendidos en un período (por ejemplo, en el último mes).
-- **Visualización:** Tabla o lista con el nombre, cantidad vendida, y categoría.
+http://localhost:8080/api/v1/reportes/ventas-diarias
+http://localhost:8080/api/v1/reportes/productos-sin-stock?pagina=1&limite=10
+http://localhost:8080/api/v1/reportes/productos-bajo-stock?umbral=5&pagina=1&limite=10
+http://localhost:8080/api/v1/reportes/resumen-ventas-categoria?periodo=semana&umbral=10
+http://localhost:8080/api/v1/reportes/valor-inventario-total
+http://localhost:8080/api/v1/reportes/utilidad-bruta?periodo=mes
+http://localhost:8080/api/v1/reportes/productos-mas-vendidos?periodo=semana&limite=5
+http://localhost:8080/api/v1/reportes/resumen-facturas-estado?year=2024
+http://localhost:8080/api/v1/reportes/ventas-compras-mensuales?year=2024
 
----
 
-## Historial de Compras Recientes
-
-### Compras del Último Mes
-- **Descripción:** Tabla o lista con detalles de cada compra, como fecha, proveedor, cantidad, y monto total. Esto puede ser útil para hacer un seguimiento detallado de adquisiciones recientes y programar nuevas compras si es necesario.
-- **Visualización:** Tabla o lista.
-
----
-
-## Otras Estadísticas o Indicadores de Rendimiento
-
-### Ingresos y Ganancias
-- **Descripción:** Tarjeta que muestre los ingresos y ganancias netas en el día, semana, o mes actual. Esto podría combinarse con un gráfico para hacer un seguimiento de estos datos.
-- **Visualización:** Tarjeta y gráfico opcional.
-
-### Fluctuación de Ventas Mensual
-- **Descripción:** Gráfico de barras con los totales de ventas por mes para visualizar cómo ha sido la tendencia a lo largo del año. Esto permitirá ver si las ventas han aumentado o disminuido mes a mes y entender mejor el crecimiento o estacionalidad de la tienda.
-- **Visualización:** Gráfico de barras.
-
----
-
-## Priorización y Estrategia de Carga de Datos
-
-### Datos Críticos y Dinámicos (Carga Inicial + Actualización en Segundo Plano)
-- **Total de Ventas del Día**
-- **Productos sin Stock**
-- **Productos con Bajo Stock**
-- **Fluctuación de Ventas Mensual**
-
-> Estos datos se pueden cargar al entrar al dashboard y actualizar en segundo plano (cada 10-15 minutos, dependiendo de la frecuencia de cambio en el negocio).
-
-### Datos de Resumen (Cargados en Intervalos)
-- **Resumen de Ventas por Categoría**
-- **Comparación de Ventas Diarias/Semanales**
-- **Top Productos Vendidos**
-- **Ingresos y Ganancias**
-
-> Estos datos se pueden actualizar cada vez que se visite el dashboard y cada hora o al cambiar el período visualizado (día, semana, mes).
-
-### Datos de Referencia (Actualización más Espaciada)
-- **Historial de Compras Recientes**
-
-> Este es un dato de referencia que se puede actualizar cada vez que el usuario abra el dashboard o consulte la sección de compras específicamente, ya que la información cambia menos frecuentemente.
-
----
-
-## Mejora en la Visualización
-
-- **Diseño de Tarjetas Resumidas:**
-  - Las tarjetas para “Total de Ventas del Día”, “Productos sin Stock” y “Productos con Bajo Stock” pueden estar al inicio del dashboard.
-  - Usar colores para representar cambios o advertencias (por ejemplo, rojo para productos agotados, verde para incremento de ventas) puede ayudar a priorizar la atención.
-
-- **Gráficos de Tendencia:**
-  - El gráfico de Fluctuación de Ventas Mensual se puede mostrar como un gráfico de barras.
-  - Para un vistazo rápido a la comparación de ventas semanales o mensuales, un gráfico de líneas es ideal.
-  - Un gráfico circular para el Resumen de Ventas por Categoría facilitaría ver las categorías con más ventas y su proporción relativa.
-
-- **Tablas Interactivas:**
-  - Las tablas para Historial de Compras Recientes y Top Productos Vendidos deben tener opciones de filtrado o paginación, para que el usuario pueda navegar y encontrar detalles específicos fácilmente.
-
----
-
-## Interacción y Experiencia del Usuario
-
-- **Carga Condicional de Datos:**
-  - Con herramientas como Zustand o React Query, puedes condicionar la carga para evitar consultas innecesarias y mejorar la experiencia de usuario, cargando solo los datos esenciales inicialmente y permitiendo actualizaciones periódicas o al acceder a cada sección específica.
-
-- **Interactividad en Gráficos:**
-  - Permitir al usuario seleccionar intervalos de tiempo (diario, semanal, mensual) en los gráficos y elegir los datos que desea visualizar, como el período de fluctuación de ventas o la comparación de ventas.
-
-- **Notificaciones o Alertas:**
-  - Considera agregar pequeñas notificaciones o indicadores en las tarjetas de inventario cuando hay productos sin stock o con bajo stock. Estas alertas pueden ser configurables, para que solo se muestren si hay un cambio en el estado del producto desde la última consulta.
-
----
-
-## Conclusión
-
-Organizar el dashboard en tarjetas y gráficos interactivos permitirá mostrar información crítica y relevante en un formato visual y fácil de interpretar. Además, con una carga condicional y estrategias de actualización diferenciadas para cada tipo de dato, se mantiene el rendimiento de la aplicación sin perder precisión en los datos mostrados. Con esta estructura, el dashboard se convierte en una herramienta eficaz para la toma de decisiones y el monitoreo constante.

@@ -1,53 +1,48 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { ApiResponse } from 'src/interface';
 import { GetLocalDate } from 'src/utility/getLocalDate';
-import { subWeeks, subMonths, startOfDay, endOfDay, subDays, endOfMonth, startOfMonth, startOfWeek } from 'date-fns';
+import { Producto } from '@prisma/client';
 
 @Injectable()
 export class ReportesService {
-  private readonly logger = new Logger(ReportesService.name);
+  constructor(private prisma: PrismaService) {}
 
-  constructor(private readonly prisma: PrismaService) { }
-
-  // Helper function to log errors
-  private logError(message: string, error: Error) {
-    this.logger.error(message, error.stack);
-  }
-
-  // Helper function to calculate date range
-  private getDateRange(periodo: 'semana' | 'mes' | 'dia') {
+  // Servicio que compara ventas diarias de hoy y ayer
+  async compararVentasDiarias(): Promise<ApiResponse<{ totalVentasHoy: number; cantidadVentasHoy: number; totalAyer: number; cantidadAyer: number; variacion: string }>> {
     const hoy = GetLocalDate();
-    let start: Date;
-    let end: Date;
+    hoy.setHours(0, 0, 0, 0);
+    const ayer = new Date(hoy);
+    ayer.setDate(hoy.getDate() - 1);
 
-    switch (periodo) {
-      case 'semana':
-        start = startOfWeek(hoy);
-        end = endOfDay(hoy);
-        break;
-      case 'mes':
-        start = startOfMonth(hoy);
-        end = endOfDay(hoy);
-        break;
-      case 'dia':
-      default:
-        start = startOfDay(hoy);
-        end = endOfDay(hoy);
-        break;
-    }
+    const ventasHoy = await this.prisma.factura.aggregate({
+      _sum: { total: true },
+      _count: { id: true },
+      where: { createdAt: { gte: hoy } },
+    });
 
-    return { start, end };
+    const ventasAyer = await this.prisma.factura.aggregate({
+      _sum: { total: true },
+      _count: { id: true },
+      where: { createdAt: { gte: ayer, lt: hoy } },
+    });
+
+    const variacion = this.calcularVariacion(ventasHoy._sum.total.toNumber(), ventasAyer._sum.total.toNumber());
+
+    return {
+      success: true,
+      data: {
+        totalVentasHoy: ventasHoy._sum.total?.toNumber() || 0,
+        cantidadVentasHoy: ventasHoy._count.id || 0,
+        totalAyer: ventasAyer._sum.total?.toNumber() || 0,
+        cantidadAyer: ventasAyer._count.id || 0,
+        variacion: `${variacion}%`
+      }
+    };
   }
 
-  // Helper function to calculate percentage variation
-  private calcularVariacion(actual: number, anterior: number): string {
-    if (anterior === 0) return actual > 0 ? '100%' : '0%';
-    const variacion = ((actual - anterior) / anterior) * 100;
-    return `${variacion.toFixed(2)}%`;
-  }
-
-  // Function to get products out of stock
-  async outStockProduct(page: number = 1, limit: number = 10) {
+  // Servicio que obtiene productos sin stock obtenerProductosSinStock
+  async obtenerProductosSinStock(page: number = 1, limit: number = 10) {
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.max(1, limit);
 
@@ -84,13 +79,12 @@ export class ReportesService {
         message: 'Consulta satisfactoria',
       };
     } catch (error) {
-      this.logError(`Error al obtener productos sin stock: ${error.message}`, error);
       throw new Error(`Error al obtener productos sin stock: ${error.message}`);
     }
   }
 
-  // Function to get low stock products
-  async lowstockProducts(params: { umbral: number, page: number, limit: number }) {
+  // Servicio que obtiene productos con bajo stock 
+  async obtenerProductosBajoStock(params: { umbral: number, page: number, limit: number }) {
     const { umbral = 10, page = 1, limit = 10 } = params;
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.max(1, limit);
@@ -129,220 +123,50 @@ export class ReportesService {
         message: 'Consulta satisfactoria',
       };
     } catch (error) {
-      this.logError(`Error al obtener productos con bajo stock: ${error.message}`, error);
       throw new Error(`Error al obtener productos con bajo stock: ${error.message}`);
     }
   }
 
-  // Function to get total sales of the day
-  async totalVentasDelDia() {
-    const { start, end } = this.getDateRange('dia');
-    const hoy = start;
-    const ayer = subDays(hoy, 1);
-
-    try {
-      const [totalHoy, totalAyer] = await Promise.all([
-        this.getTotalVentasPorFecha(hoy, end),
-        this.getTotalVentasPorFecha(ayer, start),
-      ]);
-
-      const variacion = this.calcularVariacion(totalHoy, totalAyer);
-
-      return {
-        success: true,
-        data: {
-          totalVentasHoy: totalHoy,
-          totalAyer: totalAyer,
-          variacion: variacion,
-        },
-      };
-    } catch (error) {
-      this.logError(`Error al obtener las ventas del día: ${error.message}`, error);
-      throw new Error(`Error al obtener las ventas del día: ${error.message}`);
+  // Servicio que obtiene resumen de ventas por categoría
+  async resumenVentasPorCategoria(periodo: 'dia' | 'semana' | 'mes', umbral: number = 0): Promise<ApiResponse<{ categoria: string; totalVentas: number; cantidadVentas: number }[]>> {
+  const fechaInicio = this.calcularFechaInicio(periodo);
+  
+  // Agrupamos por producto en los detalles de factura y sumamos el importe
+  const ventas = await this.prisma.detalleFactura.groupBy({
+    by: ['productoId'],
+    _sum: { importe: true },
+    _count: { id: true },
+    where: {
+      factura: { createdAt: { gte: fechaInicio } }
     }
-  }
+  });
 
-  // Helper function to calculate total sales for a specific date range
-  private async getTotalVentasPorFecha(fechaInicio: Date, fechaFin: Date): Promise<number> {
-    const result = await this.prisma.factura.aggregate({
-      _sum: { total: true },
-      where: { createdAt: { gte: fechaInicio, lt: fechaFin } },
-    });
-    return result._sum.total?.toNumber() || 0;
-  }
-
-  // Function to get sales summary by category for a period
-  async resumenVentasPorCategoria(periodo: 'semana' | 'mes') {
-    const { start, end } = this.getDateRange(periodo);
-    const inicioPeriodoAnterior = periodo === 'semana' ? subWeeks(start, 1) : subMonths(start, 1);
-    const finPeriodoAnterior = end;
-
-    try {
-      const [detallesActual, detallesAnterior] = await Promise.all([
-        this.getDetallesVentasPorPeriodo(start, end),
-        this.getDetallesVentasPorPeriodo(inicioPeriodoAnterior, finPeriodoAnterior),
-      ]);
-
-      const ventasActuales = this.sumarVentasPorCategoria(detallesActual);
-      const ventasAnteriores = this.sumarVentasPorCategoria(detallesAnterior);
-
-      const resumen = Object.keys(ventasActuales).map(categoria => {
-        const ventasActualesValor = ventasActuales[categoria];
-        const ventasAnterioresValor = ventasAnteriores[categoria] || 0;
-
-        const variacion = this.calcularVariacion(ventasActualesValor, ventasAnterioresValor);
-        return { categoria, totalVentas: ventasActualesValor, variacionPorcentual: variacion };
+  // Mapeamos las ventas para obtener la categoría asociada a cada producto
+  const ventasPorCategoria = await Promise.all(
+    ventas.map(async (venta) => {
+      const producto = await this.prisma.producto.findUnique({
+        where: { id: venta.productoId },
+        select: { categoria: { select: { nombre: true } } }
       });
 
       return {
-        success: true, data: resumen, periodo: periodo, // El tipo de periodo (semana o mes)
-        fechas: {
-          inicio: start,
-          fin: end
-        },
+        categoria: producto?.categoria.nombre || 'Sin categoría',
+        totalVentas: venta._sum.importe?.toNumber() || 0,
+        cantidadVentas: venta._count.id || 0
       };
-    } catch (error) {
-      this.logError(`Error al obtener ventas por categoría: ${error.message}`, error);
-      throw new Error(`Error al obtener ventas por categoría: ${error.message}`);
-    }
-  }
+    })
+  );
 
-  // Helper function to get sales details for a specific period
-  private async getDetallesVentasPorPeriodo(inicio: Date, fin: Date) {
-    return this.prisma.detalleFactura.findMany({
-      where: { factura: { createdAt: { gte: inicio, lte: fin }, estado: 'PAGADA' } },
-      include: { producto: { include: { categoria: true } } },
-    });
-  }
-
-  // Helper function to sum sales by category
-  private sumarVentasPorCategoria(detalles: any[]): Record<string, number> {
-    return detalles.reduce((acc, detalle) => {
-      const categoria = detalle.producto.categoria?.nombre || 'Sin categoría';
-      acc[categoria] = (acc[categoria] || 0) + detalle.importe.toNumber();
-      return acc;
-    }, {} as Record<string, number>);
-  }
-
-  // Function to get the number of issued and paid invoices by month for a given year
-  async facturasEmitidasVsPagadasPendientes(year: number) {
-    try {
-      const facturasEmitidas = await this.prisma.factura.aggregate({
-        _count: true,
-        where: {
-          createdAt: {
-            gte: new Date(`${year}-01-01`),
-            lte: new Date(`${year}-12-31`),
-          },
-        },
-      });
-
-      const facturasPagadas = await this.prisma.factura.aggregate({
-        _count: true,
-        where: {
-          createdAt: {
-            gte: new Date(`${year}-01-01`),
-            lte: new Date(`${year}-12-31`),
-          },
-          estado: 'PAGADA',
-        },
-      });
+  // Filtramos según el umbral y preparamos la respuesta
+  return {
+    success: true,
+    data: ventasPorCategoria.filter(v => v.totalVentas >= umbral)
+  };
+}
 
 
-      const facturasPendientes = await this.prisma.factura.aggregate({
-        _count: true,
-        where: {
-          createdAt: {
-            gte: new Date(`${year}-01-01`),
-            lte: new Date(`${year}-12-31`),
-          },
-          estado: 'PENDIENTE',
-        },
-      });
-
-      return {
-        success: true,
-        data: {
-          facturasEmitidas: facturasEmitidas._count,
-          facturasPagadas: facturasPagadas._count,
-          facturasPendientes: facturasPendientes._count,
-        },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener las facturas emitidas y pagadas: ${error.message}`, error);
-      throw new Error(`Error al obtener las facturas emitidas y pagadas: ${error.message}`);
-    }
-  }
-
-  // Function to get the total purchases made during a specific period (e.g., year)
-  async totalComprasRealizadas(year: number) {
-    try {
-      const totalCompras = await this.prisma.compra.aggregate({
-        _sum: {
-          total: true,
-        },
-        where: {
-          createdAt: {
-            gte: new Date(`${year}-01-01`),
-            lte: new Date(`${year}-12-31`),
-          },
-        },
-      });
-
-      return {
-        success: true,
-        data: { totalCompras: totalCompras._sum.total || 0 },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener el total de compras realizadas: ${error.message}`, error);
-      throw new Error(`Error al obtener el total de compras realizadas: ${error.message}`);
-    }
-  }
-
-
-  // Function to get the last inventory movements
-  async ultimosMovimientosInventario(page: number = 1, limit: number = 10) {
-    const validatedPage = Math.max(1, page);
-    const validatedLimit = Math.max(1, limit);
-
-    try {
-      const [movimientos, totalRecords] = await Promise.all([
-        this.prisma.movimientoInventario.findMany({
-          skip: (validatedPage - 1) * validatedLimit,
-          take: validatedLimit,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            producto: { select: { nombre: true } },
-          },
-        }),
-        this.prisma.movimientoInventario.count(),
-      ]);
-
-      const totalPages = Math.max(1, Math.ceil(totalRecords / validatedLimit));
-      const hasNext = validatedPage < totalPages;
-
-      return {
-        success: true,
-        data: {
-          movimientos,
-          totalRecords,
-          limit: validatedLimit,
-          currentPage: validatedPage,
-          totalPages,
-          hasNext,
-        },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener los movimientos de inventario: ${error.message}`, error);
-      throw new Error(`Error al obtener los movimientos de inventario: ${error.message}`);
-    }
-  }
-
-  // Function to get the inventory value by category
-  async valorInventario() {
+  // Servicio que calcula el valor total del inventario
+  async calcularValorInventarioTotal() {
     try {
 
       const productosInventory = await this.prisma.producto.findMany({
@@ -380,220 +204,169 @@ export class ReportesService {
         message: 'Consulta satisfactoria',
       };
     } catch (error) {
-      this.logError(`Error al obtener el valor de inventario por categoría: ${error.message}`, error);
       throw new Error(`Error al obtener el valor de inventario por categoría: ${error.message}`);
     }
   }
 
-  // Function to get products with low stock
-  async notificacionBajoStock(umbral: number = 10) {
-    try {
-      const productosBajoStock = await this.prisma.producto.findMany({
-        where: { stock: { lt: umbral, gt: 0 } },
+  // Servicio que calcula utilidad bruta en un periodo
+  async calcularUtilidadBruta(periodo: 'semana' | 'mes'): Promise<ApiResponse<{ totalVentas: number; totalCosto: number; utilidadBruta: number }>> {
+    const fechaInicio = this.calcularFechaInicio(periodo);
+    const ventas = await this.prisma.factura.aggregate({
+      _sum: { total: true },
+      where: { createdAt: { gte: fechaInicio } }
+    });
+    const costo = await this.prisma.producto.aggregate({
+      _sum: { precio: true, stock: true }
+    });
+    const totalCosto = costo._sum.precio?.toNumber() * (costo._sum.stock || 0) || 0;
+    const utilidadBruta = (ventas._sum.total?.toNumber() || 0) - totalCosto;
+
+    return {
+      success: true,
+      data: {
+        totalVentas: ventas._sum.total?.toNumber() || 0,
+        totalCosto,
+        utilidadBruta
+      }
+    };
+  }
+
+  // Servicio que obtiene productos más vendidos
+async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10): Promise<ApiResponse<{ producto: string; categoria: string; totalVentas: number }[]>> {
+  const fechaInicio = this.calcularFechaInicio(periodo);
+  
+  // Agrupamos los detalles de factura por producto y sumamos las cantidades
+  const productosVendidos = await this.prisma.detalleFactura.groupBy({
+    by: ['productoId'],
+    _sum: { cantidad: true },
+    where: {
+      factura: { createdAt: { gte: fechaInicio } }
+    },
+    orderBy: {
+      _sum: { cantidad: 'desc' }
+    },
+    take: Number(limite)
+  });
+
+  // Mapeamos los resultados para obtener los nombres de productos y categorías
+  const productosConDetalles = await Promise.all(
+    productosVendidos.map(async (producto) => {
+      const detallesProducto = await this.prisma.producto.findUnique({
+        where: { id: producto.productoId },
         select: {
           nombre: true,
-          stock: true,
-          categoria: { select: { nombre: true } },
-        },
+          categoria: {
+            select: { nombre: true }
+          }
+        }
       });
-
       return {
-        success: true,
-        data: productosBajoStock,
-        message: 'Consulta satisfactoria',
+        producto: detallesProducto?.nombre || 'Producto desconocido',
+        categoria: detallesProducto?.categoria.nombre || 'Sin categoría',
+        totalVentas: producto._sum.cantidad || 0
       };
-    } catch (error) {
-      this.logError(`Error al obtener productos con bajo stock: ${error.message}`, error);
-      throw new Error(`Error al obtener productos con bajo stock: ${error.message}`);
-    }
+    })
+  );
+
+  return {
+    success: true,
+    data: productosConDetalles
+  };
+}
+
+
+  // Servicio que obtiene resumen de facturas por estado
+  async resumenFacturasPorEstado(year: number): Promise<ApiResponse<{ facturasEmitidas: number; totalEmitido: number; facturasPagadas: number; totalPagado: number; facturasPendientes: number; totalPendiente: number }>> {
+    const inicioAño = new Date(`${Number(year)}-01-01`);
+    const finAño = new Date(`${Number(year) + 1}-01-01`);
+
+    const facturasEmitidas = await this.prisma.factura.aggregate({
+      _count: { id: true },
+      _sum: { total: true },
+      where: { createdAt: { gte: inicioAño, lt: finAño } }
+    });
+    const facturasPagadas = await this.prisma.factura.aggregate({
+      _count: { id: true },
+      _sum: { total: true },
+      where: { estado: 'PAGADA', createdAt: { gte: inicioAño, lt: finAño } }
+    });
+
+    const facturasPendientes = (facturasEmitidas._count.id || 0) - (facturasPagadas._count.id || 0);
+    const totalPendiente = (facturasEmitidas._sum.total?.toNumber() || 0) - (facturasPagadas._sum.total?.toNumber() || 0);
+
+    return {
+      success: true,
+      data: {
+        facturasEmitidas: facturasEmitidas._count.id || 0,
+        totalEmitido: facturasEmitidas._sum.total?.toNumber() || 0,
+        facturasPagadas: facturasPagadas._count.id || 0,
+        totalPagado: facturasPagadas._sum.total?.toNumber() || 0,
+        facturasPendientes,
+        totalPendiente
+      }
+    };
   }
 
+ // Servicio que obtiene datos de ventas y compras mensuales para el year especificado
+async obtenerDatosVentasComprasMensuales(year: number): Promise<ApiResponse<{ etiquetas: string[]; datosVentas: number[]; datosCompras: number[] }>> {
+  const etiquetas = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const datosVentas = Array(12).fill(0);
+  const datosCompras = Array(12).fill(0);
 
-  // Function to get the top selling products
-  async productosMasVendidos(periodo: 'semana' | 'mes') {
-    const { start, end } = this.getDateRange(periodo);
-
-    try {
-      const ventas = await this.prisma.detalleFactura.findMany({
-        where: {
-          factura: {
-            createdAt: {
-              gte: start,
-              lte: end,
-            },
-            estado: 'PAGADA',
-          },
-        },
-        include: { producto: true },
-      });
-
-      const productosVendidos = ventas.reduce((acc, detalle) => {
-        const producto = detalle.producto.nombre;
-        acc[producto] = (acc[producto] || 0) + detalle.importe.toNumber();
-        return acc;
-      }, {} as Record<string, number>);
-
-      const productosOrdenados = Object.entries(productosVendidos)
-        .sort(([, a], [, b]) => b - a)
-        .map(([producto, totalVentas]) => ({ producto, totalVentas }));
-
-      return {
-        success: true,
-        data: {
-          productosOrdenados,
-          periodo: periodo, // El tipo de periodo (semana o mes)
-          fechas: {
-            inicio: start,
-            fin: end
-          },
-        },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener los productos más vendidos: ${error.message}`, error);
-      throw new Error(`Error al obtener los productos más vendidos: ${error.message}`);
+  // Obtener ventas agrupadas por mes
+  const ventas = await this.prisma.factura.groupBy({
+    by: ['createdAt'],
+    _sum: { total: true },
+    where: {
+      createdAt: {
+        gte: new Date(`${Number(year)}-01-01`),
+        lt: new Date(`${Number(year) + 1}-01-01`)
+      }
     }
+  });
+
+  // Distribuir ventas en el array de datosVentas basado en el mes
+  ventas.forEach(venta => {
+    const mes = new Date(venta.createdAt).getMonth();
+    datosVentas[mes] += venta._sum.total?.toNumber() || 0;
+  });
+
+  // Obtener compras agrupadas por mes
+  const compras = await this.prisma.compra.groupBy({
+    by: ['createdAt'],
+    _sum: { total: true },
+    where: {
+      createdAt: {
+        gte: new Date(`${Number(year)}-01-01`),
+        lt: new Date(`${Number(year) + 1}-01-01`)
+      }
+    }
+  });
+
+  // Distribuir compras en el array de datosCompras basado en el mes
+  compras.forEach(compra => {
+    const mes = new Date(compra.createdAt).getMonth();
+    datosCompras[mes] += compra._sum.total?.toNumber() || 0;
+  });
+
+  return {
+    success: true,
+    data: { etiquetas, datosVentas, datosCompras }
+  };
+}
+
+  // Función auxiliar para calcular variación porcentual
+  private calcularVariacion(totalHoy: number, totalAyer: number): number {
+    if (totalAyer === 0) return totalHoy > 0 ? 100 : 0;
+    return ((totalHoy - totalAyer) / totalAyer) * 100;
   }
 
-  // Function to calculate gross profit for a given period
-  async utilidadBruta(periodo: 'semana' | 'mes') {
-    const { start, end } = this.getDateRange(periodo);
-
-    try {
-      // Retrieve sales details for the specified period
-      const ventas = await this.prisma.detalleFactura.findMany({
-        where: {
-          factura: {
-            createdAt: {
-              gte: start,
-              lte: end,
-            },
-            estado: 'PAGADA',
-          },
-        },
-        include: {
-          producto: true, // Include product data to access price information
-        },
-      });
-
-      // Retrieve purchase prices for each product sold
-      const detalleCompras = await this.prisma.detalleCompra.findMany({
-        where: {
-          productoId: { in: ventas.map((detalle) => detalle.productoId) },
-        },
-        select: {
-          productoId: true,
-          precioCompra: true,
-        },
-      });
-
-      // Map purchase prices to products for easy lookup
-      const preciosCompra = detalleCompras.reduce((acc, detalle) => {
-        acc[detalle.productoId] = detalle.precioCompra.toNumber();
-        return acc;
-      }, {} as Record<number, number>);
-
-      // Calculate total sales and gross profit
-      let totalVentas = 0;
-      let totalCosto = 0;
-      const utilidadBruta = ventas.reduce((acc, detalle) => {
-        const precioCompra = preciosCompra[detalle.productoId] || 0;
-        const precioVenta = detalle.importe.toNumber();
-        const gananciaBruta = precioVenta - precioCompra;
-
-        // Acumula la utilidad bruta y los totales
-        acc += gananciaBruta * detalle.cantidad; // Consider quantity sold in the profit calculation
-        totalVentas += precioVenta * detalle.cantidad; // Total de ventas
-        totalCosto += precioCompra * detalle.cantidad; // Total del costo de los productos
-
-        return acc;
-      }, 0);
-
-      return {
-        success: true,
-        data: {
-          totalVentas,
-          totalCosto,
-          utilidadBruta,
-          periodo: periodo, // El tipo de periodo (semana o mes)
-          fechas: {
-            inicio: start,
-            fin: end
-          },
-        },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al calcular la utilidad bruta: ${error.message}`, error);
-      throw new Error(`Error al calcular la utilidad bruta: ${error.message}`);
-    }
+  // Función auxiliar para calcular la fecha de inicio en función del período
+  private calcularFechaInicio(periodo: 'dia' | 'semana' | 'mes'): Date {
+    const fechaActual = new Date();
+    if (periodo === 'dia') return new Date(fechaActual.setDate(fechaActual.getDate() - 1));
+    if (periodo === 'semana') return new Date(fechaActual.setDate(fechaActual.getDate() - 7));
+    if (periodo === 'mes') return new Date(fechaActual.setMonth(fechaActual.getMonth() - 1));
+    return fechaActual;
   }
-
-
-
-  async getLineData(year: number) {
-    try {
-      // Array de meses en español
-      const labels = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ];
-
-      const ventasMensuales = await Promise.all(
-        Array.from({ length: 12 }, async (_, month) => {
-          const start = startOfMonth(new Date(year, month));
-          const end = endOfMonth(new Date(year, month));
-          const ventas = await this.prisma.factura.aggregate({
-            _sum: { total: true },
-            where: { createdAt: { gte: start, lte: end }, estado: 'PAGADA' },
-          });
-          return ventas._sum.total?.toNumber() || 0;
-        })
-      );
-
-      const comprasMensuales = await Promise.all(
-        Array.from({ length: 12 }, async (_, month) => {
-          const start = startOfMonth(new Date(year, month));
-          const end = endOfMonth(new Date(year, month));
-          const compras = await this.prisma.compra.aggregate({
-            _sum: { total: true },
-            where: { createdAt: { gte: start, lte: end } },
-          });
-          return compras._sum.total?.toNumber() || 0;
-        })
-      );
-
-      const lineData = {
-        labels,
-        datasets: [
-          {
-            label: 'Ventas (RD$)',
-            data: ventasMensuales,
-            borderColor: '#28a745', // Verde para ventas
-            fill: false,
-            tension: 0.4,
-          },
-          {
-            label: 'Compras (RD$)',
-            data: comprasMensuales,
-            borderColor: '#f97316', // Naranja para compras
-            fill: false,
-            tension: 0.4,
-          },
-        ],
-      };
-
-      return {
-        success: true,
-        data: lineData,
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logger.error(`Error al obtener datos de ventas y compras: ${error.message}`, error.stack);
-      throw new Error(`Error al obtener datos de ventas y compras: ${error.message}`);
-    }
-  }
-
-
-
 }
