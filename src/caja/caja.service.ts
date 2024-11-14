@@ -80,7 +80,7 @@ export class CajaService {
         const historialCreated = await prisma.historialCaja.create({ data: historialData });
 
         // Convertir montoInicial de Decimal a number
-        const montoInicialNumber = historialCreated.montoInicial.toNumber();
+        const montoInicialNumber = Number(historialCreated.montoInicial);
 
         // Crear el movimiento de caja relacionado con la apertura
         const movimientoData: CreateMovimientosCajaDto = {

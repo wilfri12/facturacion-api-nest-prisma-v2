@@ -151,7 +151,7 @@ export class ReportesService {
 
       return {
         categoria: producto?.categoria.nombre || 'Sin categoría',
-        totalVentas: venta._sum.importe?.toNumber() || 0,
+        totalVentas: Number(venta._sum.importe) || 0,
         cantidadVentas: venta._count.id || 0
       };
     })
@@ -177,7 +177,7 @@ export class ReportesService {
         },
       });
 
-      const valorTotal = productosInventory.reduce((acc, producto) => acc + producto.precio.toNumber() * producto.stock, 0);
+      const valorTotal = productosInventory.reduce((acc, producto) => acc + Number(producto.precio) * producto.stock, 0);
 
       const productos = await this.prisma.producto.findMany({
         where: { stock: { gt: 0 } },
@@ -190,7 +190,7 @@ export class ReportesService {
 
       const valorPorCategoria = productos.reduce((acc, producto) => {
         const categoria = producto.categoria.nombre;
-        const valor = producto.precio.toNumber() * producto.stock;
+        const valor = Number(producto.precio) * producto.stock;
         acc[categoria] = (acc[categoria] || 0) + valor;
         return acc;
       }, {} as Record<string, number>);
@@ -218,13 +218,13 @@ export class ReportesService {
     const costo = await this.prisma.producto.aggregate({
       _sum: { precio: true, stock: true }
     });
-    const totalCosto = costo._sum.precio?.toNumber() * (costo._sum.stock || 0) || 0;
-    const utilidadBruta = (ventas._sum.total?.toNumber() || 0) - totalCosto;
+    const totalCosto = Number(costo._sum.precio) * (costo._sum.stock || 0) || 0;
+    const utilidadBruta = (Number(ventas._sum.total) || 0) - totalCosto;
 
     return {
       success: true,
       data: {
-        totalVentas: ventas._sum.total?.toNumber() || 0,
+        totalVentas: Number(ventas._sum.total) || 0,
         totalCosto,
         utilidadBruta
       }
@@ -292,15 +292,15 @@ async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10
     });
 
     const facturasPendientes = (facturasEmitidas._count.id || 0) - (facturasPagadas._count.id || 0);
-    const totalPendiente = (facturasEmitidas._sum.total?.toNumber() || 0) - (facturasPagadas._sum.total?.toNumber() || 0);
+    const totalPendiente = (Number(facturasEmitidas._sum.total) || 0) - (Number(facturasPagadas._sum.total) || 0);
 
     return {
       success: true,
       data: {
         facturasEmitidas: facturasEmitidas._count.id || 0,
-        totalEmitido: facturasEmitidas._sum.total?.toNumber() || 0,
+        totalEmitido: Number(facturasEmitidas._sum.total) || 0,
         facturasPagadas: facturasPagadas._count.id || 0,
-        totalPagado: facturasPagadas._sum.total?.toNumber() || 0,
+        totalPagado: Number(facturasPagadas._sum.total) || 0,
         facturasPendientes,
         totalPendiente
       }
@@ -328,7 +328,7 @@ async obtenerDatosVentasComprasMensuales(year: number): Promise<ApiResponse<{ et
   // Distribuir ventas en el array de datosVentas basado en el mes
   ventas.forEach(venta => {
     const mes = new Date(venta.createdAt).getMonth();
-    datosVentas[mes] += venta._sum.total?.toNumber() || 0;
+    datosVentas[mes] += Number(venta._sum.total) || 0;
   });
 
   // Obtener compras agrupadas por mes
@@ -346,7 +346,7 @@ async obtenerDatosVentasComprasMensuales(year: number): Promise<ApiResponse<{ et
   // Distribuir compras en el array de datosCompras basado en el mes
   compras.forEach(compra => {
     const mes = new Date(compra.createdAt).getMonth();
-    datosCompras[mes] += compra._sum.total?.toNumber() || 0;
+    datosCompras[mes] += Number(compra._sum.total) || 0;
   });
 
   return {
