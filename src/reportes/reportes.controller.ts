@@ -79,7 +79,7 @@ export class ReportesController {
     @Param('year') year: number,
   ) {
     try {
-      const result = await this.reportesService.facturasEmitidasVsPagadas(year);
+      const result = await this.reportesService.facturasEmitidasVsPagadasPendientes(year);
       return result;
     } catch (error) {
       console.error('Error al obtener las facturas emitidas y pagadas:', error);
@@ -109,9 +109,9 @@ export class ReportesController {
   }
 
   @Get('valor-inventario')
-  async getValorTotalInventario() {
+  async valorInventario() {
     try {
-      const result = await this.reportesService.valorTotalInventario();
+      const result = await this.reportesService.valorInventario();
       return result;
     } catch (error) {
       console.error('Error al obtener el valor total del inventario:', error);
@@ -141,20 +141,6 @@ export class ReportesController {
     }
   }
 
-  @Get('valor-inventario-categoria')
-  async getValorInventarioPorCategoria() {
-    try {
-      const result = await this.reportesService.valorInventarioPorCategoria();
-      return result;
-    } catch (error) {
-      console.error('Error al obtener el valor de inventario por categoría:', error);
-      return {
-        success: false,
-        message: 'Error al obtener el valor de inventario por categoría.',
-        error: error.message,
-      };
-    }
-  }
 
   @Get('notificacion-bajo-stock')
   async getNotificacionBajoStock(
@@ -173,20 +159,7 @@ export class ReportesController {
     }
   }
 
-  @Get('facturas-pendientes')
-  async getFacturasPendientes() {
-    try {
-      const result = await this.reportesService.facturasPendientes();
-      return result;
-    } catch (error) {
-      console.error('Error al obtener facturas pendientes:', error);
-      return {
-        success: false,
-        message: 'Error al obtener facturas pendientes.',
-        error: error.message,
-      };
-    }
-  }
+ 
 
   @Get('productos-mas-vendidos')
   async getProductosMasVendidos(
@@ -220,5 +193,11 @@ export class ReportesController {
         error: error.message,
       };
     }
+  }
+
+  @Get('line-data')
+  async getLineData(@Query('year') year: string) {
+    const yearNumber = parseInt(year, 10);
+    return this.reportesService.getLineData(yearNumber);
   }
 }

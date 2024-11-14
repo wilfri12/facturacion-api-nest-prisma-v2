@@ -225,7 +225,7 @@ export class ReportesService {
   }
 
   // Function to get the number of issued and paid invoices by month for a given year
-  async facturasEmitidasVsPagadas(year: number) {
+  async facturasEmitidasVsPagadasPendientes(year: number) {
     try {
       const facturasEmitidas = await this.prisma.factura.aggregate({
         _count: true,
@@ -248,11 +248,24 @@ export class ReportesService {
         },
       });
 
+
+      const facturasPendientes = await this.prisma.factura.aggregate({
+        _count: true,
+        where: {
+          createdAt: {
+            gte: new Date(`${year}-01-01`),
+            lte: new Date(`${year}-12-31`),
+          },
+          estado: 'PENDIENTE',
+        },
+      });
+
       return {
         success: true,
         data: {
           facturasEmitidas: facturasEmitidas._count,
           facturasPagadas: facturasPagadas._count,
+          facturasPendientes: facturasPendientes._count,
         },
         message: 'Consulta satisfactoria',
       };
@@ -288,29 +301,6 @@ export class ReportesService {
     }
   }
 
-  // Function to get the total value of the inventory
-  async valorTotalInventario() {
-    try {
-      const productos = await this.prisma.producto.findMany({
-        where: { stock: { gt: 0 } },
-        select: {
-          precio: true,
-          stock: true,
-        },
-      });
-
-      const valorTotal = productos.reduce((acc, producto) => acc + producto.precio.toNumber() * producto.stock, 0);
-
-      return {
-        success: true,
-        data: { valorTotalInventario: valorTotal },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener el valor total del inventario: ${error.message}`, error);
-      throw new Error(`Error al obtener el valor total del inventario: ${error.message}`);
-    }
-  }
 
   // Function to get the last inventory movements
   async ultimosMovimientosInventario(page: number = 1, limit: number = 10) {
@@ -352,8 +342,19 @@ export class ReportesService {
   }
 
   // Function to get the inventory value by category
-  async valorInventarioPorCategoria() {
+  async valorInventario() {
     try {
+
+      const productosInventory = await this.prisma.producto.findMany({
+        where: { stock: { gt: 0 } },
+        select: {
+          precio: true,
+          stock: true,
+        },
+      });
+
+      const valorTotal = productosInventory.reduce((acc, producto) => acc + producto.precio.toNumber() * producto.stock, 0);
+
       const productos = await this.prisma.producto.findMany({
         where: { stock: { gt: 0 } },
         select: {
@@ -372,7 +373,10 @@ export class ReportesService {
 
       return {
         success: true,
-        data: valorPorCategoria,
+        data: {
+          valorTotal,
+          valorPorCategoria,
+        },
         message: 'Consulta satisfactoria',
       };
     } catch (error) {
@@ -404,23 +408,6 @@ export class ReportesService {
     }
   }
 
-  // Function to get the number of pending invoices
-  async facturasPendientes() {
-    try {
-      const facturasPendientes = await this.prisma.factura.count({
-        where: { estado: 'PENDIENTE' },
-      });
-
-      return {
-        success: true,
-        data: { facturasPendientes },
-        message: 'Consulta satisfactoria',
-      };
-    } catch (error) {
-      this.logError(`Error al obtener facturas pendientes: ${error.message}`, error);
-      throw new Error(`Error al obtener facturas pendientes: ${error.message}`);
-    }
-  }
 
   // Function to get the top selling products
   async productosMasVendidos(periodo: 'semana' | 'mes') {
@@ -539,6 +526,71 @@ export class ReportesService {
     } catch (error) {
       this.logError(`Error al calcular la utilidad bruta: ${error.message}`, error);
       throw new Error(`Error al calcular la utilidad bruta: ${error.message}`);
+    }
+  }
+
+
+
+  async getLineData(year: number) {
+    try {
+      // Array de meses en español
+      const labels = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+
+      const ventasMensuales = await Promise.all(
+        Array.from({ length: 12 }, async (_, month) => {
+          const start = startOfMonth(new Date(year, month));
+          const end = endOfMonth(new Date(year, month));
+          const ventas = await this.prisma.factura.aggregate({
+            _sum: { total: true },
+            where: { createdAt: { gte: start, lte: end }, estado: 'PAGADA' },
+          });
+          return ventas._sum.total?.toNumber() || 0;
+        })
+      );
+
+      const comprasMensuales = await Promise.all(
+        Array.from({ length: 12 }, async (_, month) => {
+          const start = startOfMonth(new Date(year, month));
+          const end = endOfMonth(new Date(year, month));
+          const compras = await this.prisma.compra.aggregate({
+            _sum: { total: true },
+            where: { createdAt: { gte: start, lte: end } },
+          });
+          return compras._sum.total?.toNumber() || 0;
+        })
+      );
+
+      const lineData = {
+        labels,
+        datasets: [
+          {
+            label: 'Ventas (RD$)',
+            data: ventasMensuales,
+            borderColor: '#28a745', // Verde para ventas
+            fill: false,
+            tension: 0.4,
+          },
+          {
+            label: 'Compras (RD$)',
+            data: comprasMensuales,
+            borderColor: '#f97316', // Naranja para compras
+            fill: false,
+            tension: 0.4,
+          },
+        ],
+      };
+
+      return {
+        success: true,
+        data: lineData,
+        message: 'Consulta satisfactoria',
+      };
+    } catch (error) {
+      this.logger.error(`Error al obtener datos de ventas y compras: ${error.message}`, error.stack);
+      throw new Error(`Error al obtener datos de ventas y compras: ${error.message}`);
     }
   }
 
