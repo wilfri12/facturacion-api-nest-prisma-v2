@@ -27,14 +27,14 @@ export class ReportesService {
       where: { createdAt: { gte: ayer, lt: hoy } },
     });
 
-    const variacion = this.calcularVariacion(ventasHoy._sum.total.toNumber(), ventasAyer._sum.total.toNumber());
+    const variacion = this.calcularVariacion(Number(ventasHoy._sum.total), Number(ventasAyer._sum.total));
 
     return {
       success: true,
       data: {
-        totalVentasHoy: ventasHoy._sum.total?.toNumber() || 0,
+        totalVentasHoy:  Number(ventasHoy._sum.total) || 0,
         cantidadVentasHoy: ventasHoy._count.id || 0,
-        totalAyer: ventasAyer._sum.total?.toNumber() || 0,
+        totalAyer:  Number(ventasAyer._sum.total) || 0,
         cantidadAyer: ventasAyer._count.id || 0,
         variacion: `${variacion}%`
       }
