@@ -24,209 +24,256 @@ export class FacturaService {
  */
   async createFactura(
     data: FacturaDto & { detalles: DetalleFactura[] },
-): Promise<ApiResponse<Factura>> {
+  ): Promise<ApiResponse<Factura>> {
     try {
-        let subtotalTotal = 0;
-        let totalItebis = 0;
+      let subtotalTotal = 0;
+      let totalItebis = 0;
 
-        const {
-            detalles,
-            empresaId,
-            metodoPago,
-            moneda,
-            usuarioId,
-            clienteId,
-            clienteNombre,
-            cajaId,
-        } = data;
+      const {
+        detalles,
+        empresaId,
+        metodoPago,
+        moneda,
+        usuarioId,
+        clienteId,
+        clienteNombre,
+        cajaId,
+      } = data;
 
-        if (!data || !detalles || detalles.length === 0) {
-            throw new Error('No se recibió ningún dato en la factura');
-        }
+      if (!data || !detalles || detalles.length === 0) {
+        throw new Error('No se recibió ningún dato en la factura');
+      }
 
-        const empresaIdNumber = parseInt(empresaId.toString());
-        const usuarioIdNumber = parseInt(usuarioId.toString());
-        const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
-        const cajaIdNumber = cajaId ? cajaId : 1;
-        const createdAt = GetLocalDate();
-        const updatedAt = GetLocalDate();
-        const estadoFactura = metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
+      const empresaIdNumber = parseInt(empresaId.toString());
+      const usuarioIdNumber = parseInt(usuarioId.toString());
+      const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
+      const cajaIdNumber = cajaId ? cajaId : 1;
+      const createdAt = GetLocalDate();
+      const updatedAt = GetLocalDate();
+      const estadoFactura = metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
 
-        const facturaData = {
-            codigo: 'FACT-', // El código se completará después con el ID de la factura
-            empresaId: empresaIdNumber,
-            estado: estadoFactura,
-            itebisTotal: 0,
-            metodoPago,
-            moneda,
-            cajaId: cajaIdNumber,
-            subtotal: 0,
-            total: 0,
-            usuarioId: usuarioIdNumber,
-            clienteId: clienteIdNumber || null,
-            clienteNombre,
-            createdAt,
-            updatedAt,
-        };
+      const facturaData = {
+        codigo: 'FACT-', // El código se completará después con el ID de la factura
+        empresaId: empresaIdNumber,
+        estado: estadoFactura,
+        itebisTotal: 0,
+        metodoPago,
+        moneda,
+        cajaId: cajaIdNumber,
+        subtotal: 0,
+        total: 0,
+        usuarioId: usuarioIdNumber,
+        clienteId: clienteIdNumber || null,
+        clienteNombre,
+        createdAt,
+        updatedAt,
+      };
 
-        const factura = await this.prisma.$transaction(async (prisma) => {
-            const secuencia = await prisma.secuencias.findUnique({ where: { nombre: 'factura' } });
-            const secuenciaFactura = (secuencia?.valor || 0) + 1;
-            await prisma.secuencias.update({
-                where: { nombre: 'factura' },
-                data: { valor: secuenciaFactura },
-            });
-
-            const createdFactura = await prisma.factura.create({
-                data: facturaData,
-            });
-
-            const productoIds = detalles.map((detalle) => detalle.productoId);
-            const productos = await prisma.producto.findMany({
-                where: { id: { in: productoIds } },
-            });
-
-            const detalleFacturaData = [];
-            const movimientoInventarioData = [];
-            const productoUpdates = [];
-            const loteUpdates = [];
-
-            for (const detalle of detalles) {
-                const producto = productos.find((p) => p.id === detalle.productoId);
-                if (!producto) throw new Error(`Producto ID ${detalle.productoId} no encontrado`);
-
-                const precioUnitario = parseFloat(producto.precio.toString());
-                const cantidad = parseInt(detalle.cantidad.toString());
-                const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
-
-                if (producto.stock < cantidad) {
-                  console.log('cantidad', cantidad);
-                  console.log('producto.stock', producto.stock);
-                  console.log('producto.stock < cantidad', producto.stock < cantidad);
-                  
-                    throw new Error(`Inventario insuficiente para el producto ${producto.nombre}`);
-                }
-
-                const importe = cantidad * precioUnitario;
-                const itebisCalculado = importe * itebisPorcentaje;
-
-                subtotalTotal += importe;
-                totalItebis += itebisCalculado;
-
-                detalleFacturaData.push({
-                    facturaId: createdFactura.id,
-                    productoId: detalle.productoId,
-                    empresaId: empresaIdNumber,
-                    cantidad,
-                    precioUnitario,
-                    itebis: itebisCalculado,
-                    importe,
-                    createdAt,
-                    updatedAt,
-                });
-
-                movimientoInventarioData.push({
-                    productoId: detalle.productoId,
-                    tipo: 'SALIDA',
-                    cantidad,
-                    descripcion: `Venta en factura FACT-${createdFactura.id}`,
-                    usuarioId: usuarioIdNumber,
-                    empresaId: empresaIdNumber,
-                    createdAt,
-                    updatedAt,
-                });
-
-                // Obtener lotes del producto ordenados por fecha de vencimiento (FIFO)
-                const lotes = await prisma.loteProducto.findMany({
-                    where: { productoId: detalle.productoId, cantidadRestante: { gt: 0 }, estado: EstadoLote.ACTIVO },
-                    orderBy: { fechaEntrada: 'asc' },
-                });
-
-                let _cantidadRestante = cantidad;
-
-                // Restar cantidades de los lotes
-                for (const lote of lotes) {
-                    if (_cantidadRestante <= 0) break;
-
-                    const cantidadARestar = Math.min(lote.cantidadRestante, _cantidadRestante);
-                    loteUpdates.push({
-                        where: { id: lote.id },
-                        data: { cantidadRestante: lote.cantidadRestante - cantidadARestar, updatedAt },
-                    });
-
-                    _cantidadRestante -= cantidadARestar;
-                }
-
-                const nuevoStock = producto.stock - cantidad;
-                const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
-
-                productoUpdates.push({
-                    where: { id: detalle.productoId },
-                    data: {
-                        stock: nuevoStock,
-                        estado: estadoProducto,
-                        updatedAt,
-                    },
-                });
-            }
-
-            await prisma.detalleFactura.createMany({ data: detalleFacturaData });
-            await prisma.movimientoInventario.createMany({ data: movimientoInventarioData });
-
-            for (const update of productoUpdates) {
-                await prisma.producto.update(update);
-            }
-
-            for (const loteUpdate of loteUpdates) {
-                await prisma.loteProducto.update(loteUpdate);
-            }
-
-            await prisma.factura.update({
-                where: { id: createdFactura.id },
-                data: {
-                    subtotal: subtotalTotal,
-                    total: subtotalTotal + totalItebis,
-                    itebisTotal: totalItebis,
-                    codigo: `FACT-${secuenciaFactura}`,
-                    estado: estadoFactura,
-                    updatedAt,
-                },
-            });
-
-            const transaccionFacturaCreated  = await prisma.transaccionVenta.create({
-                data: {
-                    facturaId: createdFactura.id,
-                    usuarioId: usuarioIdNumber,
-                    empresaId: empresaIdNumber,
-                    createdAt,
-                    updatedAt,
-                },
-            });
-
-            await prisma.transaccion.create({
-              data: {
-                tipo: 'VENTA',
-                monto: subtotalTotal + totalItebis,
-                empresaId,
-                fecha: createdAt,
-                facturaId: createdFactura.id
-              }
-            });
-
-            await prisma.detalleFactura.updateMany({
-              where: { facturaId: createdFactura.id },
-              data: { transaccionVentaId: transaccionFacturaCreated.id },
-          });
-
-            return createdFactura;
+      const factura = await this.prisma.$transaction(async (prisma) => {
+        const secuencia = await prisma.secuencias.findUnique({ where: { nombre: 'factura' } });
+        const secuenciaFactura = (secuencia?.valor || 0) + 1;
+        await prisma.secuencias.update({
+          where: { nombre: 'factura' },
+          data: { valor: secuenciaFactura },
         });
 
-        return { success: true, data: factura };
+        const createdFactura = await prisma.factura.create({
+          data: facturaData,
+        });
+
+        const productoIds = detalles.map((detalle) => detalle.productoId);
+        const productos = await prisma.producto.findMany({
+          where: { id: { in: productoIds } },
+        });
+
+        const detalleFacturaData = [];
+        const movimientoInventarioData = [];
+        const productoUpdates = [];
+        const loteUpdates = [];
+
+        for (const detalle of detalles) {
+          const producto = productos.find((p) => p.id === detalle.productoId);
+          if (!producto) throw new Error(`Producto ID ${detalle.productoId} no encontrado`);
+
+          const precioUnitario = parseFloat(producto.precio.toString());
+          const cantidad = parseInt(detalle.cantidad.toString());
+          const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
+
+          if (producto.stock < cantidad) {
+            console.log('cantidad', cantidad);
+            console.log('producto.stock', producto.stock);
+            console.log('producto.stock < cantidad', producto.stock < cantidad);
+
+            throw new Error(`Inventario insuficiente para el producto ${producto.nombre}`);
+          }
+
+          const importe = cantidad * precioUnitario;
+          const itebisCalculado = importe * itebisPorcentaje;
+
+          subtotalTotal += importe;
+          totalItebis += itebisCalculado;
+
+          detalleFacturaData.push({
+            facturaId: createdFactura.id,
+            productoId: detalle.productoId,
+            empresaId: empresaIdNumber,
+            cantidad,
+            precioUnitario,
+            itebis: itebisCalculado,
+            importe,
+            createdAt,
+            updatedAt,
+          });
+
+          movimientoInventarioData.push({
+            productoId: detalle.productoId,
+            tipo: 'SALIDA',
+            cantidad,
+            descripcion: `Venta en factura FACT-${createdFactura.id}`,
+            usuarioId: usuarioIdNumber,
+            empresaId: empresaIdNumber,
+            createdAt,
+            updatedAt,
+          });
+
+          // Obtener lotes del producto ordenados por fecha de vencimiento (FIFO)
+          const lotes = await prisma.loteProducto.findMany({
+            where: { productoId: detalle.productoId, cantidadRestante: { gt: 0 }, estado: EstadoLote.ACTIVO },
+            orderBy: { fechaEntrada: 'asc' },
+          });
+
+          let _cantidadRestante = cantidad;
+
+          // Restar cantidades de los lotes
+          for (const lote of lotes) {
+            if (_cantidadRestante <= 0) break;
+
+            const cantidadARestar = Math.min(lote.cantidadRestante, _cantidadRestante);
+            loteUpdates.push({
+              where: { id: lote.id },
+              data: { cantidadRestante: lote.cantidadRestante - cantidadARestar, updatedAt },
+            });
+
+            _cantidadRestante -= cantidadARestar;
+          }
+
+          const nuevoStock = producto.stock - cantidad;
+          const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
+
+          productoUpdates.push({
+            where: { id: detalle.productoId },
+            data: {
+              stock: nuevoStock,
+              estado: estadoProducto,
+              updatedAt,
+            },
+          });
+        }
+
+        await prisma.detalleFactura.createMany({ data: detalleFacturaData });
+        await prisma.movimientoInventario.createMany({ data: movimientoInventarioData });
+
+        for (const update of productoUpdates) {
+          await prisma.producto.update(update);
+        }
+
+        for (const loteUpdate of loteUpdates) {
+          await prisma.loteProducto.update(loteUpdate);
+        }
+
+        
+
+        const transaccionFacturaCreated = await prisma.transaccionVenta.create({
+          data: {
+            facturaId: createdFactura.id,
+            usuarioId: usuarioIdNumber,
+            empresaId: empresaIdNumber,
+            createdAt,
+            updatedAt,
+          },
+        });
+
+        await prisma.transaccion.create({
+          data: {
+            tipo: 'VENTA',
+            monto: subtotalTotal + totalItebis,
+            empresaId,
+            fecha: createdAt,
+            facturaId: createdFactura.id
+          }
+        });
+
+        await prisma.detalleFactura.updateMany({
+          where: { facturaId: createdFactura.id },
+          data: { transaccionVentaId: transaccionFacturaCreated.id },
+        });
+
+
+        const facturaUpdated = await prisma.factura.update({
+          where: { id: createdFactura.id },
+          data: {
+            subtotal: subtotalTotal,
+            total: subtotalTotal + totalItebis,
+            itebisTotal: totalItebis,
+            codigo: `FACT-${secuenciaFactura}`,
+            estado: estadoFactura,
+            updatedAt,
+          },
+          include: {
+            detallesFacturas: {
+              select: {
+                id: true,
+                producto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    precio: true,
+                    descripcion: true,
+                    codigo: true,
+                    categoria: {
+                      select: {
+                        nombre: true,
+                      }
+                    }
+                  }
+                },
+                cantidad: true,
+                importe: true,
+              }
+            },
+            Caja: {
+              select: {
+                id: true,
+                nombre: true,
+              }
+            },
+            usuario: {
+              select: {
+                id: true,
+                nombreUsuario: true,
+              },
+            },
+            empresa: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+          }
+        });
+
+        console.log(facturaUpdated);
+        
+
+        return facturaUpdated;
+      });
+
+      return { success: true, data: factura };
     } catch (error: any) {
-        console.error('Error al crear la factura:', error);
-        return { success: false, error: `${error}` };
+      console.error('Error al crear la factura:', error);
+      return { success: false, error: `${error}` };
     }
-}
+  }
 
 
 
@@ -443,35 +490,35 @@ export class FacturaService {
 
   async pagarFactura(id: number): Promise<ApiResponse<Factura>> {
     try {
-        // Busca la factura por ID
-        const factura = await this.prisma.factura.findUnique({
-            where: { id }
-        });
+      // Busca la factura por ID
+      const factura = await this.prisma.factura.findUnique({
+        where: { id }
+      });
 
-        // Verifica si la factura existe
-        if (!factura) {
-            throw new Error('Factura no encontrada');
-        }
+      // Verifica si la factura existe
+      if (!factura) {
+        throw new Error('Factura no encontrada');
+      }
 
-        // Actualiza el estado de la factura a PAGADA y guarda la fecha de actualización
-        const facturaActualizada = await this.prisma.factura.update({
-            data: { 
-                estado: Estado.PAGADA, 
-                updatedAt: GetLocalDate() 
-            },
-            where: { id }
-        });
+      // Actualiza el estado de la factura a PAGADA y guarda la fecha de actualización
+      const facturaActualizada = await this.prisma.factura.update({
+        data: {
+          estado: Estado.PAGADA,
+          updatedAt: GetLocalDate()
+        },
+        where: { id }
+      });
 
-        // Retorna la respuesta de éxito junto con la factura actualizada
-        return { success: true, data: facturaActualizada };
+      // Retorna la respuesta de éxito junto con la factura actualizada
+      return { success: true, data: facturaActualizada };
 
     } catch (error) {
-        console.error("Error al pagar la factura:", error);
+      console.error("Error al pagar la factura:", error);
 
-        // Retorna una respuesta de error con el mensaje de error específico
-        return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+      // Retorna una respuesta de error con el mensaje de error específico
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
-}
+  }
 
 
 
