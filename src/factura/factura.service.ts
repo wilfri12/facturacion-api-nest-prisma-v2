@@ -530,13 +530,8 @@ export class FacturaService {
         endDate,
         estado,
         metodoPago,
-        page = 1,
-        limit = 10,
       } = params;
   
-      // Cálculo de `skip` y `take` para la paginación
-      const skip = (page - 1) * limit;
-      const take = limit;
   
       // Construcción de filtros condicionales
       const filters: any = {};
@@ -598,8 +593,6 @@ export class FacturaService {
               },
             },
           },
-          skip,
-          take,
           orderBy: {
             createdAt: 'desc', // Ordenar por fecha descendente
           },

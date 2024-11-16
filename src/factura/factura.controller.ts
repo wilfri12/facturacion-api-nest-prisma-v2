@@ -97,8 +97,6 @@ export class FacturaController {
     @Query('endDate') endDate: string,
     @Query('estado') estado?: string,
     @Query('metodoPago') metodoPago?: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10'
   ) {
     try {
 
@@ -111,8 +109,6 @@ export class FacturaController {
         endDate: endDate ? new Date(endDate) : undefined,
         estado,
         metodoPago,
-        page: parseInt(page, 10),
-        limit: parseInt(limit, 10),
       });
 
       // Configurar los encabezados para enviar el PDF

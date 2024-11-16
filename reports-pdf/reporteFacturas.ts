@@ -63,8 +63,6 @@ export const reporteFacturas = (
   const totalFacturas = facturas.length;
   const totalMonto = facturas.reduce((sum, factura) => sum + Number(factura.total), 0);
 
-  const _startDate: Date = startDate ? new Date(startDate) : null;
-  const _endDate: Date = endDate ? new Date(endDate) : null;
 
   // Filas de las facturas
   const facturasRows = facturas.flatMap((factura) => {
