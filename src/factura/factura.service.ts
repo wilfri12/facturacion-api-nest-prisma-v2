@@ -4,9 +4,10 @@ import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
 import { DetalleFactura, Estado, EstadoLote, EstadoProducto, EstadoTransaccion, Factura, MetodoPago } from '@prisma/client';
 import { PrinterService } from 'src/printer/printer.service';
-import { facturaReport } from 'report/factura.report';
+import { facturaReport } from 'reports-pdf/imprimirFactura';
 import { FacturaInterface } from 'src/interface/factura.interface';
 import { GetLocalDate } from 'src/utility/getLocalDate';
+import { reporteFacturas } from 'reports-pdf/reporteFacturas';
 
 @Injectable()
 export class FacturaService {
@@ -100,10 +101,6 @@ export class FacturaService {
           const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
 
           if (producto.stock < cantidad) {
-            console.log('cantidad', cantidad);
-            console.log('producto.stock', producto.stock);
-            console.log('producto.stock < cantidad', producto.stock < cantidad);
-
             throw new Error(`Inventario insuficiente para el producto ${producto.nombre}`);
           }
 
@@ -261,10 +258,6 @@ export class FacturaService {
             },
           }
         });
-
-        console.log(facturaUpdated);
-        
-
         return facturaUpdated;
       });
 
@@ -278,8 +271,8 @@ export class FacturaService {
 
 
 
-  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
-    const { startDate, endDate, estado, page = 1, pageSize = 10 } = params;
+  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago? : MetodoPago, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
+    const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago } = params;
 
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
     const pageNumber = Math.max(1, parseInt(page.toString()));
@@ -295,7 +288,8 @@ export class FacturaService {
             AND: [
               startDateTime ? { createdAt: { gte: startDateTime } } : {},
               endDateTime ? { createdAt: { lte: endDateTime } } : {},
-              estado ? { estado: estado } : {}
+              estado ? { estado: estado } : {},
+              metodoPago ? { metodoPago: metodoPago } : {}
             ]
           },
           include: {
@@ -519,6 +513,122 @@ export class FacturaService {
       return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
+
+
+  async facturaReportByParams(params: {
+    startDate?: Date;
+    endDate?: Date;
+    estado?: string;
+    metodoPago?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    try {
+      // Desestructuramos los parámetros y establecemos valores predeterminados para la paginación
+      const {
+        startDate,
+        endDate,
+        estado,
+        metodoPago,
+        page = 1,
+        limit = 10,
+      } = params;
+  
+      // Cálculo de `skip` y `take` para la paginación
+      const skip = (page - 1) * limit;
+      const take = limit;
+  
+      // Construcción de filtros condicionales
+      const filters: any = {};
+      if (startDate && endDate) {
+        filters.createdAt = {
+          gte: startDate,
+          lte: endDate,
+        };
+      }
+      if (estado) {
+        filters.estado = estado;
+      }
+      if (metodoPago) {
+        filters.metodoPago = metodoPago;
+      }
+  
+      // Consulta en Prisma para recuperar las facturas
+      const [facturas, total, totalMonto] = await Promise.all([
+        this.prisma.factura.findMany({
+          where: filters,
+          include: {
+            detallesFacturas: {
+              select: {
+                id: true,
+                producto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    precio: true,
+                    descripcion: true,
+                    codigo: true,
+                    categoria: {
+                      select: {
+                        nombre: true,
+                      },
+                    },
+                  },
+                },
+                cantidad: true,
+                importe: true,
+              },
+            },
+            Caja: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+            usuario: {
+              select: {
+                id: true,
+                nombreUsuario: true,
+              },
+            },
+            empresa: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+          },
+          skip,
+          take,
+          orderBy: {
+            createdAt: 'desc', // Ordenar por fecha descendente
+          },
+        }),
+        this.prisma.factura.count({ where: filters }), // Total de registros
+        this.prisma.factura.aggregate({
+          where: filters,
+          _sum: {
+            total: true, // Total acumulado de todas las facturas
+          },
+        }).then((res) => res._sum.total || 0),
+      ]);
+  
+      // Llamar a la función `reporteFacturas` para generar el PDF
+      const docDefinition = reporteFacturas(
+        facturas,
+        startDate ? startDate.toISOString() : undefined,
+        endDate ? endDate.toISOString() : undefined
+      );
+      const pdfDoc = await this.printerService.createPdf(docDefinition);
+  
+      return pdfDoc;
+    } catch (error: any) {
+      console.error('Error al recuperar las facturas:', error);
+      throw new Error('No se pudieron recuperar las facturas. Verifique los parámetros.');
+    }
+  }
+  
+  
 
 
 

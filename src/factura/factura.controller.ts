@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { FacturaDto } from './DTO/factura.dto';
-import { DetalleFactura, Estado, Factura } from '@prisma/client';
+import { DetalleFactura, Estado, Factura, MetodoPago } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { Response } from 'express';
 import { AuthGuard } from 'src/auth/auth/auth.guard';
@@ -30,6 +30,7 @@ export class FacturaController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('estado') estado?: Estado,
+    @Query('metodoPago') metodoPago?: MetodoPago,
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number
   ): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number }>> {
@@ -46,6 +47,7 @@ export class FacturaController {
         startDate: start,
         endDate: end,
         estado,
+        metodoPago,
         page,
         pageSize
       });
@@ -86,19 +88,47 @@ export class FacturaController {
       response.status(500).send('Error al generar el reporte PDF');
     }
 
-    /* @Get('report-factura/:id')
-     async employmentLetterById(@Res() response: Response, @Param('id') id: string){
-       try {
-         const pdfDoc = await this.facturaService.facturareportByIds(+id);
-         // response.setHeader('Content-Type', 'application/pdf');
-         // pdfDoc.pipe(response);
-         // pdfDoc.end();  // End the PDF document after piping
-         return pdfDoc;
-       } catch (error) {
-         console.error(error);
-         response.status(500).send('Error al generar el reporte PDF');
-       }
-     }*/
+  }
+
+  @Get('generar/reporte/facturas')
+  async generarReporteFacturas(
+    @Res() response: Response,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('estado') estado?: string,
+    @Query('metodoPago') metodoPago?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    try {
+
+      if (startDate === undefined || endDate === undefined) {
+        throw "El rango de fecha no es valido";
+      }
+      // Llamar al servicio para generar el PDF
+      const pdfDoc = await this.facturaService.facturaReportByParams({
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        estado,
+        metodoPago,
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+      });
+
+      // Configurar los encabezados para enviar el PDF
+      response.setHeader('Content-Type', 'application/pdf');
+      response.setHeader(
+        'Content-Disposition',
+        'attachment; filename="Reporte_Facturas.pdf"'
+      );
+
+      // Enviar el PDF al cliente
+      pdfDoc.pipe(response);
+      pdfDoc.end();
+    } catch (error) {
+      console.error('Error al generar el reporte de facturas:', error);
+      response.status(500).send('Error al generar el reporte de facturas');
+    }
   }
 
 
@@ -124,4 +154,7 @@ export class FacturaController {
       throw new HttpException(error.message || 'Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+
+  
 }

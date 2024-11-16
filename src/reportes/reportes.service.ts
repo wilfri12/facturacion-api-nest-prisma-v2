@@ -47,9 +47,6 @@ export class ReportesService {
     const validatedPage = Math.max(1, page);
     const validatedLimit = Math.max(1, limit);
 
-    console.log('Se ejecuto el:', new Date(GetLocalDate().getTime()));
-    
-
     try {
       const [productos, totalRecords] = await Promise.all([
         this.prisma.producto.findMany({

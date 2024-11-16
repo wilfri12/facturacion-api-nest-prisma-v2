@@ -156,15 +156,20 @@ export class CompraService {
         : Promise<ApiResponse<{ compras: Compra[], totalRecords: number, currentPage: number, totalPages: number }>> {
 
         const { startDate, endDate, page = 1, pageSize = 10 } = params;
-
         // Validación: evita páginas negativas o tamaños de página demasiado pequeños
         const pageNumber = Math.max(1, parseInt(page.toString()));
         const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
-
         try {
-            const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
-            const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
+            let startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
+            let endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
 
+            if (startDate && endDate === undefined) {
+              endDateTime =  new Date(new Date(endDateTime.getMonth() + 1).setUTCHours(23, 59, 59, 999))
+            }
+
+            if (endDate && startDate === undefined) {
+              startDateTime =  new Date(new Date(startDateTime.getMonth() - 1).setUTCHours(23, 59, 59, 999))
+            }
             const [compras, totalRecords] = await Promise.all([
                 this.prisma.compra.findMany(
                     {
