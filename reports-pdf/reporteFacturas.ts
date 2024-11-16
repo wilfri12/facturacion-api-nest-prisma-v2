@@ -2,6 +2,7 @@ import type { StyleDictionary, TDocumentDefinitions } from 'pdfmake';
 import { DateFormatter } from 'src/helpers';
 import { formatCurrency } from 'src/helpers/formatCurrency';
 import { FacturaInterface } from 'src/interface/factura.interface';
+import { GetLocalDate } from 'src/utility/getLocalDate';
 
 // Estilos mejorados
 const styles: StyleDictionary = {
@@ -15,6 +16,13 @@ const styles: StyleDictionary = {
   subHeader: {
     fontSize: 14,
     bold: true,
+    alignment: 'center',
+    color: '#333333',
+    margin: [0, 5, 0, 10],
+  },
+  periodo: {
+    fontSize: 10,
+    bold: false,
     alignment: 'center',
     color: '#333333',
     margin: [0, 5, 0, 10],
@@ -62,6 +70,48 @@ export const reporteFacturas = (
 ): TDocumentDefinitions => {
   const totalFacturas = facturas.length;
   const totalMonto = facturas.reduce((sum, factura) => sum + Number(factura.total), 0);
+
+  // Función para obtener el nombre del mes en español
+const getMonthName = (monthNumber:number) => {
+    const months = [
+      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+    ];
+    return months[monthNumber];
+  };
+
+  // Formatear las fechas
+const formatDate = (date: Date) => {
+    const day = date.getDate();
+    const month = getMonthName(date.getMonth());
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+
+// Calcular la diferencia detallada en meses y días
+const calculateDetailedDifference = (start: Date, end: Date) => {
+    let months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+  
+    let days = end.getDate() - start.getDate();
+  
+    // Ajustar si los días son negativos
+    if (days < 0) {
+      const previousMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+      days += previousMonth.getDate(); // Añadimos los días del mes anterior
+      months -= 1;
+    }
+  
+    return { months, days };
+  };
+
+
+const formattedStartDate = formatDate(new Date(startDate));
+const formattedEndDate = formatDate(new Date(endDate));
+const { months, days } = calculateDetailedDifference(new Date(startDate), new Date(endDate));
+
 
 
   // Filas de las facturas
@@ -125,6 +175,11 @@ export const reporteFacturas = (
             text: 'Reporte Consolidado de Facturas',
             style: 'subHeader',
           },
+
+          {
+            text: `${formattedStartDate} a ${formattedEndDate} (${months} ${months === 1 ? 'mes' : 'meses'}${days > 0 ? ` y ${days} ${days === 1 ? 'día' : 'días'}` : ''})`,
+            style: 'periodo',
+          },
           {
             canvas: [
               {
@@ -186,12 +241,12 @@ export const reporteFacturas = (
         margin: [40, 10, 40, 10], // Márgenes ajustados
         columns: [
           {
-            text: `${new Date().toLocaleDateString('es-ES', {
+            text: `${ GetLocalDate().toLocaleDateString('es-ES', {
               weekday: 'long',
               day: '2-digit',
               month: 'short',
               year: 'numeric',
-            })} a las ${new Date().toLocaleTimeString('es-ES', {
+            })} a las ${ GetLocalDate().toLocaleTimeString('es-ES', {
               hour: '2-digit',
               minute: '2-digit',
               hour12: true,

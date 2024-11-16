@@ -178,7 +178,7 @@ export class FacturaService {
           await prisma.loteProducto.update(loteUpdate);
         }
 
-        
+
 
         const transaccionFacturaCreated = await prisma.transaccionVenta.create({
           data: {
@@ -271,7 +271,7 @@ export class FacturaService {
 
 
 
-  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago? : MetodoPago, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
+  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
     const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago } = params;
 
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
@@ -286,6 +286,7 @@ export class FacturaService {
         this.prisma.factura.findMany({
           where: {
             AND: [
+
               startDateTime ? { createdAt: { gte: startDateTime } } : {},
               endDateTime ? { createdAt: { lte: endDateTime } } : {},
               estado ? { estado: estado } : {},
@@ -531,14 +532,51 @@ export class FacturaService {
         estado,
         metodoPago,
       } = params;
+
+      const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
+      const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
+
+      // Función para obtener el nombre del mes en español
+const getMonthName = (monthNumber:number) => {
+  const months = [
+    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+  ];
+  return months[monthNumber];
+};
+
+// Formatear las fechas
+const formatDate = (date: Date) => {
+  const day = date.getDate();
+  const month = getMonthName(date.getMonth());
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+
+// Calcular la diferencia en meses
+const calculateMonthDifference = (start:Date, end:Date) => {
+  return (
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth())
+  );
+};
+
+const monthsDifference = calculateMonthDifference(new Date(startDate), new Date(endDate));
+
+if (monthsDifference > 6) {
+
+  throw "El rango de fechas no puede exceder los 6 meses."
   
-  
+}
+
+
       // Construcción de filtros condicionales
       const filters: any = {};
       if (startDate && endDate) {
         filters.createdAt = {
-          gte: startDate,
-          lte: endDate,
+          gte: startDateTime,
+          lte: endDateTime,
         };
       }
       if (estado) {
@@ -547,7 +585,7 @@ export class FacturaService {
       if (metodoPago) {
         filters.metodoPago = metodoPago;
       }
-  
+
       // Consulta en Prisma para recuperar las facturas
       const [facturas, total, totalMonto] = await Promise.all([
         this.prisma.factura.findMany({
@@ -605,7 +643,7 @@ export class FacturaService {
           },
         }).then((res) => res._sum.total || 0),
       ]);
-  
+
       // Llamar a la función `reporteFacturas` para generar el PDF
       const docDefinition = reporteFacturas(
         facturas,
@@ -613,15 +651,15 @@ export class FacturaService {
         endDate ? endDate.toISOString() : undefined
       );
       const pdfDoc = await this.printerService.createPdf(docDefinition);
-  
+
       return pdfDoc;
     } catch (error: any) {
       console.error('Error al recuperar las facturas:', error);
       throw new Error('No se pudieron recuperar las facturas. Verifique los parámetros.');
     }
   }
-  
-  
+
+
 
 
 
