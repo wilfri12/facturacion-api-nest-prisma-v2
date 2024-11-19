@@ -190,21 +190,10 @@ export class FacturaService {
           },
         });
 
-        await prisma.transaccion.create({
-          data: {
-            tipo: 'VENTA',
-            monto: subtotalTotal + totalItebis,
-            empresaId,
-            fecha: createdAt,
-            facturaId: createdFactura.id
-          }
-        });
-
         await prisma.detalleFactura.updateMany({
           where: { facturaId: createdFactura.id },
           data: { transaccionVentaId: transaccionFacturaCreated.id },
         });
-
 
         const facturaUpdated = await prisma.factura.update({
           where: { id: createdFactura.id },

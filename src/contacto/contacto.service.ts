@@ -10,7 +10,7 @@ export class ContactoService {
   constructor(private prisma: PrismaService) { }
 
   async createContacto(data: ContactoDto): Promise<ApiResponse<Contacto>> {
-    const { direccion, email, instagram, telefono, whatsapp } = data;
+    const { direccion, email, instagram, telefono, whatsapp, empresaId } = data;
 
     const contactoData = {
       direccion,
@@ -18,9 +18,13 @@ export class ContactoService {
       instagram,
       telefono,
       whatsapp,
+      empresaId,
       createdAt: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
+
+    console.log(contactoData);
+    
 
     try {
       const contacto = await this.prisma.contacto.create({

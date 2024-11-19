@@ -9,7 +9,7 @@ import { GetLocalDate } from 'src/utility/getLocalDate';
 export class CompraService {
     constructor(private readonly prisma: PrismaService) { }
 
-    async createCompra(data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
+    async create(data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
         const { empresaId, moneda, usuarioId, detalles } = data;
         let montoTotalCompra = 0;
         const parsedEmpresaId = parseInt(empresaId.toString());
@@ -109,17 +109,6 @@ export class CompraService {
                     data: { total: montoTotalCompra, updatedAt },
                 });
     
-                // Step 7: Register the main and specific transactions
-                await prisma.transaccion.create({
-                    data: {
-                        tipo: 'COMPRA',
-                        monto: montoTotalCompra,
-                        empresaId: parsedEmpresaId,
-                        fecha: createdAt,
-                        compraId: compraCreated.id,
-                    },
-                });
-    
                 const transaccionCompraCreated = await prisma.transaccionCompra.create({
                     data: {
                         compraId: compraCreated.id,
@@ -152,7 +141,8 @@ export class CompraService {
     
     
 
-    async findAllCompra(params: { startDate?: Date, endDate?: Date, page?: number, pageSize?: number })
+    async findAll
+    (params: { startDate?: Date, endDate?: Date, page?: number, pageSize?: number })
         : Promise<ApiResponse<{ compras: Compra[], totalRecords: number, currentPage: number, totalPages: number }>> {
 
         const { startDate, endDate, page = 1, pageSize = 10 } = params;
@@ -204,7 +194,6 @@ export class CompraService {
                                     subtotal: true,
                                 }
                             },
-                            Transaccion: true,
                             TransaccionCompra: true,
                             LoteProducto: true
 
@@ -242,42 +231,57 @@ export class CompraService {
     }
 
 
-    async deleteTransaccionCompra(transaccionCompraId: number): Promise<{success?: boolean, message?: string, error?: string}> {
+    async delete(compraId: number): Promise<{success?: boolean, message?: string, error?: string}> {
         try {
           await this.prisma.$transaction(async (prisma) => {
-            console.log(`Iniciando proceso de "soft delete" para la transacción de compra con ID: ${transaccionCompraId}`);
+            console.log(`Iniciando proceso de "soft delete" para la transacción de compra con ID: ${compraId}`);
             
             // 1. Obtener la transacción y los datos relacionados
-            console.log(`Consultando transacción y sus datos relacionados para ID: ${transaccionCompraId}`);
-            const transaccion = await prisma.transaccionCompra.findUnique({
-              where: { id: transaccionCompraId },
+            console.log(`Consultando transacción y sus datos relacionados para ID: ${compraId}`);
+            const compra = await prisma.compra.findUnique({
+              where: { id: compraId },
               include: {
-                compra: true,
-                detallesCompra: {
-                  include: { producto: true }
+                LoteProducto: true,
+                detallesCompras: {
+                  include:{ producto: true}
                 },
-                lotes: true,
+                TransaccionCompra: true,
                 usuario: true,
-                empresa: true,
+
               },
             });
       
-            if (!transaccion) {
-              console.log(`Transacción con ID ${transaccionCompraId} no encontrada`);
-              throw new Error("Transacción no encontrada");
+            if (!compra) {
+              console.log(`Compra con ID ${compraId} no encontrada`);
+              throw new Error("Compra no encontrada");
             }
       
-            if (transaccion.estado !== "ACTIVA") {
-              console.log(`La transacción con ID ${transaccionCompraId} ya no está activa`);
-              throw new Error("La transacción no está activa");
+            if (compra.delete) {
+              console.log(`La Compra con ID ${compraId} había sido eliminada anteriormente`);
+              throw new Error("La Compra había sido eliminada anteriormente");
+            } 
+
+            for (const lote of compra.LoteProducto)
+            {
+              if (lote.estado === 'ACTIVO') {
+                throw `El lote ${lote.id} está activado, no se puede eliminar la compra.`
+              }
+
+              await prisma.loteProducto.updateMany({
+                where:{id: lote.id, delete: false},
+                data: {updatedAt: GetLocalDate(), delete: true}
+              })
+
             }
+
             
-            console.log(`Transacción encontrada. Estado actual: ${transaccion.estado}`);
+           
+            
       
             // 2. Marcar la transacción, compra y sus detalles como eliminados
             console.log(`Marcando la transacción de compra, la compra y sus detalles como eliminados`);
             await prisma.transaccionCompra.update({
-              where: { id: transaccionCompraId },
+              where: { id: compraId },
               data: {
                 estado: "ANULADA",
                 motivoAnulacion: "Anulación de compra",
@@ -285,23 +289,24 @@ export class CompraService {
                 updatedAt: GetLocalDate(),
               },
             });
-            console.log(`Transacción con ID ${transaccionCompraId} marcada como ANULADA`);
+            console.log(`Transacción con ID ${compraId} marcada como ANULADA`);
       
             await prisma.compra.update({
-              where: { id: transaccion.compraId },
+              where: { id: compraId, delete: false},
               data: { delete: true, updatedAt: GetLocalDate() },
             });
-            console.log(`Compra con ID ${transaccion.compraId} marcada como eliminada`);
+
+            console.log(`Compra con ID ${compraId} marcada como eliminada`);
       
             await prisma.detalleCompra.updateMany({
-              where: { compraId: transaccion.compraId },
+              where: { compraId: compraId },
               data: { delete: true, updatedAt: GetLocalDate() },
             });
-            console.log(`Detalles de compra para la compra ID ${transaccion.compraId} marcados como eliminados`);
+            console.log(`Detalles de compra para la compra ID ${compraId} marcados como eliminados`);
       
             // 3. Ajustar inventario y marcar lotes como eliminados
             console.log(`Ajustando el inventario y marcando lotes como eliminados`);
-            for (const detalle of transaccion.detallesCompra) {
+            for (const detalle of compra.detallesCompras) {
               const { productoId, cantidad } = detalle;
               console.log(`Procesando ajuste de inventario para ProductoID: ${productoId}, Cantidad: ${cantidad}`);
               
@@ -312,48 +317,18 @@ export class CompraService {
                   tipo: 'AJUSTE',
                   cantidad: -cantidad,
                   descripcion: 'Ajuste por anulación de compra',
-                  usuarioId: transaccion.usuarioId,
-                  empresaId: transaccion.empresaId,
+                  usuarioId: compra.usuarioId,
+                  empresaId: compra.empresaId,
                   createdAt: GetLocalDate(),
                   updatedAt: GetLocalDate(),
                 },
               });
               console.log(`Movimiento de ajuste creado para ProductoID: ${productoId}`);
-      
-             
-      
-              // Ajustar o eliminar los lotes de la compra
-              let cantidadARevertir = cantidad;
-              for (const lote of transaccion.lotes) {
-                if (lote.productoId === productoId && cantidadARevertir > 0) {
-                  const ajuste = Math.min(lote.cantidadRestante, cantidadARevertir);
-                  console.log(`Ajustando lote ID ${lote.id} para ProductoID ${productoId}. Cantidad a revertir: ${ajuste}`);
-                  
-                  if (ajuste === lote.cantidadRestante) {
-                    await prisma.loteProducto.update({
-                      where: { id: lote.id },
-                      data: { delete: true, updatedAt: GetLocalDate() },
-                    });
-                    console.log(`Lote ID ${lote.id} marcado como eliminado`);
-                  } else {
-                    await prisma.loteProducto.update({
-                      where: { id: lote.id },
-                      data: {
-                        cantidadRestante: lote.cantidadRestante - ajuste,
-                        updatedAt: GetLocalDate(),
-                      },
-                    });
-                    console.log(`Lote ID ${lote.id} cantidad restante ajustada a: ${lote.cantidadRestante - ajuste}`);
-                  }
-                  cantidadARevertir -= ajuste;
-                }
-              }
             }
-            
-            console.log(`Proceso de "soft delete" completado para la transacción de compra con ID ${transaccionCompraId}`);
+            console.log(`Proceso de "soft delete" completado para la transacción de compra con ID ${compraId}`);
           });
           
-          return { success: true, message: 'Transacción anulada exitosamente y ajustes realizados.' };
+          return { success: true, message: 'La compra ha sido eliminada exitosamente' };
         } catch (error) {
           console.error('Error al anular la transacción de compra:', error);
           return { success: false, error: `${error}` };

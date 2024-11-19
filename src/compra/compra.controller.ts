@@ -10,7 +10,7 @@ export class CompraController {
     @Post()
     async createCompra(@Body() data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
         try {
-            const compra = await this.compraService.createCompra(data);
+            const compra = await this.compraService.create(data);
             
             return compra;
 
@@ -35,7 +35,7 @@ export class CompraController {
                 return
             }
 
-            const compras = await this.compraService.findAllCompra(
+            const compras = await this.compraService.findAll(
                 {startDate: start,
                 endDate: end,
                 page,
@@ -48,7 +48,7 @@ export class CompraController {
         }
     }
 
-    @Delete('transaccion/:id')
+    @Delete(':id')
   async softDeleteCompra(
     @Param('id') id: string
   ) {
@@ -56,7 +56,7 @@ export class CompraController {
       console.log(`Iniciando proceso de eliminación suave para la compra con ID: ${id}`);
       
       // Llamamos al servicio que maneja la lógica de eliminación suave
-      const result = await this.compraService.deleteTransaccionCompra(+id);
+      const result = await this.compraService.delete(+id);
 
       console.log(`Eliminación suave de compra con ID ${id} completada exitosamente`);
       return {

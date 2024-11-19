@@ -6,7 +6,7 @@ import { Producto } from '@prisma/client';
 
 @Injectable()
 export class ReportesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Servicio que compara ventas diarias de hoy y ayer
   async compararVentasDiarias(): Promise<ApiResponse<{ totalVentasHoy: number; cantidadVentasHoy: number; totalAyer: number; cantidadAyer: number; variacion: string }>> {
@@ -33,9 +33,9 @@ export class ReportesService {
     return {
       success: true,
       data: {
-        totalVentasHoy:  Number(ventasHoy._sum.total) || 0,
+        totalVentasHoy: Number(ventasHoy._sum.total) || 0,
         cantidadVentasHoy: ventasHoy._count.id || 0,
-        totalAyer:  Number(ventasAyer._sum.total) || 0,
+        totalAyer: Number(ventasAyer._sum.total) || 0,
         cantidadAyer: ventasAyer._count.id || 0,
         variacion: `${Number(variacion.toFixed(2))}%`
       }
@@ -91,6 +91,9 @@ export class ReportesService {
     const validatedLimit = Math.max(1, limit);
     const validatedUmbral = Math.max(1, umbral);
 
+    console.log('Bajo stock', params);
+
+
     try {
       const [productos, totalRecords] = await Promise.all([
         this.prisma.producto.findMany({
@@ -130,40 +133,44 @@ export class ReportesService {
 
   // Servicio que obtiene resumen de ventas por categoría
   async resumenVentasPorCategoria(periodo: 'dia' | 'semana' | 'mes', umbral: number = 0): Promise<ApiResponse<{ categoria: string; totalVentas: number; cantidadVentas: number }[]>> {
-  const fechaInicio = this.calcularFechaInicio(periodo);
-  
-  // Agrupamos por producto en los detalles de factura y sumamos el importe
-  const ventas = await this.prisma.detalleFactura.groupBy({
-    by: ['productoId'],
-    _sum: { importe: true },
-    _count: { id: true },
-    where: {
-      factura: { createdAt: { gte: fechaInicio } }
-    }
-  });
+    const fechaInicio = this.calcularFechaInicio(periodo);
 
-  // Mapeamos las ventas para obtener la categoría asociada a cada producto
-  const ventasPorCategoria = await Promise.all(
-    ventas.map(async (venta) => {
-      const producto = await this.prisma.producto.findUnique({
-        where: { id: venta.productoId },
-        select: { categoria: { select: { nombre: true } } }
-      });
+    console.log('resumenVentasPorCategoria', periodo);
+    console.log('resumenVentasPorCategoria', fechaInicio);
 
-      return {
-        categoria: producto?.categoria.nombre || 'Sin categoría',
-        totalVentas: Number(venta._sum.importe) || 0,
-        cantidadVentas: venta._count.id || 0
-      };
-    })
-  );
 
-  // Filtramos según el umbral y preparamos la respuesta
-  return {
-    success: true,
-    data: ventasPorCategoria.filter(v => v.totalVentas >= umbral)
-  };
-}
+    // Agrupamos por producto en los detalles de factura y sumamos el importe
+    const ventas = await this.prisma.detalleFactura.groupBy({
+      by: ['productoId'],
+      _sum: { importe: true },
+      _count: { id: true },
+      where: {
+        factura: { createdAt: { gte: fechaInicio } }
+      }
+    });
+
+    // Mapeamos las ventas para obtener la categoría asociada a cada producto
+    const ventasPorCategoria = await Promise.all(
+      ventas.map(async (venta) => {
+        const producto = await this.prisma.producto.findUnique({
+          where: { id: venta.productoId },
+          select: { categoria: { select: { nombre: true } } }
+        });
+
+        return {
+          categoria: producto?.categoria.nombre || 'Sin categoría',
+          totalVentas: Number(venta._sum.importe) || 0,
+          cantidadVentas: venta._count.id || 0
+        };
+      })
+    );
+
+    // Filtramos según el umbral y preparamos la respuesta
+    return {
+      success: true,
+      data: ventasPorCategoria.filter(v => v.totalVentas >= umbral)
+    };
+  }
 
 
   // Servicio que calcula el valor total del inventario
@@ -212,6 +219,10 @@ export class ReportesService {
   // Servicio que calcula utilidad bruta en un periodo
   async calcularUtilidadBruta(periodo: 'semana' | 'mes'): Promise<ApiResponse<{ totalVentas: number; totalCosto: number; utilidadBruta: number }>> {
     const fechaInicio = this.calcularFechaInicio(periodo);
+
+    console.log('calcularUtilidadBruta', periodo);
+    console.log('calcularUtilidadBruta', fechaInicio);
+    
     const ventas = await this.prisma.factura.aggregate({
       _sum: { total: true },
       where: { createdAt: { gte: fechaInicio } }
@@ -233,53 +244,59 @@ export class ReportesService {
   }
 
   // Servicio que obtiene productos más vendidos
-async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10): Promise<ApiResponse<{ producto: string; categoria: string; totalVentas: number }[]>> {
-  const fechaInicio = this.calcularFechaInicio(periodo);
-  
-  // Agrupamos los detalles de factura por producto y sumamos las cantidades
-  const productosVendidos = await this.prisma.detalleFactura.groupBy({
-    by: ['productoId'],
-    _sum: { cantidad: true },
-    where: {
-      factura: { createdAt: { gte: fechaInicio } }
-    },
-    orderBy: {
-      _sum: { cantidad: 'desc' }
-    },
-    take: Number(limite)
-  });
+  async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10): Promise<ApiResponse<{ producto: string; categoria: string; totalVentas: number }[]>> {
+    const fechaInicio = this.calcularFechaInicio(periodo);
 
-  // Mapeamos los resultados para obtener los nombres de productos y categorías
-  const productosConDetalles = await Promise.all(
-    productosVendidos.map(async (producto) => {
-      const detallesProducto = await this.prisma.producto.findUnique({
-        where: { id: producto.productoId },
-        select: {
-          nombre: true,
-          categoria: {
-            select: { nombre: true }
+    console.log('obtenerProductosMasVendidos', periodo);
+    console.log('obtenerProductosMasVendidos', fechaInicio);
+
+    // Agrupamos los detalles de factura por producto y sumamos las cantidades
+    const productosVendidos = await this.prisma.detalleFactura.groupBy({
+      by: ['productoId'],
+      _sum: { cantidad: true },
+      where: {
+        factura: { createdAt: { gte: fechaInicio } }
+      },
+      orderBy: {
+        _sum: { cantidad: 'desc' }
+      },
+      take: Number(limite)
+    });
+
+    // Mapeamos los resultados para obtener los nombres de productos y categorías
+    const productosConDetalles = await Promise.all(
+      productosVendidos.map(async (producto) => {
+        const detallesProducto = await this.prisma.producto.findUnique({
+          where: { id: producto.productoId },
+          select: {
+            nombre: true,
+            categoria: {
+              select: { nombre: true }
+            }
           }
-        }
-      });
-      return {
-        producto: detallesProducto?.nombre || 'Producto desconocido',
-        categoria: detallesProducto?.categoria.nombre || 'Sin categoría',
-        totalVentas: producto._sum.cantidad || 0
-      };
-    })
-  );
+        });
+        return {
+          producto: detallesProducto?.nombre || 'Producto desconocido',
+          categoria: detallesProducto?.categoria.nombre || 'Sin categoría',
+          totalVentas: producto._sum.cantidad || 0
+        };
+      })
+    );
 
-  return {
-    success: true,
-    data: productosConDetalles
-  };
-}
+    return {
+      success: true,
+      data: productosConDetalles
+    };
+  }
 
 
   // Servicio que obtiene resumen de facturas por estado
   async resumenFacturasPorEstado(year: number): Promise<ApiResponse<{ facturasEmitidas: number; totalEmitido: number; facturasPagadas: number; totalPagado: number; facturasPendientes: number; totalPendiente: number }>> {
     const inicioAño = new Date(`${Number(year)}-01-01`);
     const finAño = new Date(`${Number(year) + 1}-01-01`);
+
+    console.log('resumenFacturasPorEstado', inicioAño);
+    console.log('resumenFacturasPorEstado', finAño);
 
     const facturasEmitidas = await this.prisma.factura.aggregate({
       _count: { id: true },
@@ -308,53 +325,58 @@ async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10
     };
   }
 
- // Servicio que obtiene datos de ventas y compras mensuales para el year especificado
-async obtenerDatosVentasComprasMensuales(year: number): Promise<ApiResponse<{ etiquetas: string[]; datosVentas: number[]; datosCompras: number[] }>> {
-  const etiquetas = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  const datosVentas = Array(12).fill(0);
-  const datosCompras = Array(12).fill(0);
+  // Servicio que obtiene datos de ventas y compras mensuales para el year especificado
+  async obtenerDatosVentasComprasMensuales(year: number): Promise<ApiResponse<{ etiquetas: string[]; datosVentas: number[]; datosCompras: number[] }>> {
+    const etiquetas = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const datosVentas = Array(12).fill(0);
+    const datosCompras = Array(12).fill(0);
 
-  // Obtener ventas agrupadas por mes
-  const ventas = await this.prisma.factura.groupBy({
-    by: ['createdAt'],
-    _sum: { total: true },
-    where: {
-      createdAt: {
-        gte: new Date(`${Number(year)}-01-01`),
-        lt: new Date(`${Number(year) + 1}-01-01`)
+    console.log('obtenerDatosVentasComprasMensuales', year);
+    console.log('obtenerDatosVentasComprasMensuales', etiquetas);
+    console.log('obtenerDatosVentasComprasMensuales', datosVentas);
+    console.log('obtenerDatosVentasComprasMensuales', datosCompras);
+
+    // Obtener ventas agrupadas por mes
+    const ventas = await this.prisma.factura.groupBy({
+      by: ['createdAt'],
+      _sum: { total: true },
+      where: {
+        createdAt: {
+          gte: new Date(`${Number(year)}-01-01`),
+          lt: new Date(`${Number(year) + 1}-01-01`)
+        }
       }
-    }
-  });
+    });
 
-  // Distribuir ventas en el array de datosVentas basado en el mes
-  ventas.forEach(venta => {
-    const mes = new Date(venta.createdAt).getMonth();
-    datosVentas[mes] += Number(venta._sum.total) || 0;
-  });
+    // Distribuir ventas en el array de datosVentas basado en el mes
+    ventas.forEach(venta => {
+      const mes = new Date(venta.createdAt).getMonth();
+      datosVentas[mes] += Number(venta._sum.total) || 0;
+    });
 
-  // Obtener compras agrupadas por mes
-  const compras = await this.prisma.compra.groupBy({
-    by: ['createdAt'],
-    _sum: { total: true },
-    where: {
-      createdAt: {
-        gte: new Date(`${Number(year)}-01-01`),
-        lt: new Date(`${Number(year) + 1}-01-01`)
+    // Obtener compras agrupadas por mes
+    const compras = await this.prisma.compra.groupBy({
+      by: ['createdAt'],
+      _sum: { total: true },
+      where: {
+        createdAt: {
+          gte: new Date(`${Number(year)}-01-01`),
+          lt: new Date(`${Number(year) + 1}-01-01`)
+        }
       }
-    }
-  });
+    });
 
-  // Distribuir compras en el array de datosCompras basado en el mes
-  compras.forEach(compra => {
-    const mes = new Date(compra.createdAt).getMonth();
-    datosCompras[mes] += Number(compra._sum.total) || 0;
-  });
+    // Distribuir compras en el array de datosCompras basado en el mes
+    compras.forEach(compra => {
+      const mes = new Date(compra.createdAt).getMonth();
+      datosCompras[mes] += Number(compra._sum.total) || 0;
+    });
 
-  return {
-    success: true,
-    data: { etiquetas, datosVentas, datosCompras }
-  };
-}
+    return {
+      success: true,
+      data: { etiquetas, datosVentas, datosCompras }
+    };
+  }
 
   // Función auxiliar para calcular variación porcentual
   private calcularVariacion(totalHoy: number, totalAyer: number): number {
