@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
 import { CajaService } from './caja.service';
 import { CreateCajaDto, AbrirCajaDTO } from './dto/create-caja.dto';
 import { UpdateCajaDto } from './dto/update-caja.dto';
+import { ApiResponse } from 'src/interface';
+import { Caja, HistorialCaja } from '@prisma/client';
 
 @Controller('api/v1/caja')
 export class CajaController {
@@ -12,10 +14,24 @@ export class CajaController {
     return this.cajaService.createCaja(createCajaDto);
   }
 
-  @Post('/historial')
-  createHistorial(@Body() data: AbrirCajaDTO) {
-    return this.cajaService.abrirCaja(data);
+  @Post('abrir')
+async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>> {
+  try {
+    const resultado = await this.cajaService.abrirCaja(datosApertura);
+
+    if (!resultado) {
+      throw new HttpException(
+         'Error al abrir la caja.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return resultado;
+  } catch (error) {
+    return {success: false, error: error}
   }
+}
+
 
   @Get()
   findAll() {

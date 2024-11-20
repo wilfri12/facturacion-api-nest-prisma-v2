@@ -260,12 +260,14 @@ export class FacturaService {
 
 
 
-  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
-    const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago } = params;
+  async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number, codigo?: string }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
+    const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago, codigo} = params;
 
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
     const pageNumber = Math.max(1, parseInt(page.toString()));
     const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
+
+    console.log(params);
 
     try {
       const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
@@ -279,7 +281,8 @@ export class FacturaService {
               startDateTime ? { createdAt: { gte: startDateTime } } : {},
               endDateTime ? { createdAt: { lte: endDateTime } } : {},
               estado ? { estado: estado } : {},
-              metodoPago ? { metodoPago: metodoPago } : {}
+              metodoPago ? { metodoPago: metodoPago } : {},
+              codigo ? { codigo: { contains: codigo } } : {}
             ]
           },
           include: {
@@ -332,9 +335,12 @@ export class FacturaService {
         this.prisma.factura.count({
           where: {
             AND: [
+
               startDateTime ? { createdAt: { gte: startDateTime } } : {},
               endDateTime ? { createdAt: { lte: endDateTime } } : {},
-              estado ? { estado: estado } : {}
+              estado ? { estado: estado } : {},
+              metodoPago ? { metodoPago: metodoPago } : {},
+              codigo ? { codigo: { contains: codigo } } : {}
             ]
           }
         })
