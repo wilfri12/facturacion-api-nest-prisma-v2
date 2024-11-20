@@ -26,13 +26,14 @@ export class FacturaController {
 
   //@UseGuards(AuthGuard)
   @Get()
-  async find(
+  async findAll(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('estado') estado?: Estado,
     @Query('metodoPago') metodoPago?: MetodoPago,
     @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number
+    @Query('pageSize') pageSize?: number,
+    @Query('codigo') codigo?: string,
   ): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number }>> {
     try {
       // Convertir las fechas de string a Date si están presentes
@@ -49,7 +50,8 @@ export class FacturaController {
         estado,
         metodoPago,
         page,
-        pageSize
+        pageSize,
+        codigo
       });
 
       return facturas;
@@ -109,6 +111,7 @@ export class FacturaController {
         endDate: endDate ? new Date(endDate) : undefined,
         estado,
         metodoPago,
+        
       });
 
       // Configurar los encabezados para enviar el PDF

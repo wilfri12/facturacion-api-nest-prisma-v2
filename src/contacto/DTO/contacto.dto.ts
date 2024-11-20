@@ -1,5 +1,5 @@
 import { PartialType } from "@nestjs/mapped-types";
-import {IsEmail, IsOptional, IsString } from "class-validator";
+import {IsEmail, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class ContactoDto {
     @IsString()
@@ -17,6 +17,9 @@ export class ContactoDto {
 
     @IsString()
     whatsapp: string;
+
+    @IsNumber()
+    empresaId: number;
 }
 
 export class UpdateContactoDto extends PartialType(ContactoDto) {

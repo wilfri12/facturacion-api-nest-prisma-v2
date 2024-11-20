@@ -14,47 +14,34 @@ model Contacto {
   whatsapp  String?   @db.VarChar(15)
   instagram String?   @db.VarChar(30)
   direccion String    @db.VarChar(50)
-  empresa   Empresa?
   usuario   Usuario?
   cliente   Cliente?
   createdAt DateTime? @default(now())
   updatedAt DateTime? @default(now()) @updatedAt
+  Empresa   Empresa?  @relation(fields: [empresaId], references: [id])
+  empresaId Int?
 }
 
 model Empresa {
-  id                    Int                     @id @default(autoincrement())
-  nombre                String                  @db.VarChar(50)
-  descripcion           String?                 @db.VarChar(100)
-  contactoId            Int?                    @unique
-  contacto              Contacto?               @relation(fields: [contactoId], references: [id])
-  usuarios              Usuario[]
-  categorias            Categoria[]
-  productos             Producto[]
-  facturas              Factura[]
-  detallesFacturas      DetalleFactura[]
-  clientes              Cliente[]
-  detallesCompras       DetalleCompra[]
-  Compras               Compra[]
-  Descuento             Descuento[]
-  DescuentoProducto     DescuentoProducto[]
-  DescuentoSubcategoria DescuentoSubcategoria[]
-  DescuentoCliente      DescuentoCliente[]
-  HistorialDescuentos   HistorialDescuentos[]
-  Promocion             Promocion[]
-  PromocionDetalle      PromocionDetalle[]
-  HistorialPrecio       HistorialPrecio[]
-  MovimientoInventario  MovimientoInventario[]
-  Notificacion          Notificacion[]
-  DevolucionCliente     DevolucionCliente[]
-  createdAt             DateTime?               @default(now())
-  updatedAt             DateTime?               @default(now()) @updatedAt
-  LoteProducto          LoteProducto[]
-  Caja                  Caja[]
-  ReporteFinanciero     ReporteFinanciero[]
-  GastosOperativos      GastosOperativos[]
-  TransaccionCompra     TransaccionCompra[]
-  TransaccionVenta      TransaccionVenta[]
-  Transaccion           Transaccion[]
+  id                   Int                    @id @default(autoincrement())
+  nombre               String                 @db.VarChar(50)
+  descripcion          String?                @db.VarChar(100)
+  usuarios             Usuario[]
+  categorias           Categoria[]
+  productos            Producto[]
+  facturas             Factura[]
+  detallesFacturas     DetalleFactura[]
+  clientes             Cliente[]
+  detallesCompras      DetalleCompra[]
+  Compras              Compra[]
+  MovimientoInventario MovimientoInventario[]
+  createdAt            DateTime?              @default(now())
+  updatedAt            DateTime?              @default(now()) @updatedAt
+  LoteProducto         LoteProducto[]
+  Caja                 Caja[]
+  TransaccionCompra    TransaccionCompra[]
+  TransaccionVenta     TransaccionVenta[]
+  Contactos            Contacto[]
 
   @@index([nombre], map: "empresa_nombre_idx")
 }
@@ -74,14 +61,13 @@ model Categoria {
 }
 
 model SubCategoria {
-  id                    Int                     @id @default(autoincrement())
-  nombre                String                  @db.VarChar(50)
-  categoriaId           Int
-  categoria             Categoria               @relation(fields: [categoriaId], references: [id])
-  productos             Producto[]
-  DescuentoSubcategoria DescuentoSubcategoria[]
-  createdAt             DateTime?               @default(now())
-  updatedAt             DateTime?               @default(now()) @updatedAt
+  id          Int        @id @default(autoincrement())
+  nombre      String     @db.VarChar(50)
+  categoriaId Int
+  categoria   Categoria  @relation(fields: [categoriaId], references: [id])
+  productos   Producto[]
+  createdAt   DateTime?  @default(now())
+  updatedAt   DateTime?  @default(now()) @updatedAt
 
   @@unique([categoriaId, nombre], map: "categoria_subcategoria_unique")
   @@index([nombre])
@@ -104,44 +90,13 @@ model Producto {
   empresa              Empresa                @relation(fields: [empresaId], references: [id])
   categoria            Categoria              @relation(fields: [categoriaId], references: [id])
   subCategoria         SubCategoria?          @relation(fields: [subCategoriaId], references: [id])
-  DescuentoProducto    DescuentoProducto[]
-  HistorialDescuentos  HistorialDescuentos[]
-  PromocionDetalle     PromocionDetalle[]
-  HistorialPrecio      HistorialPrecio[]
-  MovimientoInventario MovimientoInventario[]
-  DevolucionCliente    DevolucionCliente[]
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
   LoteProducto         LoteProducto[]
-  atributos            ProductoAtributo[]
+  MovimientoInventario MovimientoInventario[]
 
   @@index([codigo], map: "producto_codigo_idx")
   @@index([nombre])
-}
-
-model ProductoAtributo {
-  id              Int           @id @default(autoincrement())
-  productoId      Int
-  producto        Producto      @relation(fields: [productoId], references: [id])
-  atributoId      Int
-  valorAtributoId Int
-  valorAtributo   ValorAtributo @relation(fields: [valorAtributoId], references: [id])
-
-  @@unique([productoId, valorAtributoId]) // Para asegurar que un producto solo tiene un valor por atributo
-}
-
-model ValorAtributo {
-  id               Int                @id @default(autoincrement())
-  valor            String             @db.VarChar(50) // Ej. "Rojo", "Blanco", "40", "M"
-  atributoId       Int?
-  Atributo         Atributo?          @relation(fields: [atributoId], references: [id])
-  ProductoAtributo ProductoAtributo[]
-}
-
-model Atributo {
-  id      Int             @id @default(autoincrement())
-  nombre  String          @db.VarChar(50) // Ej. "color", "talla"
-  valores ValorAtributo[]
 }
 
 model Usuario {
@@ -157,11 +112,9 @@ model Usuario {
   empresa              Empresa                @relation(fields: [empresaId], references: [id])
   facturas             Factura[]
   Compras              Compra[]
-  Notificacion         Notificacion[]
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
   MovimientoInventario MovimientoInventario[]
-  DevolucionCliente    DevolucionCliente[]
   MovimientosCaja      MovimientosCaja[]
   Cajas                Caja[]
   TransaccionCompra    TransaccionCompra[]
@@ -171,45 +124,41 @@ model Usuario {
 }
 
 model Cliente {
-  id               Int                @id @default(autoincrement())
-  identificacion   String             @unique @db.VarChar(50)
-  nombre           String             @db.VarChar(50)
-  contactoId       Int                @unique
-  tipoCliente      TipoCliente        @default(FISICO)
-  empresaId        Int
-  contacto         Contacto?          @relation(fields: [contactoId], references: [id])
-  empresa          Empresa            @relation(fields: [empresaId], references: [id])
-  facturas         Factura[]
-  DescuentoCliente DescuentoCliente[]
-  createdAt        DateTime?          @default(now())
-  updatedAt        DateTime?          @default(now()) @updatedAt
+  id             Int         @id @default(autoincrement())
+  identificacion String      @unique @db.VarChar(50)
+  nombre         String      @db.VarChar(50)
+  contactoId     Int         @unique
+  tipoCliente    TipoCliente @default(FISICO)
+  empresaId      Int
+  contacto       Contacto?   @relation(fields: [contactoId], references: [id])
+  empresa        Empresa     @relation(fields: [empresaId], references: [id])
+  facturas       Factura[]
+  createdAt      DateTime?   @default(now())
+  updatedAt      DateTime?   @default(now()) @updatedAt
 }
 
 model Factura {
-  id                  Int                   @id @default(autoincrement())
-  codigo              String                @unique
-  subtotal            Decimal               @default(0.00) @db.Decimal(10, 2)
-  total               Decimal               @default(0.00) @db.Decimal(10, 2)
-  itebisTotal         Decimal               @default(0.00) @db.Decimal(10, 2)
-  metodoPago          MetodoPago            @default(EFECTIVO)
-  usuarioId           Int
-  clienteId           Int?
-  clienteNombre       String?               @db.VarChar(50)
-  empresaId           Int
-  estado              Estado                @default(PAGADA)
-  cajaId              Int?
-  moneda              TipoMoneda            @default(DOP)
-  empresa             Empresa               @relation(fields: [empresaId], references: [id])
-  usuario             Usuario               @relation(fields: [usuarioId], references: [id])
-  cliente             Cliente?              @relation(fields: [clienteId], references: [id])
-  detallesFacturas    DetalleFactura[]
-  HistorialDescuentos HistorialDescuentos[]
-  DevolucionCliente   DevolucionCliente[]
-  createdAt           DateTime?             @default(now())
-  updatedAt           DateTime?             @default(now()) @updatedAt
-  Caja                Caja?                 @relation(fields: [cajaId], references: [id])
-  TransaccionVenta    TransaccionVenta[]
-  Transaccion         Transaccion[]
+  id               Int                @id @default(autoincrement())
+  codigo           String             @unique
+  subtotal         Decimal            @default(0.00) @db.Decimal(10, 2)
+  total            Decimal            @default(0.00) @db.Decimal(10, 2)
+  itebisTotal      Decimal            @default(0.00) @db.Decimal(10, 2)
+  metodoPago       MetodoPago         @default(EFECTIVO)
+  usuarioId        Int
+  clienteId        Int?
+  clienteNombre    String?            @db.VarChar(50)
+  empresaId        Int
+  estado           Estado             @default(PAGADA)
+  cajaId           Int?
+  moneda           TipoMoneda         @default(DOP)
+  empresa          Empresa            @relation(fields: [empresaId], references: [id])
+  usuario          Usuario            @relation(fields: [usuarioId], references: [id])
+  cliente          Cliente?           @relation(fields: [clienteId], references: [id])
+  detallesFacturas DetalleFactura[]
+  createdAt        DateTime?          @default(now())
+  updatedAt        DateTime?          @default(now()) @updatedAt
+  Caja             Caja?              @relation(fields: [cajaId], references: [id])
+  TransaccionVenta TransaccionVenta[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
   @@index([createdAt])
@@ -248,7 +197,6 @@ model Compra {
   updatedAt         DateTime?           @default(now()) @updatedAt
   delete            Boolean             @default(false)
   TransaccionCompra TransaccionCompra[]
-  Transaccion       Transaccion[]
   LoteProducto      LoteProducto[]
 
   @@index([createdAt])
@@ -276,141 +224,6 @@ model DetalleCompra {
   @@map("DetalleCompra")
 }
 
-//modelos de promociones 
-
-//Esta tabla almacenará la información básica sobre cada descuento.
-
-model Descuento {
-  id                    Int                     @id @default(autoincrement())
-  tipo                  TipoDescuento           @default(PORCENTUAL)
-  valor                 Decimal                 @default(0.00) @db.Decimal(10, 2)
-  fechaInicio           DateTime
-  fechaFin              DateTime
-  createdAt             DateTime?               @default(now())
-  updatedAt             DateTime?               @default(now()) @updatedAt
-  condicion             String                  @db.Text
-  activo                Boolean                 @default(true)
-  DescuentoProducto     DescuentoProducto[]
-  DescuentoSubcategoria DescuentoSubcategoria[]
-  DescuentoCliente      DescuentoCliente[]
-  HistorialDescuentos   HistorialDescuentos[]
-  PromocionDetalle      PromocionDetalle[]
-  empresaId             Int
-  empresa               Empresa                 @relation(fields: [empresaId], references: [id])
-}
-
-//Tabla de Descuentos por Producto
-//Para asociar descuentos a productos específicos.
-
-model DescuentoProducto {
-  id          Int       @id @default(autoincrement())
-  descuentoId Int
-  productoId  Int
-  descuento   Descuento @relation(fields: [descuentoId], references: [id])
-  producto    Producto  @relation(fields: [productoId], references: [id])
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @default(now()) @updatedAt
-  empresaId   Int
-  empresa     Empresa   @relation(fields: [empresaId], references: [id])
-}
-
-// Tabla de Descuentos por SubCategoria
-// Para aplicar descuentos a todos los productos dentro de una SubCategoria específica.
-
-model DescuentoSubcategoria {
-  id             Int          @id @default(autoincrement())
-  descuentoId    Int
-  subCategoriaId Int
-  descuento      Descuento    @relation(fields: [descuentoId], references: [id])
-  subcategoria   SubCategoria @relation(fields: [subCategoriaId], references: [id])
-  createdAt      DateTime?    @default(now())
-  updatedAt      DateTime?    @default(now()) @updatedAt
-  empresaId      Int
-  empresa        Empresa      @relation(fields: [empresaId], references: [id])
-}
-
-// Tabla de Descuentos por Cliente
-// Para aplicar descuentos específicos a ciertos clientes.
-
-model DescuentoCliente {
-  id          Int       @id @default(autoincrement())
-  descuentoId Int
-  clienteId   Int
-  descuento   Descuento @relation(fields: [descuentoId], references: [id])
-  cliente     Cliente   @relation(fields: [clienteId], references: [id])
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @default(now()) @updatedAt
-  empresaId   Int
-  empresa     Empresa   @relation(fields: [empresaId], references: [id])
-}
-
-// Tabla de Historial de Descuentos Aplicados
-// Para registrar cuándo y cómo se aplicaron los descuentos. Esto es útil para auditoría y análisis.
-
-model HistorialDescuentos {
-  id              Int       @id @default(autoincrement())
-  descuentoId     Int
-  productoId      Int
-  facturaId       Int
-  fechaAplicacion DateTime
-  cantidad        Decimal   @default(0.00) @db.Decimal(10, 2)
-  valorDescuento  Decimal   @default(0.00) @db.Decimal(10, 2)
-  createdAt       DateTime? @default(now())
-  updatedAt       DateTime? @default(now()) @updatedAt
-  descuento       Descuento @relation(fields: [descuentoId], references: [id])
-  producto        Producto  @relation(fields: [productoId], references: [id])
-  factura         Factura   @relation(fields: [facturaId], references: [id])
-  empresaId       Int
-  empresa         Empresa   @relation(fields: [empresaId], references: [id])
-}
-
-// Tabla de Promociones Especiales
-// Para manejar promociones que pueden involucrar reglas más complejas o combinaciones de productos y descuentos.
-
-model Promocion {
-  id               Int                @id @default(autoincrement())
-  nombre           String
-  descripcion      String
-  fechaInicio      DateTime
-  fechaFin         DateTime
-  createdAt        DateTime?          @default(now())
-  updatedAt        DateTime?          @default(now()) @updatedAt
-  PromocionDetalle PromocionDetalle[]
-  empresaId        Int
-  empresa          Empresa            @relation(fields: [empresaId], references: [id])
-}
-
-model PromocionDetalle {
-  id          Int       @id @default(autoincrement())
-  promocionId Int
-  productoId  Int
-  descuentoId Int
-  descuento   Descuento @relation(fields: [descuentoId], references: [id])
-  promocion   Promocion @relation(fields: [promocionId], references: [id])
-  producto    Producto  @relation(fields: [productoId], references: [id])
-  empresaId   Int
-  empresa     Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @default(now()) @updatedAt
-}
-
-// Historial de Precios
-// Este modelo rastreará los cambios de precios en los productos a lo largo del tiempo.
-model HistorialPrecio {
-  id             Int       @id @default(autoincrement())
-  productoId     Int
-  precioAnterior Decimal   @db.Decimal(10, 2)
-  precioNuevo    Decimal   @db.Decimal(10, 2)
-  fechaCambio    DateTime  @default(now())
-  producto       Producto  @relation(fields: [productoId], references: [id])
-  empresaId      Int
-  empresa        Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @default(now()) @updatedAt
-}
-
-// Manejo de Inventarios
-// Agregaremos un modelo para registrar entradas y salidas de inventario.
 model MovimientoInventario {
   id          Int            @id @default(autoincrement())
   productoId  Int
@@ -441,7 +254,7 @@ model LoteProducto {
   updatedAt           DateTime?          @default(now()) @updatedAt
   producto            Producto           @relation(fields: [productoId], references: [id])
   empresa             Empresa            @relation(fields: [empresaId], references: [id])
-  estado              EstadoLote @default(PENDIENTE)
+  estado              EstadoLote         @default(PENDIENTE)
   delete              Boolean            @default(false)
   TransaccionCompra   TransaccionCompra? @relation(fields: [transaccionCompraId], references: [id])
   transaccionCompraId Int?
@@ -497,146 +310,38 @@ model MovimientosCaja {
   @@index([usuarioId])
 }
 
-//Notificaciones o Alertas
-//Crear un modelo para manejar notificaciones en el sistema.
-model Notificacion {
-  id        Int       @id @default(autoincrement())
-  titulo    String    @db.VarChar(100)
-  mensaje   String    @db.Text
-  leido     Boolean   @default(false)
-  fecha     DateTime  @default(now())
-  usuarioId Int
-  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
-  empresaId Int
-  empresa   Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @default(now()) @updatedAt
-}
-
-//Devoluciones
-//Crear modelos para manejar devoluciones de clientes y proveedores.
-
-model DevolucionCliente {
-  id         Int       @id @default(autoincrement())
-  facturaId  Int
-  productoId Int
-  cantidad   Int
-  motivo     String    @db.VarChar(100)
-  fecha      DateTime  @default(now())
-  usuarioId  Int
-  factura    Factura   @relation(fields: [facturaId], references: [id])
-  producto   Producto  @relation(fields: [productoId], references: [id])
-  empresaId  Int
-  empresa    Empresa   @relation(fields: [empresaId], references: [id])
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @default(now()) @updatedAt
-}
-
-//Manejo de Usuarios y Permisos
-//Agregar un modelo para permisos más detallados.
-
-model Permiso {
-  id          Int          @id @default(autoincrement())
-  nombre      String       @db.VarChar(50)
-  descripcion String?      @db.VarChar(100)
-  roles       RolPermiso[]
-}
-
-model RolPermiso {
-  id        Int     @id @default(autoincrement())
-  rol       Role
-  permisoId Int
-  permiso   Permiso @relation(fields: [permisoId], references: [id])
-
-  @@unique([rol, permisoId], map: "rol_permiso_unique")
-}
-
-model Transaccion {
-  id        Int             @id @default(autoincrement())
-  empresaId Int
-  compraId  Int?
-  facturaId Int?
-  tipo      TipoTransaccion
-  fecha     DateTime        @default(now())
-  monto     Float // Total de la transacción
-  empresa   Empresa         @relation(fields: [empresaId], references: [id])
-  compra    Compra?         @relation(fields: [compraId], references: [id])
-  factura   Factura?        @relation(fields: [facturaId], references: [id])
-  createdAt DateTime?       @default(now())
-  delete    Boolean         @default(false)
-
-  @@index([empresaId, fecha])
-  @@index([tipo])
-}
-
 model TransaccionCompra {
-  id                   Int               @id @default(autoincrement())
-  compra               Compra            @relation(fields: [compraId], references: [id])
-  compraId             Int
-  detallesCompra       DetalleCompra[]
-  lotes                LoteProducto[]
-  usuario              Usuario           @relation(fields: [usuarioId], references: [id])
-  usuarioId            Int
-  empresa              Empresa           @relation(fields: [empresaId], references: [id])
-  empresaId            Int
-  estado               EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
-  motivoAnulacion      String? // Razón de la anulación (si aplica)
-  fechaAnulacion       DateTime? // Fecha en que se anuló la transacción
-  idTransaccionAnulada Int? // ID de la transacción original que está anulada (si aplica)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id              Int               @id @default(autoincrement())
+  compra          Compra            @relation(fields: [compraId], references: [id])
+  compraId        Int
+  detallesCompra  DetalleCompra[]
+  lotes           LoteProducto[]
+  usuario         Usuario           @relation(fields: [usuarioId], references: [id])
+  usuarioId       Int
+  empresa         Empresa           @relation(fields: [empresaId], references: [id])
+  empresaId       Int
+  estado          EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
+  motivoAnulacion String? // Razón de la anulación (si aplica)
+  fechaAnulacion  DateTime? // Fecha en que se anuló la transacción
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model TransaccionVenta {
-  id                   Int               @id @default(autoincrement())
-  factura              Factura           @relation(fields: [facturaId], references: [id])
-  facturaId            Int
-  detalleFactura       DetalleFactura[]
-  lotes                LoteProducto[]
-  usuario              Usuario           @relation(fields: [usuarioId], references: [id])
-  usuarioId            Int
-  empresa              Empresa           @relation(fields: [empresaId], references: [id])
-  empresaId            Int
-  estado               EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
-  motivoAnulacion      String? // Razón de la anulación (si aplica)
-  fechaAnulacion       DateTime? // Fecha en que se anuló la transacción
-  idTransaccionAnulada Int? // ID de la transacción original que está anulada (si aplica)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-}
-
-model ReporteFinanciero {
-  id           Int       @id @default(autoincrement())
-  fechaInicio  DateTime
-  fechaFin     DateTime
-  totalVentas  Float     @default(0.0)
-  totalCompras Float     @default(0.0)
-  ganancia     Float     @default(0.0)
-  detalles     Json? // Desglose adicional
-  empresaId    Int
-  empresa      Empresa   @relation(fields: [empresaId], references: [id])
-  createdAt    DateTime? @default(now())
-  delete       Boolean   @default(false)
-
-  @@index([empresaId, fechaInicio, fechaFin])
-}
-
-// Registrar costos fijos y variables: Este modelo es útil para capturar todos los gastos necesarios para operar el negocio, como:
-
-// Alquiler de oficinas o locales.
-// Sueldos y salarios del personal.
-// Servicios públicos (agua, electricidad, internet).
-// Publicidad y marketing.
-// Mantenimiento, transporte, o cualquier otro gasto no directamente relacionado con la compra o venta de productos.
-
-model GastosOperativos {
-  id        Int      @id @default(autoincrement())
-  concepto  String   @db.VarChar(100)
-  monto     Float
-  fecha     DateTime @default(now())
-  empresaId Int
-  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+  id              Int               @id @default(autoincrement())
+  factura         Factura           @relation(fields: [facturaId], references: [id])
+  facturaId       Int
+  detalleFactura  DetalleFactura[]
+  lotes           LoteProducto[]
+  usuario         Usuario           @relation(fields: [usuarioId], references: [id])
+  usuarioId       Int
+  empresa         Empresa           @relation(fields: [empresaId], references: [id])
+  empresaId       Int
+  estado          EstadoTransaccion @default(ACTIVA) // Estado de la transacción (ACTIVA, ANULADA, PENDIENTE)
+  motivoAnulacion String? // Razón de la anulación (si aplica)
+  fechaAnulacion  DateTime? // Fecha en que se anuló la transacción
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Secuencias {
@@ -741,7 +446,6 @@ enum EstadoTransaccion {
   ANULADA
   PENDIENTE
 }
-
 
 enum EstadoLote {
   PENDIENTE
