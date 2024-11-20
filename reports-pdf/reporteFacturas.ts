@@ -172,7 +172,7 @@ const { months, days } = calculateDetailedDifference(new Date(startDate), new Da
             style: 'header',
           },
           {
-            text: 'Reporte Consolidado de Facturas',
+            text: 'Reporte de Facturas',
             style: 'subHeader',
           },
 
