@@ -4,6 +4,50 @@ import { ApiResponse } from 'src/interface';
 import { GetLocalDate } from 'src/utility/getLocalDate';
 import { Producto } from '@prisma/client';
 
+interface ProductoVendido {
+  nombre: string;
+  cantidadVendida: number;
+  ingresosGenerados: number;
+  costoTotal: number;
+}
+
+interface Categoria {
+  nombre: string;
+  ventasTotales: number;
+  cantidadVendida: number;
+}
+
+interface Tendencia {
+  mes: string;
+  ventas: number;
+  compras: number;
+  gananciaBruta: number;
+}
+
+interface ProductoBajoStock {
+  nombre: string;
+  stockRestante: number;
+}
+
+interface KPIs {
+  ventasTotales: number;
+  costoTotal: number;
+  gananciaBruta: number;
+  margenBruto: string;
+  ticketPromedio: string;
+  facturasEmitidas: number;
+}
+
+export interface DashboardData {
+  KPIs: KPIs;
+  productosVendidos: ProductoVendido[];
+  productoMasVendido: ProductoVendido | null;
+  categorias: Categoria[];
+  productosBajoStock: ProductoBajoStock[];
+  tendencias: Tendencia[];
+}
+
+
 @Injectable()
 export class ReportesService {
   constructor(private prisma: PrismaService) { }
@@ -217,31 +261,140 @@ export class ReportesService {
   }
 
   // Servicio que calcula utilidad bruta en un periodo
-  async calcularUtilidadBruta(periodo: 'semana' | 'mes'): Promise<ApiResponse<{ totalVentas: number; totalCosto: number; utilidadBruta: number }>> {
-    const fechaInicio = this.calcularFechaInicio(periodo);
-
-    console.log('calcularUtilidadBruta', periodo);
-    console.log('calcularUtilidadBruta', fechaInicio);
-    
-    const ventas = await this.prisma.factura.aggregate({
-      _sum: { total: true },
-      where: { createdAt: { gte: fechaInicio } }
+  async calcularDatosDashboard(periodoInicio: Date, periodoFin: Date): Promise<{ success: boolean; data: DashboardData }> {
+    const startDateTime = periodoInicio ? new Date(new Date(periodoInicio).setUTCHours(0, 0, 0, 0)) : undefined;
+    const endDateTime = periodoFin ? new Date(new Date(periodoFin).setUTCHours(23, 59, 59, 999)) : undefined;
+  
+    const facturas = await this.prisma.factura.findMany({
+      where: {
+        AND: [
+          startDateTime ? { createdAt: { gte: startDateTime } } : {},
+          endDateTime ? { createdAt: { lte: endDateTime } } : {},
+        ],
+      },
+      include: {
+        detallesFacturas: {
+          include: {
+            producto: {
+              include: { categoria: true },
+            },
+          },
+        },
+      },
     });
-    const costo = await this.prisma.producto.aggregate({
-      _sum: { precio: true, stock: true }
+  
+    const ventasTotales = facturas.reduce((acc, factura) => acc + Number(factura.total), 0);
+    let costoTotal = 0;
+    const productosVendidos: Record<number, ProductoVendido> = {};
+    const categorias: Record<string, Categoria> = {};
+    const tendencias: Record<string, { ventas: number; compras: number; gananciaBruta: number }> = {};
+  
+    const movimientos = await this.prisma.movimientoInventario.findMany({
+      where: {
+        AND: [
+          { createdAt: { gte: startDateTime } },
+          { createdAt: { lte: endDateTime } },
+        ],
+      },
+      include: {
+        producto: { include: { categoria: true } },
+      },
     });
-    const totalCosto = Number(costo._sum.precio) * (costo._sum.stock || 0) || 0;
-    const utilidadBruta = (Number(ventas._sum.total) || 0) - totalCosto;
-
+  
+    for (const movimiento of movimientos) {
+      const lote = await this.prisma.loteProducto.findFirst({
+        where: { productoId: movimiento.productoId, estado: 'ACTIVO' },
+        orderBy: { fechaEntrada: 'asc' },
+      });
+  
+      if (lote) {
+        const costoUnitario = Number(lote.precioCompra);
+        if (movimiento.tipo === 'SALIDA') {
+          costoTotal += costoUnitario * movimiento.cantidad;
+  
+          if (!productosVendidos[movimiento.productoId]) {
+            productosVendidos[movimiento.productoId] = {
+              nombre: movimiento.producto.nombre,
+              cantidadVendida: 0,
+              ingresosGenerados: 0,
+              costoTotal: 0,
+            };
+          }
+  
+          productosVendidos[movimiento.productoId].cantidadVendida += movimiento.cantidad;
+          productosVendidos[movimiento.productoId].ingresosGenerados += movimiento.cantidad * Number(movimiento.producto.precio);
+          productosVendidos[movimiento.productoId].costoTotal += costoUnitario * movimiento.cantidad;
+  
+          const categoriaNombre = movimiento.producto.categoria?.nombre || "Sin Categoría";
+          if (!categorias[categoriaNombre]) {
+            categorias[categoriaNombre] = {
+              nombre: categoriaNombre,
+              ventasTotales: 0,
+              cantidadVendida: 0,
+            };
+          }
+  
+          categorias[categoriaNombre].ventasTotales += movimiento.cantidad * Number(movimiento.producto.precio);
+          categorias[categoriaNombre].cantidadVendida += movimiento.cantidad;
+  
+          const mes = new Date(movimiento.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
+          if (!tendencias[mes]) {
+            tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
+          }
+          tendencias[mes].ventas += movimiento.cantidad * Number(movimiento.producto.precio);
+        } else if (movimiento.tipo === 'ENTRADA') {
+          const mes = new Date(movimiento.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
+          if (!tendencias[mes]) {
+            tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
+          }
+          tendencias[mes].compras += movimiento.cantidad * costoUnitario;
+        }
+      }
+    }
+  
+    Object.keys(tendencias).forEach(mes => {
+      tendencias[mes].gananciaBruta = tendencias[mes].ventas - tendencias[mes].compras;
+    });
+  
+    const gananciaBruta = ventasTotales - costoTotal;
+    const margenBruto = ((gananciaBruta / ventasTotales) * 100).toFixed(2);
+    const ticketPromedio = (ventasTotales / facturas.length).toFixed(2);
+  
+    const productosBajoStock = await this.prisma.loteProducto.findMany({
+      where: { cantidadRestante: { lte: 5 } },
+      include: { producto: true },
+    });
+  
     return {
       success: true,
       data: {
-        totalVentas: Number(ventas._sum.total) || 0,
-        totalCosto,
-        utilidadBruta
-      }
+        KPIs: {
+          ventasTotales,
+          costoTotal,
+          gananciaBruta,
+          margenBruto,
+          ticketPromedio,
+          facturasEmitidas: facturas.length,
+        },
+        productosVendidos: Object.values(productosVendidos),
+        productoMasVendido: Object.values(productosVendidos).sort((a, b) => b.cantidadVendida - a.cantidadVendida)[0] || null,
+        categorias: Object.values(categorias),
+        productosBajoStock: productosBajoStock.map(p => ({
+          nombre: p.producto.nombre,
+          stockRestante: Math.max(p.cantidadRestante, 0),
+        })),
+        tendencias: Object.entries(tendencias).map(([mes, datos]) => ({
+          mes,
+          ...datos,
+        })),
+      },
     };
   }
+  
+
+
+  
+
 
   // Servicio que obtiene productos más vendidos
   async obtenerProductosMasVendidos(periodo: 'semana' | 'mes', limite: number = 10): Promise<ApiResponse<{ producto: string; categoria: string; totalVentas: number }[]>> {
@@ -331,11 +484,6 @@ export class ReportesService {
     const datosVentas = Array(12).fill(0);
     const datosCompras = Array(12).fill(0);
 
-    console.log('obtenerDatosVentasComprasMensuales', year);
-    console.log('obtenerDatosVentasComprasMensuales', etiquetas);
-    console.log('obtenerDatosVentasComprasMensuales', datosVentas);
-    console.log('obtenerDatosVentasComprasMensuales', datosCompras);
-
     // Obtener ventas agrupadas por mes
     const ventas = await this.prisma.factura.groupBy({
       by: ['createdAt'],
@@ -362,7 +510,8 @@ export class ReportesService {
         createdAt: {
           gte: new Date(`${Number(year)}-01-01`),
           lt: new Date(`${Number(year) + 1}-01-01`)
-        }
+        }, 
+        delete: false
       }
     });
 

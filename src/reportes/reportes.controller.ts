@@ -1,8 +1,8 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
-import { ReportesService } from './reportes.service';
+import { DashboardData, ReportesService } from './reportes.service';
 import { ApiResponse } from 'src/interface';
 
-@Controller('api/v1/reportes')
+@Controller('api/v1/dashboard')
 export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}
 
@@ -97,22 +97,57 @@ export class ReportesController {
   }
 
   // Endpoint para calcular la utilidad bruta en un periodo
-  @Get('utilidad-bruta')
-  async getUtilidadBruta(
-    @Query('periodo') periodo: 'semana' | 'mes',
-  ) {
-    try {
-      const result = await this.reportesService.calcularUtilidadBruta(periodo);
-      return result;
-    } catch (error) {
-      console.error('Error al calcular la utilidad bruta:', error);
+  @Get('calculos')
+async calcularDatosDashboard(
+  @Query('inicio') inicio: string,
+  @Query('fin') fin: string,
+): Promise<{ success: boolean; data?: DashboardData; message?: string; error?: string }> {
+  // Validar que los parámetros de fecha estén presentes
+  if (!inicio || !fin) {
+    return {
+      success: false,
+      message: 'Los parámetros "inicio" y "fin" son obligatorios.',
+    };
+  }
+
+  try {
+    const periodoInicio = new Date(inicio);
+    const periodoFin = new Date(fin);
+
+    // Validar que las fechas sean válidas
+    if (isNaN(periodoInicio.getTime()) || isNaN(periodoFin.getTime())) {
       return {
         success: false,
-        message: 'Error al calcular la utilidad bruta.',
-        error: error.message,
+        message: 'Los parámetros de fecha no son válidos.',
       };
     }
+
+    // Asegurarse de que la fecha de inicio no sea mayor a la de fin
+    if (periodoInicio > periodoFin) {
+      return {
+        success: false,
+        message: 'La fecha de inicio no puede ser mayor que la fecha de fin.',
+      };
+    }
+
+    // Llamar al servicio para calcular los datos del dashboard
+    const result = await this.reportesService.calcularDatosDashboard(
+      periodoInicio,
+      periodoFin,
+    );
+
+    return result;
+  } catch (error) {
+    console.error('Error al calcular los datos del dashboard:', error);
+    return {
+      success: false,
+      message: 'Ocurrió un error al calcular los datos del dashboard.',
+      error: error.message,
+    };
   }
+}
+
+  
 
   // Endpoint para obtener productos más vendidos
   @Get('productos-mas-vendidos')

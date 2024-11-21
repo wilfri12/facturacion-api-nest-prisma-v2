@@ -85,6 +85,7 @@ export class CompraService {
                         cantidadRestante: parsedCantidad,
                         empresaId: parsedEmpresaId,
                         precioVenta: parsedPrecioVenta,
+                        precioCompra: precioCompra,
                         fechaEntrada: createdAt,
                         updatedAt,
                         compraId: compraCreated.id
@@ -138,8 +139,6 @@ export class CompraService {
             throw error;
         }
     }
-    
-    
 
     async findAll
     (params: { startDate?: Date, endDate?: Date, page?: number, pageSize?: number })
@@ -230,14 +229,9 @@ export class CompraService {
 
     }
 
-
     async delete(compraId: number): Promise<{success?: boolean, message?: string, error?: string}> {
         try {
           await this.prisma.$transaction(async (prisma) => {
-            console.log(`Iniciando proceso de "soft delete" para la transacción de compra con ID: ${compraId}`);
-            
-            // 1. Obtener la transacción y los datos relacionados
-            console.log(`Consultando transacción y sus datos relacionados para ID: ${compraId}`);
             const compra = await prisma.compra.findUnique({
               where: { id: compraId },
               include: {
@@ -255,11 +249,6 @@ export class CompraService {
               console.log(`Compra con ID ${compraId} no encontrada`);
               throw new Error("Compra no encontrada");
             }
-      
-            if (compra.delete) {
-              console.log(`La Compra con ID ${compraId} había sido eliminada anteriormente`);
-              throw new Error("La Compra había sido eliminada anteriormente");
-            } 
 
             for (const lote of compra.LoteProducto)
             {

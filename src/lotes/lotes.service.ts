@@ -34,7 +34,7 @@ export class LotesService {
                 endDateTime ? { fechaEntrada: { lte: endDateTime } } : {},
             ],
             
-            delete:false,
+            // delete:false,
         },
           include: {
             producto: {
@@ -133,6 +133,14 @@ export class LotesService {
                     estado: productoEstado,
                 },
             });
+
+            await prisma.compra.update({
+              where: { id: lote.compraId },
+              data: {
+                canDelete: false,
+                  updatedAt: GetLocalDate(),
+              },
+          });
 
             return { success: true, message: 'Lote activado correctamente, stock y precio actualizados.' };
         });
