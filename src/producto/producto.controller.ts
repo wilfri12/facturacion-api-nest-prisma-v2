@@ -47,6 +47,7 @@ export class ProductoController {
     }
   }
 
+
   @Get('buscar/:filtro')
   async findByFiltro(@Param('filtro') filtro: string) {
     try {

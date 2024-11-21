@@ -10,221 +10,142 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 export class ProductoService {
     constructor(private prisma: PrismaService) { }
 
-    async createProducto(
-        data: CreateProductoDto,
-    ): Promise<ApiResponse<Producto>> {
-        const {
-            categoriaId,
-            empresaId,
-            estado,
-            nombre,
-            precio,
-            stock,
-            codigo,
-            descripcion,
-            subCategoriaId,
-            ubicacion,
-        } = data;
-    
-        const currentDate = GetLocalDate();  // Centraliza la fecha para consistencia
+    async createProducto(data: CreateProductoDto): Promise<ApiResponse<Producto>> {
+        const currentDate = GetLocalDate();
+      
         const productoData = {
-            categoriaId,
-            empresaId,
-            estado,
-            nombre,
-            precio,
-            stock,
-            codigo,
-            descripcion,
-            subCategoriaId: subCategoriaId || null,
-            ubicacion,
-            createdAt: currentDate,
-            updatedAt: currentDate,
+          ...data,
+          subCategoriaId: data.subCategoriaId || null,
+          createdAt: currentDate,
+          updatedAt: currentDate,
         };
-    
+      
         try {
-            const producto = await this.prisma.$transaction(async (prisma) => {
-                const secuencia = await prisma.secuencias.findUnique({
-                    where: { nombre: 'producto' },
-                });
-    
-                const secuenciaProducto = (secuencia?.valor || 0) + 1;
-    
-                await prisma.secuencias.update({
-                    where: { nombre: 'producto' },
-                    data: { valor: secuenciaProducto },
-                });
-    
-                const productoCreated = await prisma.producto.create({
-                    data: productoData,
-                });
-    
-                // Actualiza el código del producto con la secuencia
-                await prisma.producto.update({
-                    where: { id: productoCreated.id },
-                    data: { codigo: (codigo + secuenciaProducto).toUpperCase() },
-                });
-    
-                // Retornar el producto creado
-                return productoCreated;
+          const producto = await this.prisma.$transaction(async (prisma) => {
+            // Obtener y actualizar la secuencia
+            const secuencia = await prisma.secuencias.findUnique({
+              where: { nombre: 'producto' },
             });
-    
-            return { success: true, data: producto };  // Asegura que devuelves el producto
-    
+      
+            const secuenciaProducto = (secuencia?.valor || 0) + 1;
+      
+            await prisma.secuencias.update({
+              where: { nombre: 'producto' },
+              data: { valor: secuenciaProducto },
+            });
+      
+            // Crear el producto
+            const productoCreated = await prisma.producto.create({
+              data: productoData,
+            });
+      
+            // Actualizar el código con la secuencia
+            const updatedProducto = await prisma.producto.update({
+              where: { id: productoCreated.id },
+              data: { codigo: `${data.codigo}${secuenciaProducto}`.toUpperCase() },
+            });
+      
+            return updatedProducto;
+          });
+      
+          return { success: true, data: producto };
         } catch (error) {
-            if (error instanceof PrismaClientKnownRequestError) {
-                const errorMap = {
-                    'P2002': `Error de duplicidad (${error.meta.target})`,
-                    'P2004': 'Campo nulo no permitido.',
-                    'P2006': 'Tipo de datos incorrecto.',
-                    'P2027': 'Error de conexión a la base de datos.',
-                };
-    
-                const errorMessage = errorMap[error.code] || 'Error inesperado en la base de datos.';
-                console.log(errorMessage, error);
-                return { success: false, error: errorMessage };
-            }
-    
-            console.log('Error inesperado:', error);
-            return { success: false, error: 'Ocurrió un error inesperado. Por favor, intente nuevamente más tarde.' };
+          console.error('Error al crear producto:', error);
+          return {
+            success: false,
+            error: 'Error al crear el producto. Verifique los datos e intente nuevamente.',
+          };
         }
-    }
+      }
+      
     
 
-    async findAllProducto(params: { page?: number, pageSize?: number, filtro?: string }): Promise<ApiResponse<{ productos: Producto[], totalRecords: number, currentPage: number, totalPages: number }>> {
+      async findAllProducto(params: {
+        page?: number;
+        pageSize?: number;
+        filtro?: string;
+        empresaId?: number;
+      }): Promise<ApiResponse<{
+        productos: Producto[];
+        totalRecords: number;
+        currentPage: number;
+        totalPages: number;
+      }>> {
+        const { page = 1, pageSize = 10, filtro = '', empresaId } = params;
+      
+        const whereCondition = {
+          AND: [
+            empresaId ? { empresaId } : {},
+            {
+              OR: [
+                { nombre: { contains: filtro, lte: 'insensitive' } },
+                { codigo: { contains: filtro, lte: 'insensitive' } },
+                { categoria: { nombre: { contains: filtro, lte: 'insensitive' } } },
+              ],
+            },
+          ],
+        };
+      
         try {
-            const { page = 1, pageSize = 10, filtro = '' } = params;
-
-
-            // Validación: evita páginas negativas o tamaños de página demasiado pequeños
-            const pageNumber = Math.max(1, parseInt(page.toString()));
-            const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
-            const [productos, totalRecords] = await Promise.all([
-                this.prisma.producto.findMany({
-                    where: {
-                        OR: [
-                            {
-                                nombre: {
-                                    contains: filtro,
-                                },
-                            },
-                            {
-                                codigo: {
-                                    contains: filtro,
-                                },
-                            },
-                            {
-                                categoria: {
-                                    nombre: {
-                                        contains: filtro,
-                                    },
-                                },
-                            },
-                        ],
-                    },
-                    include: {
-                        empresa: {
-                            select: {
-                                nombre: true,
-                            },
-                        },
-                        categoria: {
-                            select: {
-                                nombre: true,
-                            },
-                        },
-                        subCategoria: {
-                            select: {
-                                nombre: true,
-                            },
-                        },
-                    }, orderBy: {
-                        nombre: 'asc'
-                    },
-                    skip: (pageNumber - 1) * pageSizeNumber,
-                    take: pageSizeNumber,
-                }),
-
-                this.prisma.producto.count(),
-
-            ]);
-
-            const totalPages = Math.ceil(totalRecords / pageSizeNumber);
-            return {
-                success: true,
-                data: {
-                    productos,
-                    totalRecords,
-                    currentPage: pageNumber,
-                    totalPages
-                }
-            };
-        } catch (error: any) {
-            throw error;
+          const [productos, totalRecords] = await Promise.all([
+            this.prisma.producto.findMany({
+              where: whereCondition,
+              include: {
+                empresa: { select: { nombre: true } },
+                categoria: { select: { nombre: true } },
+                subCategoria: { select: { nombre: true } },
+              },
+              orderBy: { nombre: 'asc' },
+              skip: (page - 1) * pageSize,
+              take: Number(pageSize),
+            }),
+            this.prisma.producto.count({ where: whereCondition }),
+          ]);
+      
+          return {
+            success: true,
+            data: {
+              productos,
+              totalRecords,
+              currentPage: Number(page),
+              totalPages: Math.ceil(totalRecords / pageSize),
+            },
+          };
+        } catch (error) {
+          console.error('Error al obtener productos:', error);
+          return { success: false, error: 'Error al obtener productos.' };
         }
-    }
+      }
+      
+      
 
 
-    async FindByCodigoNombre(nombreOCodigo: string): Promise<ApiResponse<Producto[]>> {
+      async FindByCodigoNombre(filtro: string): Promise<ApiResponse<Producto[]>> {
         try {
-            const productos = await this.prisma.producto.findMany({
-                where: {
-                    OR: [
-                        {
-                            nombre: {
-                                contains: nombreOCodigo,
-                            },
-                        },
-                        {
-                            codigo: {
-                                contains: nombreOCodigo,
-                            },
-                        },
-
-                    ],
-                },
-                take: 10, // Limitar a un máximo de 10 productos
-                include: {
-                    empresa: {
-                        select: {
-                            nombre: true,
-                        },
-                    },
-                    categoria: {
-                        select: {
-                            nombre: true,
-                        },
-                    },
-                    subCategoria: {
-                        select: {
-                            nombre: true,
-                        },
-                    },
-                },
-
-            });
-            return { success: true, data: productos };
-        } catch (error: any) {
-            throw error;
+          const productos = await this.prisma.producto.findMany({
+            where: {
+              OR: [
+                { nombre: { contains: filtro, } },
+                { codigo: { contains: filtro,  } },
+              ],
+            },
+            take: 10,
+            include: {
+              empresa: { select: { nombre: true } },
+              categoria: { select: { nombre: true } },
+              subCategoria: { select: { nombre: true } },
+            },
+          });
+      
+          return { success: true, data: productos };
+        } catch (error) {
+          console.error('Error al buscar productos por código/nombre:', error);
+          return { success: false, error: 'Error al buscar productos.' };
         }
-    }
+      }
 
-
-
-    async updateProductoStock(
-        Data: UpdateProductoDto,
-        id: number,
-    ): Promise<void> {
-        const producto = await this.prisma.producto.findUnique({ where: { id } });
-        let oldStock: number = parseInt(producto.stock.toString());
-        let newStock: number = oldStock + Data.stock;
-
-        const data = { stock: newStock } as UpdateProductoDto;
-        await this.prisma.producto.update({ data, where: { id } });
-    }
-
-
-    async findByCodigo(codigo: string): Promise<Producto> {
+//modificar
+      async findByCodigo(codigo: string): Promise<Producto> {
 
         try {
             const productos = await this.prisma.producto.findFirst({
@@ -260,24 +181,29 @@ export class ProductoService {
         }
 
     }
+     
+    
 
-    async update(id: number, updateProductoDto: UpdateProductoDto): Promise<ApiResponse<Producto>> {
+      async update(id: number, updateProductoDto: UpdateProductoDto): Promise<ApiResponse<Producto>> {
         try {
           const producto = await this.prisma.producto.findUnique({ where: { id } });
-    
+      
           if (!producto) {
-            throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+            return { success: false, error: `Producto con ID ${id} no encontrado.` };
           }
-    
+      
           const updatedProducto = await this.prisma.producto.update({
             where: { id },
-            data: updateProductoDto,
+            data: {...updateProductoDto, updatedAt: GetLocalDate()}, 
           });
+      
           return { success: true, data: updatedProducto };
         } catch (error) {
-            return { success: false, error: error };
+          console.error('Error al actualizar producto:', error);
+          return { success: false, error: 'Error al actualizar el producto.' };
         }
       }
+      
 
 
 
