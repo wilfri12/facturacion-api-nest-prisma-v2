@@ -15,6 +15,7 @@ export class CajaService {
     const { empresaId, nombre, ubicacion } = data;
 
     if (!empresaId || !nombre) {
+      console.log('El ID de la empresa y el nombre de la caja son obligatorios.' );
       return { success: false, error: 'El ID de la empresa y el nombre de la caja son obligatorios.' };
     }
 
@@ -137,77 +138,84 @@ export class CajaService {
     }
   }
 
-  async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Partial<Caja>>> {
+  async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     const { cajaId, montoFinal, usuarioId } = data;
-
+  
+    // Datos para actualizar la caja y su historial
     const cajaData = {
       estado: EstadoCaja.CERRADA,
       updatedAt: GetLocalDate(),
-      usuarioId: null
+      usuarioId: null,
     };
-
+  
     const historialCajaData = {
       montoFinal: parseFloat(montoFinal.toString()),
       estado: EstadoCaja.CERRADA,
       fechaCierre: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-
+  
     try {
-      // Creación transacción
+      // Validación previa
+      if (!cajaId || !montoFinal || !usuarioId) {
+        throw new Error('Datos incompletos: cajaId, montoFinal o usuarioId no proporcionados.');
+      }
+  
+      // Inicio de la transacción
       const response = await this.prisma.$transaction(async (prisma) => {
         // Actualizar el estado de la caja
         const cajaUpdated = await prisma.caja.update({
           where: { id: cajaId },
           data: cajaData,
         });
-
-        // Buscar el historial de caja abierta más reciente
+  
+        // Buscar el historial de caja más reciente en estado abierto
         const historial = await prisma.historialCaja.findFirst({
           where: {
             cajaId,
             estado: EstadoCaja.ABIERTA,
           },
           orderBy: {
-            id: 'desc', // Ordenar por la fecha más reciente
+            id: 'desc', // Ordenar por el registro más reciente
           },
         });
-
+  
         if (!historial) {
-          throw new Error('No se encontró un historial de caja abierta.');
+          throw new Error('No se encontró un historial de caja abierta para esta caja.');
         }
-
+  
         // Actualizar el historial de caja con los datos de cierre
-        const historialUpdated = await prisma.historialCaja.update({
+        await prisma.historialCaja.update({
           where: { id: historial.id },
           data: historialCajaData,
         });
-
+  
         // Crear el movimiento de caja para el cierre
-        const montoFloat = parseFloat(montoFinal.toString())
-        const usuarioIdInt = parseInt(usuarioId.toString())
-
         await prisma.movimientosCaja.create({
           data: {
             historialCajaId: historial.id,
             createdAt: GetLocalDate(),
             descripcion: 'Cierre de caja',
-            monto: montoFloat,
+            monto: parseFloat(montoFinal.toString()),
             tipo: tipoMovimientoCaja.CIERRE,
             updatedAt: GetLocalDate(),
-            usuarioId: usuarioIdInt,
+            usuarioId: parseInt(usuarioId.toString()),
           },
         });
-
-        return cajaUpdated;
+  
+        return cajaUpdated; // Retornar la caja actualizada
       });
-
-      return { success: true, data: response };
-    } catch (error) {
-      console.error('Error al cerrar la caja:', error);
-      return { success: false, error: error.message };
+  
+      return { success: true, data: response }; // Respuesta en caso de éxito
+    } catch (error: any) {
+      console.error('Error al cerrar la caja:', error.message || error);
+      return {
+        success: false,
+        error: error.message || 'Ocurrió un error inesperado al cerrar la caja.',
+      };
     }
   }
+  
 
   async cajaAbierta(usuarioId: number): Promise<Caja | null> {
     try {

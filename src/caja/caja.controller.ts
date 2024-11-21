@@ -63,9 +63,27 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
   }
 
 
-  @Put()
-  cerrarCaja(@Body() data: UpdateCajaDto) {
-    return this.cajaService.cerrarCaja(data);
+  @Put('cerrar')
+  async cerrarCaja(@Body() data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
+    try {
+      // Llamar al servicio para cerrar la caja
+      const response = await this.cajaService.cerrarCaja(data);
+
+      // Retornar respuesta estándar
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        throw new HttpException(
+          response.error || 'No se pudo cerrar la caja.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    } catch (error) {
+      return {success: false, error}
+    }
   }
 
   @Delete(':id')
