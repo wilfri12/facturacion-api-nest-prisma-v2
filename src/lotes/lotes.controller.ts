@@ -1,19 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { LotesService } from './lotes.service';
 import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
 import { ApiResponse } from 'src/interface';
 import { LoteProducto } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/lotes')
 export class LotesController {
   constructor(private readonly lotesService: LotesService) { }
-
+  @UseGuards(AuthGuard)
   @Post()
   create(@Body() createLoteDto: CreateLoteDto) {
     return this.lotesService.create(createLoteDto);
   }
-
+  @UseGuards(AuthGuard)
   @Get()
   async findAll(
     @Query('startDate') startDate?: string,
@@ -49,6 +50,7 @@ export class LotesController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get('activar/:id')
   async activarLote(@Param('id') id: string) {
     try {

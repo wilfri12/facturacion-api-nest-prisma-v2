@@ -74,6 +74,7 @@ export class CompraService {
                         descripcion: `Compra de producto`,
                         usuarioId: parsedUsuarioId,
                         empresaId: parsedEmpresaId,
+                        precioCompra,
                         createdAt,
                         updatedAt,
                     });

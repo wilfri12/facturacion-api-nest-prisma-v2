@@ -9,7 +9,7 @@ import { AuthGuard } from 'src/auth/auth/auth.guard';
 @Controller('api/v1/factura')
 export class FacturaController {
   constructor(private readonly facturaService: FacturaService) { }
-
+  @UseGuards(AuthGuard)
   @Post()
   async create(@Body() data: FacturaDto & { detalles: DetalleFactura[] }): Promise<ApiResponse<Factura>> {
     try {
@@ -24,7 +24,7 @@ export class FacturaController {
   }
 
 
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   @Get()
   async findAll(
     @Query('startDate') startDate?: string,
@@ -63,7 +63,7 @@ export class FacturaController {
     }
   }
 
-
+  @UseGuards(AuthGuard)
   @Get('/:idFactura')
   async findByCodigo2(@Param('idFactura') idFactura: number) {
 
@@ -76,7 +76,7 @@ export class FacturaController {
   }
 
 
-
+  @UseGuards(AuthGuard)
   @Get('report-factura/:id')
   async employmentLetterById(@Res() response: Response, @Param('id') id: string) {
     try {
@@ -92,6 +92,7 @@ export class FacturaController {
 
   }
 
+  @UseGuards(AuthGuard)
   @Get('generar/reporte/facturas')
   async generarReporteFacturas(
     @Res() response: Response,
@@ -130,7 +131,7 @@ export class FacturaController {
     }
   }
 
-
+@UseGuards(AuthGuard)
   @Patch('pagar/:id')
   async pagarFactura(@Param('id') id: string) {
     try {
@@ -153,7 +154,4 @@ export class FacturaController {
       throw new HttpException(error.message || 'Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
-
-  
 }

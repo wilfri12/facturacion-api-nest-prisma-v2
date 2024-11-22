@@ -236,6 +236,8 @@ model MovimientoInventario {
   empresaId   Int
   empresa     Empresa        @relation(fields: [empresaId], references: [id])
   usuario     Usuario        @relation(fields: [usuarioId], references: [id])
+  precioVenta Decimal  @db.Decimal(10,2)  @default(0)     // Precio de venta, solo para 'SALIDA'
+  precioCompra Decimal  @db.Decimal(10,2) @default(0)    // Precio de compra, solo para 'ENTRADA'
   createdAt   DateTime?      @default(now())
   updatedAt   DateTime?      @default(now()) @updatedAt
   delete      Boolean        @default(false)

@@ -129,6 +129,7 @@ export class FacturaService {
             descripcion: `Venta en factura FACT-${createdFactura.id}`,
             usuarioId: usuarioIdNumber,
             empresaId: empresaIdNumber,
+            precioVenta: precioUnitario,
             createdAt,
             updatedAt,
           });
@@ -152,9 +153,18 @@ export class FacturaService {
             });
 
             _cantidadRestante -= cantidadARestar;
+            console.log('cantidadARestar', cantidadARestar);
           }
 
+          console.log('_cantidadRestante', _cantidadRestante);
+          console.log('cantidad de productos a restar', cantidad);
+
+
+          
+
           const nuevoStock = producto.stock - cantidad;
+          console.log('nuevoStock', nuevoStock);
+          
           const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
 
           productoUpdates.push({
@@ -175,6 +185,8 @@ export class FacturaService {
         }
 
         for (const loteUpdate of loteUpdates) {
+          console.log('loteUpdate', loteUpdate);
+          
           await prisma.loteProducto.update(loteUpdate);
         }
 
@@ -562,10 +574,7 @@ const monthsDifference = calculateMonthDifference(new Date(startDate), new Date(
 if (monthsDifference > 6) {
 
   throw "El rango de fechas no puede exceder los 6 meses."
-  
 }
-
-
       // Construcción de filtros condicionales
       const filters: any = {};
       if (startDate && endDate) {
@@ -653,9 +662,5 @@ if (monthsDifference > 6) {
       throw new Error('No se pudieron recuperar las facturas. Verifique los parámetros.');
     }
   }
-
-
-
-
 
 }

@@ -1,12 +1,14 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
 import { DashboardData, ReportesService } from './reportes.service';
 import { ApiResponse } from 'src/interface';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/dashboard')
 export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}
 
   // Endpoint para comparar ventas diarias
+  @UseGuards(AuthGuard)
   @Get('ventas-diarias')
   async compararVentasDiarias() {
     try {
@@ -23,6 +25,7 @@ export class ReportesController {
   }
 
   // Endpoint para obtener productos sin stock
+  @UseGuards(AuthGuard)
   @Get('productos-sin-stock')
   async obtenerProductosSinStock(
     @Query('pagina') pagina: number = 1,
@@ -42,6 +45,7 @@ export class ReportesController {
   }
 
   // Endpoint para obtener productos con bajo stock
+  @UseGuards(AuthGuard)
   @Get('productos-bajo-stock')
   async obtenerProductosBajoStock(
     @Query('umbral') umbral: number = 10,
@@ -61,26 +65,9 @@ export class ReportesController {
     }
   }
 
-  // Endpoint para obtener resumen de ventas por categoría
-  @Get('resumen-ventas-categoria')
-  async resumenVentasPorCategoria(
-    @Query('periodo') periodo: 'dia' | 'semana' | 'mes',
-    @Query('umbral') umbral: number = 0
-  ) {
-    try {
-      const result = await this.reportesService.resumenVentasPorCategoria(periodo, umbral);
-      return result;
-    } catch (error) {
-      console.error('Error al obtener resumen de ventas por categoría:', error);
-      return {
-        success: false,
-        message: 'Error al obtener resumen de ventas por categoría.',
-        error: error.message,
-      };
-    }
-  }
 
   // Endpoint para calcular el valor total del inventario
+  @UseGuards(AuthGuard)
   @Get('valor-inventario-total')
   async calcularValorInventarioTotal() {
     try {
@@ -97,6 +84,7 @@ export class ReportesController {
   }
 
   // Endpoint para calcular la utilidad bruta en un periodo
+  @UseGuards(AuthGuard)
   @Get('calculos')
 async calcularDatosDashboard(
   @Query('inicio') inicio: string,
@@ -150,6 +138,7 @@ async calcularDatosDashboard(
   
 
   // Endpoint para obtener productos más vendidos
+  @UseGuards(AuthGuard)
   @Get('productos-mas-vendidos')
   async obtenerProductosMasVendidos(
     @Query('periodo') periodo: 'semana' | 'mes',
@@ -169,6 +158,7 @@ async calcularDatosDashboard(
   }
 
   // Endpoint para obtener resumen de facturas por estado
+  @UseGuards(AuthGuard)
   @Get('resumen-facturas-estado')
   async resumenFacturasPorEstado(
     @Query('year') year: number
@@ -187,6 +177,7 @@ async calcularDatosDashboard(
   }
 
   // Endpoint para obtener datos de ventas y compras mensuales para el año especificado
+  @UseGuards(AuthGuard)
   @Get('ventas-compras-mensuales')
   async obtenerDatosVentasComprasMensuales(
     @Query('year') year: number

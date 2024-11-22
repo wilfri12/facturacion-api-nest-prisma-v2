@@ -1,12 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Compra } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
 import { CompraService } from './compra.service';
 import { CompraDto, DetalleCompraDto } from './DTO/compra.dto';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/compra')
 export class CompraController {
     constructor(private readonly compraService: CompraService) { }
+
+    @UseGuards(AuthGuard)
     @Post()
     async createCompra(@Body() data: CompraDto & { detalles: DetalleCompraDto[] }): Promise<ApiResponse<Compra>> {
         try {
@@ -19,6 +22,7 @@ export class CompraController {
         }
     }
 
+    @UseGuards(AuthGuard)
     @Get()
     async findAllCompra(
         @Query('startDate') startDate?: string,
@@ -48,6 +52,7 @@ export class CompraController {
         }
     }
 
+    @UseGuards(AuthGuard)
     @Delete(':id')
   async softDeleteCompra(
     @Param('id') id: string

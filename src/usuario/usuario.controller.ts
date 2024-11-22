@@ -1,13 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { Usuario } from '@prisma/client';
 import { UpdateUsuarioDto, UsuarioDto } from './DTO/usuario.dto';
 import { ApiResponse } from 'src/interface';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/usuario')
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) { }
 
+  @UseGuards(AuthGuard)
   @Post()
   async create(@Body() data: UsuarioDto): Promise<ApiResponse<Usuario>> {
     try {
@@ -24,6 +26,7 @@ export class UsuarioController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   async find(): Promise<ApiResponse<Usuario[]>> {
     try {
@@ -34,6 +37,7 @@ export class UsuarioController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
   async update(
     @Param('id') id: string,

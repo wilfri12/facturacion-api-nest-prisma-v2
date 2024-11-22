@@ -1,19 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { CajaService } from './caja.service';
 import { CreateCajaDto, AbrirCajaDTO } from './dto/create-caja.dto';
 import { UpdateCajaDto } from './dto/update-caja.dto';
 import { ApiResponse } from 'src/interface';
 import { Caja, HistorialCaja } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/caja')
 export class CajaController {
   constructor(private readonly cajaService: CajaService) { }
 
+  @UseGuards(AuthGuard)
   @Post()
   create(@Body() createCajaDto: CreateCajaDto) {
     return this.cajaService.createCaja(createCajaDto);
   }
 
+  @UseGuards(AuthGuard)
   @Post('abrir')
 async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>> {
   try {
@@ -32,17 +35,19 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
   }
 }
 
-
+@UseGuards(AuthGuard)
   @Get()
   findAll() {
     return this.cajaService.findAllCajaCerrada();
   }
 
+  @UseGuards(AuthGuard)
   @Get('/historial')
   findOne() {
     return this.cajaService.finsHistorialCaja();
   }
 
+  @UseGuards(AuthGuard)
   @Get('/estado/:usuarioId')
   async findCajaAbierta(@Param('usuarioId') usuarioId: string) {
     const caja = await this.cajaService.cajaAbierta(+usuarioId);
@@ -62,7 +67,7 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
     };
   }
 
-
+  @UseGuards(AuthGuard)
   @Put('cerrar')
   async cerrarCaja(@Body() data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     try {
@@ -86,6 +91,7 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
     }
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.cajaService.remove(+id);

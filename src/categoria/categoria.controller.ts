@@ -1,13 +1,15 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { CategoriaService } from './categoria.service';
 import { Categoria } from '@prisma/client';
 import { CategoriaDto } from './DTO/categoria.dto';
 import { ApiResponse } from 'src/interface';
+import { AuthGuard } from 'src/auth/auth/auth.guard';
 
 @Controller('api/v1/categoria')
 export class CategoriaController {
   constructor(private readonly categoriaService: CategoriaService) { }
 
+  @UseGuards(AuthGuard)
   @Post()
   async create(@Body() data: CategoriaDto[]) {
     try {
@@ -18,6 +20,7 @@ export class CategoriaController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   async find(): Promise<ApiResponse<Categoria[]>> {
     try {

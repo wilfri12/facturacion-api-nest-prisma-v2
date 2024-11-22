@@ -3,10 +3,14 @@ import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { Movimiento } from './entities/movimiento.entity';
 import { TipoMovimiento } from '@prisma/client';
+import { PrinterService } from '../printer/printer.service';
+import { reporteMovimientoEntradaSalida } from 'reports-pdf/reporteEntraSalida';
 
 @Injectable()
 export class MovimientoService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService,
+    private readonly printerService: PrinterService
+  ) { }
 
 
   
@@ -97,4 +101,98 @@ export class MovimientoService {
       throw error;
     }
   }
+
+
+  async reporteMovimiento(params: {
+    startDate?: Date;
+    endDate?: Date;
+    filtroProducto?: string;
+    tipo?: TipoMovimiento;
+  }){
+    try {
+      const { startDate, endDate, filtroProducto, tipo } = params;
+  
+      const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
+      const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
+  
+      console.log("Start Date:", startDateTime);
+      console.log("End Date:", endDateTime);
+  
+      const [movimientos, totalRecords] = await Promise.all([
+        this.prisma.movimientoInventario.findMany({
+          where: {
+            AND: [
+              startDateTime ? { createdAt: { gte: startDateTime } } : {},
+              endDateTime ? { createdAt: { lte: endDateTime } } : {},
+              tipo ? { tipo: tipo } : {},
+              filtroProducto
+                ? {
+                    producto: {
+                      OR: [
+                        { nombre: { contains: filtroProducto } },
+                        { codigo: { contains: filtroProducto } },
+                      ],
+                    },
+                  }
+                : {},
+            ],
+          },
+          include: {
+            producto: {
+              select: {
+                codigo: true,
+                nombre: true,
+              },
+            },
+            usuario: {
+              select: {
+                nombreUsuario: true,
+              },
+            },
+            empresa: true,
+          },
+          orderBy: {
+            id: 'desc',
+          },
+        }),
+  
+        this.prisma.movimientoInventario.count({
+          where: {
+            AND: [
+              startDateTime ? { createdAt: { gte: startDateTime } } : {},
+              endDateTime ? { createdAt: { lte: endDateTime } } : {},
+              tipo ? { tipo: tipo } : {},
+              filtroProducto
+                ? {
+                    producto: {
+                      OR: [
+                        { nombre: { contains: filtroProducto } },
+                        { codigo: { contains: filtroProducto } },
+                      ],
+                    },
+                  }
+                : {},
+            ],
+          },
+        }),
+      ]);
+  
+      const docDefinition = reporteMovimientoEntradaSalida({
+        data: {
+          movimientos,
+          totalRecords,
+        },
+        startDate: startDate ? startDate.toISOString() : undefined,
+        endDate: endDate ? endDate.toISOString() : undefined,
+      });
+  
+      const pdfDoc = await this.printerService.createPdf(docDefinition);
+  
+      return pdfDoc;
+    } catch (error: any) {
+      console.error("Error en reporteMovimiento:", error);
+      throw error;
+    }
+  }
+  
 }

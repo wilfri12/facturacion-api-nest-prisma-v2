@@ -175,47 +175,6 @@ export class ReportesService {
     }
   }
 
-  // Servicio que obtiene resumen de ventas por categoría
-  async resumenVentasPorCategoria(periodo: 'dia' | 'semana' | 'mes', umbral: number = 0): Promise<ApiResponse<{ categoria: string; totalVentas: number; cantidadVentas: number }[]>> {
-    const fechaInicio = this.calcularFechaInicio(periodo);
-
-    console.log('resumenVentasPorCategoria', periodo);
-    console.log('resumenVentasPorCategoria', fechaInicio);
-
-
-    // Agrupamos por producto en los detalles de factura y sumamos el importe
-    const ventas = await this.prisma.detalleFactura.groupBy({
-      by: ['productoId'],
-      _sum: { importe: true },
-      _count: { id: true },
-      where: {
-        factura: { createdAt: { gte: fechaInicio } }
-      }
-    });
-
-    // Mapeamos las ventas para obtener la categoría asociada a cada producto
-    const ventasPorCategoria = await Promise.all(
-      ventas.map(async (venta) => {
-        const producto = await this.prisma.producto.findUnique({
-          where: { id: venta.productoId },
-          select: { categoria: { select: { nombre: true } } }
-        });
-
-        return {
-          categoria: producto?.categoria.nombre || 'Sin categoría',
-          totalVentas: Number(venta._sum.importe) || 0,
-          cantidadVentas: venta._count.id || 0
-        };
-      })
-    );
-
-    // Filtramos según el umbral y preparamos la respuesta
-    return {
-      success: true,
-      data: ventasPorCategoria.filter(v => v.totalVentas >= umbral)
-    };
-  }
-
 
   // Servicio que calcula el valor total del inventario
   async calcularValorInventarioTotal() {
@@ -262,9 +221,13 @@ export class ReportesService {
 
   // Servicio que calcula utilidad bruta en un periodo
   async calcularDatosDashboard(periodoInicio: Date, periodoFin: Date): Promise<{ success: boolean; data: DashboardData }> {
+    console.log("Iniciando cálculo del dashboard");
+    
     const startDateTime = periodoInicio ? new Date(new Date(periodoInicio).setUTCHours(0, 0, 0, 0)) : undefined;
     const endDateTime = periodoFin ? new Date(new Date(periodoFin).setUTCHours(23, 59, 59, 999)) : undefined;
-  
+    console.log("Periodo de análisis:", { startDateTime, endDateTime });
+    
+    // Obtener facturas
     const facturas = await this.prisma.factura.findMany({
       where: {
         AND: [
@@ -275,95 +238,130 @@ export class ReportesService {
       include: {
         detallesFacturas: {
           include: {
-            producto: {
-              include: { categoria: true },
-            },
+            producto: { include: { categoria: true } },
           },
         },
       },
     });
+    console.log("Facturas obtenidas:", facturas.length);
   
+    // Ventas totales calculadas desde facturas
     const ventasTotales = facturas.reduce((acc, factura) => acc + Number(factura.total), 0);
+    console.log("Ventas totales calculadas:", ventasTotales);
+  
     let costoTotal = 0;
     const productosVendidos: Record<number, ProductoVendido> = {};
     const categorias: Record<string, Categoria> = {};
     const tendencias: Record<string, { ventas: number; compras: number; gananciaBruta: number }> = {};
   
+    // Obtener detalles de facturas relacionados con movimientos de inventario
     const movimientos = await this.prisma.movimientoInventario.findMany({
       where: {
         AND: [
-          { createdAt: { gte: startDateTime } },
-          { createdAt: { lte: endDateTime } },
+          { tipo: 'SALIDA' }, // Solo movimientos de salida
+          { createdAt: { gte: startDateTime, lte: endDateTime } },
         ],
       },
       include: {
         producto: { include: { categoria: true } },
       },
     });
+    console.log("Movimientos de inventario obtenidos:", movimientos.length);
   
+    // Procesar movimientos
     for (const movimiento of movimientos) {
+      console.log("Procesando movimiento:", movimiento);
+  
       const lote = await this.prisma.loteProducto.findFirst({
         where: { productoId: movimiento.productoId, estado: 'ACTIVO' },
         orderBy: { fechaEntrada: 'asc' },
       });
   
-      if (lote) {
-        const costoUnitario = Number(lote.precioCompra);
-        if (movimiento.tipo === 'SALIDA') {
-          costoTotal += costoUnitario * movimiento.cantidad;
-  
-          if (!productosVendidos[movimiento.productoId]) {
-            productosVendidos[movimiento.productoId] = {
-              nombre: movimiento.producto.nombre,
-              cantidadVendida: 0,
-              ingresosGenerados: 0,
-              costoTotal: 0,
-            };
-          }
-  
-          productosVendidos[movimiento.productoId].cantidadVendida += movimiento.cantidad;
-          productosVendidos[movimiento.productoId].ingresosGenerados += movimiento.cantidad * Number(movimiento.producto.precio);
-          productosVendidos[movimiento.productoId].costoTotal += costoUnitario * movimiento.cantidad;
-  
-          const categoriaNombre = movimiento.producto.categoria?.nombre || "Sin Categoría";
-          if (!categorias[categoriaNombre]) {
-            categorias[categoriaNombre] = {
-              nombre: categoriaNombre,
-              ventasTotales: 0,
-              cantidadVendida: 0,
-            };
-          }
-  
-          categorias[categoriaNombre].ventasTotales += movimiento.cantidad * Number(movimiento.producto.precio);
-          categorias[categoriaNombre].cantidadVendida += movimiento.cantidad;
-  
-          const mes = new Date(movimiento.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
-          if (!tendencias[mes]) {
-            tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
-          }
-          tendencias[mes].ventas += movimiento.cantidad * Number(movimiento.producto.precio);
-        } else if (movimiento.tipo === 'ENTRADA') {
-          const mes = new Date(movimiento.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
-          if (!tendencias[mes]) {
-            tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
-          }
-          tendencias[mes].compras += movimiento.cantidad * costoUnitario;
-        }
+      if (!lote) {
+        console.warn("Lote no encontrado para producto:", movimiento.productoId);
+        continue;
       }
+  
+      const costoUnitario = Number(lote.precioCompra);
+      console.log("Costo unitario calculado:", costoUnitario);
+  
+      // Actualizar costos y métricas de productos vendidos
+      costoTotal += costoUnitario * movimiento.cantidad;
+      console.log("Costo total actualizado:", costoTotal);
+  
+      if (!productosVendidos[movimiento.productoId]) {
+        productosVendidos[movimiento.productoId] = {
+          nombre: movimiento.producto.nombre,
+          cantidadVendida: 0,
+          ingresosGenerados: 0,
+          costoTotal: 0,
+        };
+      }
+  
+      productosVendidos[movimiento.productoId].cantidadVendida += movimiento.cantidad;
+      productosVendidos[movimiento.productoId].ingresosGenerados += movimiento.cantidad * Number(movimiento.producto.precio);
+      productosVendidos[movimiento.productoId].costoTotal += costoUnitario * movimiento.cantidad;
+  
+      console.log("Producto vendido actualizado:", productosVendidos[movimiento.productoId]);
+  
+      const categoriaNombre = movimiento.producto.categoria?.nombre || "Sin Categoría";
+      if (!categorias[categoriaNombre]) {
+        categorias[categoriaNombre] = {
+          nombre: categoriaNombre,
+          ventasTotales: 0,
+          cantidadVendida: 0,
+        };
+      }
+  
+      categorias[categoriaNombre].ventasTotales += movimiento.cantidad * Number(movimiento.producto.precio);
+      categorias[categoriaNombre].cantidadVendida += movimiento.cantidad;
+  
+      // Tendencias
+      const mes = new Date(movimiento.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (!tendencias[mes]) {
+        tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
+      }
+      tendencias[mes].ventas += movimiento.cantidad * Number(movimiento.producto.precio);
     }
   
-    Object.keys(tendencias).forEach(mes => {
-      tendencias[mes].gananciaBruta = tendencias[mes].ventas - tendencias[mes].compras;
+    // Ajustar tendencias con compras
+    const movimientosEntradas = await this.prisma.movimientoInventario.findMany({
+      where: {
+        AND: [
+          { tipo: 'ENTRADA' }, // Solo movimientos de entrada
+          { createdAt: { gte: startDateTime, lte: endDateTime } },
+        ],
+      },
     });
   
+    for (const entrada of movimientosEntradas) {
+      const mes = new Date(entrada.createdAt).toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (!tendencias[mes]) {
+        tendencias[mes] = { ventas: 0, compras: 0, gananciaBruta: 0 };
+      }
+      const costoUnitario = Number(entrada.precioCompra);
+      tendencias[mes].compras += entrada.cantidad * costoUnitario;
+    }
+  
+    // Calcular ganancia bruta en tendencias
+    Object.keys(tendencias).forEach(mes => {
+      tendencias[mes].gananciaBruta = tendencias[mes].ventas - tendencias[mes].compras;
+      console.log("Tendencias actualizadas para mes:", mes, tendencias[mes]);
+    });
+  
+    // KPIs
     const gananciaBruta = ventasTotales - costoTotal;
+    console.log("Ganancia bruta calculada:", gananciaBruta);
+  
     const margenBruto = ((gananciaBruta / ventasTotales) * 100).toFixed(2);
     const ticketPromedio = (ventasTotales / facturas.length).toFixed(2);
+    console.log("KPIs calculados:", { margenBruto, ticketPromedio });
   
     const productosBajoStock = await this.prisma.loteProducto.findMany({
       where: { cantidadRestante: { lte: 5 } },
       include: { producto: true },
     });
+    console.log("Productos bajo stock encontrados:", productosBajoStock.length);
   
     return {
       success: true,
@@ -390,6 +388,8 @@ export class ReportesService {
       },
     };
   }
+  
+  
   
 
 
