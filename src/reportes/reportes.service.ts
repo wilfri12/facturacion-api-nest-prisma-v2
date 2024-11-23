@@ -358,8 +358,8 @@ export class ReportesService {
     const gananciaBruta = ventasTotales - costoTotal;
     console.log("Ganancia bruta calculada:", gananciaBruta);
   
-    const margenBruto: number = ventasTotales ? ((gananciaBruta / ventasTotales) * 100) : 0;
-    const ticketPromedio: number = facturas ? (ventasTotales / facturas.length) : 0;
+    const margenBruto: number = ventasTotales ? Number(((gananciaBruta / ventasTotales) * 100).toFixed(2)) : 0;
+    const ticketPromedio: number = facturas ? Number((ventasTotales / facturas.length).toFixed(2)) : 0;
     console.log("KPIs calculados:", { margenBruto, ticketPromedio });
   
     const productosBajoStock = await this.prisma.loteProducto.findMany({

@@ -161,11 +161,11 @@ export class FacturaService {
           console.log('cantidad de productos a restar', cantidad);
 
 
-          
+
 
           const nuevoStock = producto.stock - cantidad;
           console.log('nuevoStock', nuevoStock);
-          
+
           const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
 
           productoUpdates.push({
@@ -187,7 +187,7 @@ export class FacturaService {
 
         for (const loteUpdate of loteUpdates) {
           console.log('loteUpdate', loteUpdate);
-          
+
           await prisma.loteProducto.update(loteUpdate);
         }
 
@@ -274,7 +274,7 @@ export class FacturaService {
 
 
   async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number, codigo?: string }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
-    const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago, codigo} = params;
+    const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago, codigo } = params;
 
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
     const pageNumber = Math.max(1, parseInt(page.toString()));
@@ -545,37 +545,37 @@ export class FacturaService {
       const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
 
       // Función para obtener el nombre del mes en español
-const getMonthName = (monthNumber:number) => {
-  const months = [
-    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
-  ];
-  return months[monthNumber];
-};
+      const getMonthName = (monthNumber: number) => {
+        const months = [
+          "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+          "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+        ];
+        return months[monthNumber];
+      };
 
-// Formatear las fechas
-const formatDate = (date: Date) => {
-  const day = date.getDate();
-  const month = getMonthName(date.getMonth());
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
+      // Formatear las fechas
+      const formatDate = (date: Date) => {
+        const day = date.getDate();
+        const month = getMonthName(date.getMonth());
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+      };
 
 
-// Calcular la diferencia en meses
-const calculateMonthDifference = (start:Date, end:Date) => {
-  return (
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth())
-  );
-};
+      // Calcular la diferencia en meses
+      const calculateMonthDifference = (start: Date, end: Date) => {
+        return (
+          (end.getFullYear() - start.getFullYear()) * 12 +
+          (end.getMonth() - start.getMonth())
+        );
+      };
 
-const monthsDifference = calculateMonthDifference(new Date(startDate), new Date(endDate));
+      const monthsDifference = calculateMonthDifference(new Date(startDate), new Date(endDate));
 
-if (monthsDifference > 6) {
+      if (monthsDifference > 6) {
 
-  throw "El rango de fechas no puede exceder los 6 meses."
-}
+        throw "El rango de fechas no puede exceder los 6 meses."
+      }
       // Construcción de filtros condicionales
       const filters: any = {};
       if (startDate && endDate) {
@@ -649,6 +649,10 @@ if (monthsDifference > 6) {
         }).then((res) => res._sum.total || 0),
       ]);
 
+      if (facturas.length === 0) {
+        throw new Error('No hay datos con los parámetros ingresados.');
+
+      }
       // Llamar a la función `reporteFacturas` para generar el PDF
       const docDefinition = reporteFacturas(
         facturas,
