@@ -49,7 +49,8 @@ export class MovimientoService {
                   },
                 }
                 : {},
-            ]
+            ],
+            delete: false,
           },
           include: {
             producto: {

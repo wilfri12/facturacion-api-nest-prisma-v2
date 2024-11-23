@@ -34,7 +34,7 @@ export class LotesService {
                 endDateTime ? { fechaEntrada: { lte: endDateTime } } : {},
             ],
             
-            // delete:false,
+             delete:false,
         },
           include: {
             producto: {
@@ -54,7 +54,8 @@ export class LotesService {
               AND: [
                   startDateTime ? { fechaEntrada: { gte: startDateTime } } : {},
                   endDateTime ? { fechaEntrada: { lte: endDateTime } } : {},
-              ]
+              ],
+              delete:false,
           }
       })
 
@@ -80,12 +81,12 @@ export class LotesService {
         const transaction = await this.prisma.$transaction(async (prisma) => {
             // Intentamos encontrar el lote pendiente con el producto asociado
             const lote = await prisma.loteProducto.findUnique({
-                where: { id, estado: EstadoLote.PENDIENTE },
+                where: { id, estado: EstadoLote.PENDIENTE,  delete: false, },
                 include: { producto: true },
             });
 
             if (!lote) {
-                return { success: false, message: `Lote con ID: ${id} no encontrado o ya está activado.` };
+                return { success: false, message: `Lote con ID: ${id} no encontrado, ya está activado o ha sido eliminado.` };
             }
 
             if (lote.cantidad <= 0) {
@@ -108,7 +109,7 @@ export class LotesService {
 
             // Activamos el lote y actualizamos su estado y fecha de actualización
             await prisma.loteProducto.update({
-                where: { id },
+                where: { id,  delete: false, },
                 data: { estado: EstadoLote.ACTIVO, updatedAt: GetLocalDate() },
             });
 

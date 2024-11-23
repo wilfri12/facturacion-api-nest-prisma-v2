@@ -16,6 +16,7 @@ model Contacto {
   direccion String    @db.VarChar(50)
   usuario   Usuario?
   cliente   Cliente?
+  delete    Boolean   @default(false)
   createdAt DateTime? @default(now())
   updatedAt DateTime? @default(now()) @updatedAt
   Empresa   Empresa?  @relation(fields: [empresaId], references: [id])
@@ -26,6 +27,7 @@ model Empresa {
   id                   Int                    @id @default(autoincrement())
   nombre               String                 @db.VarChar(50)
   descripcion          String?                @db.VarChar(100)
+  delete               Boolean                @default(false)
   usuarios             Usuario[]
   categorias           Categoria[]
   productos            Producto[]
@@ -51,6 +53,7 @@ model Categoria {
   nombre       String         @unique @db.VarChar(50)
   empresaId    Int
   empresa      Empresa        @relation(fields: [empresaId], references: [id])
+  delete       Boolean        @default(false)
   productos    Producto[]
   SubCategoria SubCategoria[]
   createdAt    DateTime?      @default(now())
@@ -65,6 +68,7 @@ model SubCategoria {
   nombre      String     @db.VarChar(50)
   categoriaId Int
   categoria   Categoria  @relation(fields: [categoriaId], references: [id])
+  delete      Boolean    @default(false)
   productos   Producto[]
   createdAt   DateTime?  @default(now())
   updatedAt   DateTime?  @default(now()) @updatedAt
@@ -85,6 +89,7 @@ model Producto {
   categoriaId          Int
   subCategoriaId       Int?
   empresaId            Int
+  delete               Boolean                @default(false)
   detallesFacturas     DetalleFactura[]
   detallesCompras      DetalleCompra[]
   empresa              Empresa                @relation(fields: [empresaId], references: [id])
@@ -112,6 +117,7 @@ model Usuario {
   empresa              Empresa                @relation(fields: [empresaId], references: [id])
   facturas             Factura[]
   Compras              Compra[]
+  delete               Boolean                @default(false)
   createdAt            DateTime?              @default(now())
   updatedAt            DateTime?              @default(now()) @updatedAt
   MovimientoInventario MovimientoInventario[]
@@ -138,27 +144,29 @@ model Cliente {
 }
 
 model Factura {
-  id               Int                @id @default(autoincrement())
-  codigo           String             @unique
-  subtotal         Decimal            @default(0.00) @db.Decimal(10, 2)
-  total            Decimal            @default(0.00) @db.Decimal(10, 2)
-  itebisTotal      Decimal            @default(0.00) @db.Decimal(10, 2)
-  metodoPago       MetodoPago         @default(EFECTIVO)
-  usuarioId        Int
-  clienteId        Int?
-  clienteNombre    String?            @db.VarChar(50)
-  empresaId        Int
-  estado           Estado             @default(PAGADA)
-  cajaId           Int?
-  moneda           TipoMoneda         @default(DOP)
-  empresa          Empresa            @relation(fields: [empresaId], references: [id])
-  usuario          Usuario            @relation(fields: [usuarioId], references: [id])
-  cliente          Cliente?           @relation(fields: [clienteId], references: [id])
-  detallesFacturas DetalleFactura[]
-  createdAt        DateTime?          @default(now())
-  updatedAt        DateTime?          @default(now()) @updatedAt
-  Caja             Caja?              @relation(fields: [cajaId], references: [id])
-  TransaccionVenta TransaccionVenta[]
+  id                    Int                    @id @default(autoincrement())
+  codigo                String                 @unique
+  subtotal              Decimal                @default(0.00) @db.Decimal(10, 2)
+  total                 Decimal                @default(0.00) @db.Decimal(10, 2)
+  itebisTotal           Decimal                @default(0.00) @db.Decimal(10, 2)
+  metodoPago            MetodoPago             @default(EFECTIVO)
+  usuarioId             Int
+  clienteId             Int?
+  clienteNombre         String?                @db.VarChar(50)
+  empresaId             Int
+  estado                Estado                 @default(PAGADA)
+  cajaId                Int?
+  moneda                TipoMoneda             @default(DOP)
+  empresa               Empresa                @relation(fields: [empresaId], references: [id])
+  usuario               Usuario                @relation(fields: [usuarioId], references: [id])
+  cliente               Cliente?               @relation(fields: [clienteId], references: [id])
+  delete                Boolean                @default(false)
+  detallesFacturas      DetalleFactura[]
+  createdAt             DateTime?              @default(now())
+  updatedAt             DateTime?              @default(now()) @updatedAt
+  Caja                  Caja?                  @relation(fields: [cajaId], references: [id])
+  TransaccionVenta      TransaccionVenta[]
+  MovimientosInventario MovimientoInventario[]
 
   @@index([clienteNombre], map: "factura_cliente_idx")
   @@index([createdAt])
@@ -176,6 +184,7 @@ model DetalleFactura {
   factura            Factura           @relation(fields: [facturaId], references: [id])
   empresa            Empresa           @relation(fields: [empresaId], references: [id])
   producto           Producto          @relation(fields: [productoId], references: [id])
+  delete             Boolean           @default(false)
   createdAt          DateTime?         @default(now())
   updatedAt          DateTime?         @default(now()) @updatedAt
   TransaccionVenta   TransaccionVenta? @relation(fields: [transaccionVentaId], references: [id])
@@ -185,20 +194,21 @@ model DetalleFactura {
 }
 
 model Compra {
-  id                Int                 @id @default(autoincrement())
-  total             Decimal             @default(0.00) @db.Decimal(10, 2)
-  usuarioId         Int
-  empresaId         Int
-  moneda            TipoMoneda          @default(DOP)
-  usuario           Usuario             @relation(fields: [usuarioId], references: [id])
-  empresa           Empresa             @relation(fields: [empresaId], references: [id])
-  detallesCompras   DetalleCompra[]
-  createdAt         DateTime?           @default(now())
-  updatedAt         DateTime?           @default(now()) @updatedAt
-  delete            Boolean             @default(false)
-  canDelete         Boolean             @default(true)
-  TransaccionCompra TransaccionCompra[]
-  LoteProducto      LoteProducto[]
+  id                    Int                    @id @default(autoincrement())
+  total                 Decimal                @default(0.00) @db.Decimal(10, 2)
+  usuarioId             Int
+  empresaId             Int
+  moneda                TipoMoneda             @default(DOP)
+  usuario               Usuario                @relation(fields: [usuarioId], references: [id])
+  empresa               Empresa                @relation(fields: [empresaId], references: [id])
+  detallesCompras       DetalleCompra[]
+  createdAt             DateTime?              @default(now())
+  updatedAt             DateTime?              @default(now()) @updatedAt
+  delete                Boolean                @default(false)
+  canDelete             Boolean                @default(true)
+  TransaccionCompra     TransaccionCompra[]
+  LoteProducto          LoteProducto[]
+  MovimientosInventario MovimientoInventario[]
 
   @@index([createdAt])
   @@map("Compra")
@@ -226,21 +236,25 @@ model DetalleCompra {
 }
 
 model MovimientoInventario {
-  id          Int            @id @default(autoincrement())
-  productoId  Int
-  tipo        TipoMovimiento @default(ENTRADA)
-  cantidad    Int
-  descripcion String?        @db.VarChar(100)
-  usuarioId   Int
-  producto    Producto       @relation(fields: [productoId], references: [id])
-  empresaId   Int
-  empresa     Empresa        @relation(fields: [empresaId], references: [id])
-  usuario     Usuario        @relation(fields: [usuarioId], references: [id])
-  precioVenta Decimal  @db.Decimal(10,2)  @default(0)     // Precio de venta, solo para 'SALIDA'
-  precioCompra Decimal  @db.Decimal(10,2) @default(0)    // Precio de compra, solo para 'ENTRADA'
-  createdAt   DateTime?      @default(now())
-  updatedAt   DateTime?      @default(now()) @updatedAt
-  delete      Boolean        @default(false)
+  id           Int            @id @default(autoincrement())
+  productoId   Int
+  tipo         TipoMovimiento @default(ENTRADA)
+  cantidad     Int
+  descripcion  String?        @db.VarChar(100)
+  usuarioId    Int
+  producto     Producto       @relation(fields: [productoId], references: [id])
+  empresaId    Int
+  empresa      Empresa        @relation(fields: [empresaId], references: [id])
+  usuario      Usuario        @relation(fields: [usuarioId], references: [id])
+  precioVenta  Decimal        @default(0) @db.Decimal(10, 2) // Precio de venta, solo para 'SALIDA'
+  precioCompra Decimal        @default(0) @db.Decimal(10, 2) // Precio de compra, solo para 'ENTRADA'
+  createdAt    DateTime?      @default(now())
+  updatedAt    DateTime?      @default(now()) @updatedAt
+  delete       Boolean        @default(false)
+  Compra       Compra?        @relation(fields: [compraId], references: [id])
+  compraId     Int?
+  Factura      Factura?       @relation(fields: [facturaId], references: [id])
+  facturaId    Int?
 }
 
 //Este modelo contendrá los datos del lote, como la cantidad y el precio de compra
@@ -253,7 +267,7 @@ model LoteProducto {
   compraId            Int
   compra              Compra             @relation(fields: [compraId], references: [id])
   precioVenta         Decimal            @db.Decimal(10, 2)
-  precioCompra        Decimal            @db.Decimal(10, 2)  @default(0)
+  precioCompra        Decimal            @default(0) @db.Decimal(10, 2)
   fechaEntrada        DateTime           @default(now())
   updatedAt           DateTime?          @default(now()) @updatedAt
   producto            Producto           @relation(fields: [productoId], references: [id])

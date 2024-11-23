@@ -33,8 +33,8 @@ interface KPIs {
   ventasTotales: number;
   costoTotal: number;
   gananciaBruta: number;
-  margenBruto: string;
-  ticketPromedio: string;
+  margenBruto: number;
+  ticketPromedio: number;
   facturasEmitidas: number;
 }
 
@@ -63,13 +63,13 @@ export class ReportesService {
     const ventasHoy = await this.prisma.factura.aggregate({
       _sum: { total: true },
       _count: { id: true },
-      where: { createdAt: { gte: hoy } },
+      where: { createdAt: { gte: hoy }, delete: false, },
     });
 
     const ventasAyer = await this.prisma.factura.aggregate({
       _sum: { total: true },
       _count: { id: true },
-      where: { createdAt: { gte: ayer, lt: hoy } },
+      where: { createdAt: { gte: ayer, lt: hoy }, delete: false, },
     });
 
     const variacion = this.calcularVariacion(Number(ventasHoy._sum.total), Number(ventasAyer._sum.total));
@@ -225,7 +225,9 @@ export class ReportesService {
     
     const startDateTime = periodoInicio ? new Date(new Date(periodoInicio).setUTCHours(0, 0, 0, 0)) : undefined;
     const endDateTime = periodoFin ? new Date(new Date(periodoFin).setUTCHours(23, 59, 59, 999)) : undefined;
+    console.log("----------------------------------------------------");
     console.log("Periodo de análisis:", { startDateTime, endDateTime });
+    console.log("----------------------------------------------------");
     
     // Obtener facturas
     const facturas = await this.prisma.factura.findMany({
@@ -234,6 +236,7 @@ export class ReportesService {
           startDateTime ? { createdAt: { gte: startDateTime } } : {},
           endDateTime ? { createdAt: { lte: endDateTime } } : {},
         ],
+        delete: false,
       },
       include: {
         detallesFacturas: {
@@ -261,6 +264,7 @@ export class ReportesService {
           { tipo: 'SALIDA' }, // Solo movimientos de salida
           { createdAt: { gte: startDateTime, lte: endDateTime } },
         ],
+        delete: false,
       },
       include: {
         producto: { include: { categoria: true } },
@@ -273,7 +277,7 @@ export class ReportesService {
       console.log("Procesando movimiento:", movimiento);
   
       const lote = await this.prisma.loteProducto.findFirst({
-        where: { productoId: movimiento.productoId, estado: 'ACTIVO' },
+        where: { productoId: movimiento.productoId, estado: 'ACTIVO', delete: false, },
         orderBy: { fechaEntrada: 'asc' },
       });
   
@@ -331,6 +335,7 @@ export class ReportesService {
           { tipo: 'ENTRADA' }, // Solo movimientos de entrada
           { createdAt: { gte: startDateTime, lte: endDateTime } },
         ],
+        delete: false,
       },
     });
   
@@ -353,12 +358,12 @@ export class ReportesService {
     const gananciaBruta = ventasTotales - costoTotal;
     console.log("Ganancia bruta calculada:", gananciaBruta);
   
-    const margenBruto = ((gananciaBruta / ventasTotales) * 100).toFixed(2);
-    const ticketPromedio = (ventasTotales / facturas.length).toFixed(2);
+    const margenBruto: number = ventasTotales ? ((gananciaBruta / ventasTotales) * 100) : 0;
+    const ticketPromedio: number = facturas ? (ventasTotales / facturas.length) : 0;
     console.log("KPIs calculados:", { margenBruto, ticketPromedio });
   
     const productosBajoStock = await this.prisma.loteProducto.findMany({
-      where: { cantidadRestante: { lte: 5 } },
+      where: { cantidadRestante: { lte: 10 }, delete: false, },
       include: { producto: true },
     });
     console.log("Productos bajo stock encontrados:", productosBajoStock.length);

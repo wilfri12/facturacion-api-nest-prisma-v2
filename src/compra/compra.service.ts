@@ -74,6 +74,7 @@ export class CompraService {
                         descripcion: `Compra de producto`,
                         usuarioId: parsedUsuarioId,
                         empresaId: parsedEmpresaId,
+                        compraId: compraCreated.id,
                         precioCompra,
                         createdAt,
                         updatedAt,
@@ -263,10 +264,6 @@ export class CompraService {
               })
 
             }
-
-            
-           
-            
       
             // 2. Marcar la transacción, compra y sus detalles como eliminados
             console.log(`Marcando la transacción de compra, la compra y sus detalles como eliminados`);
@@ -292,29 +289,14 @@ export class CompraService {
               where: { compraId: compraId },
               data: { delete: true, updatedAt: GetLocalDate() },
             });
+
+            await prisma.movimientoInventario.updateMany({
+              where: { compraId: compraId },
+              data: { delete: true, updatedAt: GetLocalDate() },
+            });
+
             console.log(`Detalles de compra para la compra ID ${compraId} marcados como eliminados`);
       
-            // 3. Ajustar inventario y marcar lotes como eliminados
-            console.log(`Ajustando el inventario y marcando lotes como eliminados`);
-            for (const detalle of compra.detallesCompras) {
-              const { productoId, cantidad } = detalle;
-              console.log(`Procesando ajuste de inventario para ProductoID: ${productoId}, Cantidad: ${cantidad}`);
-              
-              // Ajuste en el inventario (movimiento negativo)
-              await prisma.movimientoInventario.create({
-                data: {
-                  productoId,
-                  tipo: 'AJUSTE',
-                  cantidad: -cantidad,
-                  descripcion: 'Ajuste por anulación de compra',
-                  usuarioId: compra.usuarioId,
-                  empresaId: compra.empresaId,
-                  createdAt: GetLocalDate(),
-                  updatedAt: GetLocalDate(),
-                },
-              });
-              console.log(`Movimiento de ajuste creado para ProductoID: ${productoId}`);
-            }
             console.log(`Proceso de "soft delete" completado para la transacción de compra con ID ${compraId}`);
           });
           

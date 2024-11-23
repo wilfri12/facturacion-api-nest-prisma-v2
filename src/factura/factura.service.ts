@@ -130,6 +130,7 @@ export class FacturaService {
             usuarioId: usuarioIdNumber,
             empresaId: empresaIdNumber,
             precioVenta: precioUnitario,
+            facturaId: createdFactura.id,
             createdAt,
             updatedAt,
           });
