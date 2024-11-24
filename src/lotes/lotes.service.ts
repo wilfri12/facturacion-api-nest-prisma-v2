@@ -99,10 +99,10 @@ export class LotesService {
             }
 
             // Validamos si el producto tiene stock existente con un precio distinto al del lote
-            if (producto.stock > 0 && Math.abs(Number(producto.precio) - Number(lote.precioVenta)) > 0.01) {
+            if (producto.stock > 0 ) {
               return {
                   success: false,
-                  message: `No es posible activar el lote. El producto con código ${producto.codigo} aún tiene stock disponible (${producto.stock}), y el precio de venta del nuevo lote (${lote.precioVenta}) es diferente al precio actual del producto (${producto.precio}). Para activar este lote, el stock del producto debe estar en 0, o los precios deben coincidir.`,
+                  message: `No es posible activar el lote. El producto con código ${producto.codigo} aún tiene stock disponible (${producto.stock}).`,
               };
           }
           

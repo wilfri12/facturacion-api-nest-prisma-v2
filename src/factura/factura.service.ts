@@ -577,24 +577,6 @@ export class FacturaService {
       const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
       const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
 
-      // Función para obtener el nombre del mes en español
-      const getMonthName = (monthNumber: number) => {
-        const months = [
-          "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-          "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
-        ];
-        return months[monthNumber];
-      };
-
-      // Formatear las fechas
-      const formatDate = (date: Date) => {
-        const day = date.getDate();
-        const month = getMonthName(date.getMonth());
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
-      };
-
-
       // Calcular la diferencia en meses
       const calculateMonthDifference = (start: Date, end: Date) => {
         return (

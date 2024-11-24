@@ -1,7 +1,7 @@
 
 export const jwtConstants = {
-    secret: 'kamila-shop-tokens',
-    expiresIn: 360,
+    secret: process.env.JWT_SECRET || 'tienda-NAKA-tokens',
+    expiresIn: '1d',
   };
 
   

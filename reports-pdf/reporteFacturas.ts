@@ -36,7 +36,7 @@ const rangoFormateado = formatDateRangeWithDifference(new Date(startDate), new D
     return [
       [
         {
-          text: `Factura: ${factura.codigo}`,
+          text: `${factura.codigo}  |  ${factura.metodoPago}  |  ${factura.estado}`,
           colSpan: 3,
           style: 'tableContent',
           fillColor: '#e8f5e9', // Fondo verde claro
@@ -46,7 +46,7 @@ const rangoFormateado = formatDateRangeWithDifference(new Date(startDate), new D
       ],
       [
         {
-          text: `Fecha: ${DateFormatter.getDDMMYYYY(factura.createdAt)} | Estado: ${factura.estado}`,
+          text: `${DateFormatter.getDDMMYYYY(factura.createdAt)}`,
           colSpan: 3,
           style: 'tableContent',
           fillColor: '#f1f8e9', // Fondo amarillo claro
