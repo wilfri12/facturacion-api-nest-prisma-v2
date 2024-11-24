@@ -77,7 +77,7 @@ export class UsuarioService {
             console.error("Error al crear el usuario:", error);
 
         // Retorna una respuesta de error con el mensaje de error específico
-        return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+        return { success: false, message: error instanceof Error ? error.message : 'Error desconocido' };
         }
     }
     

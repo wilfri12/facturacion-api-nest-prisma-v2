@@ -136,9 +136,19 @@ export class CompraService {
                 return compraCreated;
             });
     
-            return { success: true, data: compra };
+            return { success: true, data: compra, message: 'La compra se ha creado exitosamente' };
         } catch (error) {
-            throw error;
+            
+      const errorMessage =
+      error.message
+        ? error.message
+        : 'Ocurrió un error inesperado al intentar cerrar la caja.';
+
+    console.error('Error al cerrar la caja:', error.message || errorMessage);
+    return {
+      success: false,
+      message: errorMessage,
+    };
         }
     }
 

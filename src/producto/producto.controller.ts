@@ -16,7 +16,7 @@ export class ProductoController {
       const producto = await this.productoService.createProducto(data);
       return producto;
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 
@@ -35,7 +35,7 @@ export class ProductoController {
       });
       return productos;
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 

@@ -33,7 +33,7 @@ export class LotesController {
       if ((startDate && !endDate) || (!startDate && endDate)) {
         return {
           success: false,
-          error: 'Ambas fechas (startDate y endDate) deben estar presentes o ninguna.'
+          message: 'Ambas fechas (startDate y endDate) deben estar presentes o ninguna.'
         };
       }
       return await this.lotesService.findAll(
@@ -46,7 +46,7 @@ export class LotesController {
       );
 
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 

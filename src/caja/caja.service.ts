@@ -15,8 +15,11 @@ export class CajaService {
     const { empresaId, nombre, ubicacion } = data;
 
     if (!empresaId || !nombre) {
-      console.log('El ID de la empresa y el nombre de la caja son obligatorios.' );
-      return { success: false, error: 'El ID de la empresa y el nombre de la caja son obligatorios.' };
+      console.log('Faltan datos requeridos para crear la caja.');
+      return {
+        success: false,
+        message: 'El ID de la empresa y el nombre de la caja son obligatorios para proceder con la creación.'
+      };
     }
 
     const cajaData = {
@@ -29,12 +32,26 @@ export class CajaService {
 
     try {
       const caja = await this.prisma.caja.create({ data: cajaData });
-      return { success: true, data: caja };
+      return {
+        success: true,
+        data: caja,
+        message: `La caja "${caja.nombre}" se creó exitosamente con el ID ${caja.id}.`
+      };
     } catch (error: any) {
-      console.error('Error al crear la caja:', error);
-      return { success: false, error: 'Error al crear la caja. Por favor, intente de nuevo.' };
+      console.error('Error al intentar crear la caja:', error.message);
+
+      // Mensaje específico según el tipo de error
+      const errorMessage = error.code === 'P2002' // Prisma Unique Constraint Error
+        ? `Ya existe una caja con el nombre "${nombre}" en la empresa especificada.`
+        : 'Ocurrió un error al crear la caja. Por favor, intente de nuevo más tarde.';
+
+      return {
+        success: false,
+        message: errorMessage
+      };
     }
   }
+
 
   async findAllCajaCerrada(): Promise<ApiResponse<Caja[]>> {
     try {
@@ -69,12 +86,12 @@ export class CajaService {
         });
 
         if (!cajaExistente) {
-          throw new Error(`La caja con ID ${cajaId} no existe.`);
+          throw new Error(`No se encontró una caja con el ID ${cajaId}. Verifique el ID proporcionado.`);
         }
 
         // Verificar si la caja ya está abierta
         if (cajaExistente.estado === EstadoCaja.ABIERTA) {
-          throw new Error(`La caja ya está abierta por el usuario ${cajaExistente.Usuario?.nombreUsuario ?? 'desconocido'}.`);
+          throw new Error(`La caja ya está abierta y está siendo utilizada por el usuario ${cajaExistente.Usuario?.nombreUsuario ?? 'desconocido'}.`);
         }
 
         // Crear el historial de apertura de la caja
@@ -108,22 +125,34 @@ export class CajaService {
             ubicacion: true,
             usuarioId: true,
             empresaId: true,
-            fechaEntrada: true, // <--- Aquí se incluye 'fechaEntrada'
+            fechaEntrada: true,
             updatedAt: true,
           },
         });
       });
 
-      return { success: true, data: cajaActualizada};
+      return {
+        success: true,
+        data: cajaActualizada,
+        message: `La caja "${cajaActualizada.nombre}" ha sido abierta exitosamente.`
+      };
     } catch (error) {
-      console.error('Error en abrirCaja:', error);
-      throw error;
+      console.error('Error al intentar abrir la caja:', error.message);
+
+      // Mejora en el mensaje de error
+      const errorMessage =
+        error.message.includes('No se encontró una caja')
+          ? error.message
+          : error.message.includes('La caja ya está abierta')
+            ? error.message
+            : 'Ocurrió un error inesperado al intentar abrir la caja. Por favor, inténtelo nuevamente.';
+
+      return {
+        success: false,
+        message: errorMessage
+      };
     }
   }
-
-
-
-
 
 
   async finsHistorialCaja(): Promise<ApiResponse<HistorialCaja[]>> {
@@ -140,35 +169,41 @@ export class CajaService {
 
   async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     const { cajaId, montoFinal, usuarioId } = data;
-  
+
     // Datos para actualizar la caja y su historial
     const cajaData = {
       estado: EstadoCaja.CERRADA,
       updatedAt: GetLocalDate(),
       usuarioId: null,
     };
-  
+
     const historialCajaData = {
       montoFinal: parseFloat(montoFinal.toString()),
       estado: EstadoCaja.CERRADA,
       fechaCierre: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-  
+
     try {
       // Validación previa
       if (!cajaId || !montoFinal || !usuarioId) {
-        throw new Error('Datos incompletos: cajaId, montoFinal o usuarioId no proporcionados.');
+        throw new Error(
+          'Los datos proporcionados son incompletos. Asegúrese de incluir el ID de la caja, el monto final y el ID del usuario.'
+        );
       }
-  
+
       // Inicio de la transacción
       const response = await this.prisma.$transaction(async (prisma) => {
-        // Actualizar el estado de la caja
-        const cajaUpdated = await prisma.caja.update({
-          where: { id: cajaId },
-          data: cajaData,
-        });
-  
+        // Validar la existencia de la caja
+        const cajaExistente = await prisma.caja.findUnique({ where: { id: cajaId } });
+        if (!cajaExistente) {
+          throw new Error(`No se encontró una caja con el ID ${cajaId}.`);
+        }
+
+        if (cajaExistente.estado === EstadoCaja.CERRADA) {
+          throw new Error('La caja ya se encuentra cerrada.');
+        }
+
         // Buscar el historial de caja más reciente en estado abierto
         const historial = await prisma.historialCaja.findFirst({
           where: {
@@ -179,17 +214,21 @@ export class CajaService {
             id: 'desc', // Ordenar por el registro más reciente
           },
         });
-  
+
         if (!historial) {
-          throw new Error('No se encontró un historial de caja abierta para esta caja.');
+          throw new Error(
+            `No se puede cerrar la caja porque no tiene un historial activo que
+             indique que está abierta. Verifique los registros y asegúrese de que
+             la caja esté correctamente abierta antes de intentar cerrarla.`
+          );
         }
-  
+
         // Actualizar el historial de caja con los datos de cierre
         await prisma.historialCaja.update({
           where: { id: historial.id },
           data: historialCajaData,
         });
-  
+
         // Crear el movimiento de caja para el cierre
         await prisma.movimientosCaja.create({
           data: {
@@ -202,20 +241,34 @@ export class CajaService {
             usuarioId: parseInt(usuarioId.toString()),
           },
         });
-  
-        return cajaUpdated; // Retornar la caja actualizada
+
+        // Actualizar el estado de la caja a CERRADA
+        return await prisma.caja.update({
+          where: { id: cajaId },
+          data: cajaData,
+        });
       });
-  
-      return { success: true, data: response }; // Respuesta en caso de éxito
+
+      return {
+        success: true,
+        data: response,
+        message: `La caja "${response.nombre}" ha sido cerrada exitosamente.`,
+      };
     } catch (error: any) {
-      console.error('Error al cerrar la caja:', error.message || error);
+
+      const errorMessage =
+        error.message
+          ? error.message
+          : 'Ocurrió un error inesperado al intentar cerrar la caja.';
+
+      console.error('Error al cerrar la caja:', error.message || errorMessage);
       return {
         success: false,
-        error: error.message || 'Ocurrió un error inesperado al cerrar la caja.',
+        message: errorMessage,
       };
     }
   }
-  
+
 
   async cajaAbierta(usuarioId: number): Promise<Caja | null> {
     try {
@@ -232,8 +285,4 @@ export class CajaService {
   }
 
 
-
-  remove(id: number) {
-    return `This action removes a #${id} caja`;
-  }
 }

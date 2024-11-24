@@ -22,7 +22,7 @@ export class UsuarioController {
         
       }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 
@@ -33,7 +33,7 @@ export class UsuarioController {
       const usuarios = this.usuarioService.findAllUsuario();
       return usuarios;
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 

@@ -12,8 +12,39 @@ export class CajaController {
 
   @UseGuards(AuthGuard)
   @Post()
-  create(@Body() createCajaDto: CreateCajaDto) {
-    return this.cajaService.createCaja(createCajaDto);
+  async create(@Body() createCajaDto: CreateCajaDto): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.cajaService.createCaja(createCajaDto);
+
+      // Si el servicio responde con éxito
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+          message: response.message || 'Caja creada exitosamente.',
+        };
+      }
+
+      // Si el servicio responde con error
+      throw new HttpException(
+        {
+          success: false,
+          message: response.message || 'No se pudo crear la caja.',
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    } catch (error: any) {
+      console.error('Error al crear la caja en el controlador:', error.message || error);
+
+      // Manejo de errores inesperados
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Ocurrió un error inesperado al intentar crear la caja.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   @UseGuards(AuthGuard)
@@ -31,7 +62,7 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
 
     return resultado;
   } catch (error) {
-    return {success: false, error: error}
+    return {success: false, message: error}
   }
 }
 
@@ -67,33 +98,17 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
     };
   }
 
-  @UseGuards(AuthGuard)
-  @Put('cerrar')
+  // @UseGuards(AuthGuard)
+  @Patch('cerrar')
   async cerrarCaja(@Body() data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     try {
       // Llamar al servicio para cerrar la caja
       const response = await this.cajaService.cerrarCaja(data);
 
-      // Retornar respuesta estándar
-      if (response.success) {
-        return {
-          success: true,
-          data: response.data,
-        };
-      } else {
-        throw new HttpException(
-          response.error || 'No se pudo cerrar la caja.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      return response;
     } catch (error) {
-      return {success: false, error}
+      return {success: false, message: error}
     }
   }
 
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cajaService.remove(+id);
-  }
 }

@@ -16,7 +16,7 @@ export class ContactoController {
       const contacto = await this.contactoService.createContacto(data);
       return contacto;
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   }
 
@@ -27,7 +27,7 @@ export class ContactoController {
       const contactos = await this.contactoService.findAllContacto();
       return contactos;
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   }
 

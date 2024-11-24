@@ -14,7 +14,7 @@ export class ClienteController {
       const cliente = await this.clienteService.createLiente(data);
       return cliente;
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   }
 
@@ -24,7 +24,7 @@ export class ClienteController {
       const cliente = await this.clienteService.findAllCliente(identificacion);
       return cliente;
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   }
 }

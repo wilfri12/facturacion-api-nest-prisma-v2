@@ -18,7 +18,7 @@ export class CompraController {
             return compra;
 
         } catch (error) {
-            return { success: false, error: error.message }
+            return { success: false, message: error.message }
         }
     }
 
@@ -48,7 +48,7 @@ export class CompraController {
             return compras;
 
         } catch (error) {
-            return { success: false, error: error.message }
+            return { success: false, message: error.message }
         }
     }
 

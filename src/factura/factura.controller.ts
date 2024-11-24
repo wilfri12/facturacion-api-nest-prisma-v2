@@ -9,7 +9,7 @@ import { AuthGuard } from 'src/auth/auth/auth.guard';
 @Controller('api/v1/factura')
 export class FacturaController {
   constructor(private readonly facturaService: FacturaService) { }
-  @UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Post()
   async create(@Body() data: FacturaDto & { detalles: DetalleFactura[] }): Promise<ApiResponse<Factura>> {
     try {
@@ -24,7 +24,7 @@ export class FacturaController {
   }
 
 
-  @UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Get()
   async findAll(
     @Query('startDate') startDate?: string,
@@ -63,7 +63,7 @@ export class FacturaController {
     }
   }
 
-  @UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Get('/:idFactura')
   async findByCodigo2(@Param('idFactura') idFactura: number) {
 
@@ -76,7 +76,7 @@ export class FacturaController {
   }
 
 
-  @UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Get('report-factura/:id')
   async employmentLetterById(@Res() response: Response, @Param('id') id: string) {
     try {
@@ -92,7 +92,7 @@ export class FacturaController {
 
   }
 
-  @UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Get('generar/reporte/facturas')
   async generarReporteFacturas(
     @Res() response: Response,
@@ -131,7 +131,7 @@ export class FacturaController {
     }
   }
 
-@UseGuards(AuthGuard)
+//@UseGuards(AuthGuard)
   @Patch('pagar/:id')
   async pagarFactura(@Param('id') id: string) {
     try {
@@ -147,7 +147,7 @@ export class FacturaController {
         };
       } else {
         // Lanza una excepción en caso de error
-        throw new HttpException(response.error || 'Error al pagar la factura', HttpStatus.BAD_REQUEST);
+        throw new HttpException(response.message || 'Error al pagar la factura', HttpStatus.BAD_REQUEST);
       }
     } catch (error) {
       // Captura errores inesperados y responde con estado 500

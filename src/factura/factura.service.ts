@@ -26,6 +26,7 @@ export class FacturaService {
   async createFactura(
     data: FacturaDto & { detalles: DetalleFactura[] },
   ): Promise<ApiResponse<Factura>> {
+    let codigoFacturaMessage = '';
     try {
       let subtotalTotal = 0;
       let totalItebis = 0;
@@ -41,9 +42,14 @@ export class FacturaService {
         cajaId,
       } = data;
 
-      if (!data || !detalles || detalles.length === 0) {
-        throw new Error('No se recibió ningún dato en la factura');
+      if (!cajaId || !usuarioId || !empresaId) {
+        throw new Error('Faltan datos obligatorios para crear la factura. Asegúrese de proporcionar el ID de la caja, el ID del usuario y el ID de la empresa.');
       }
+
+      if (!data || !detalles || detalles.length === 0) {
+        throw new Error('La factura no contiene información válida. Por favor, verifique que los datos principales de la factura y los detalles de los productos estén correctamente definidos.');
+      }
+
 
       const empresaIdNumber = parseInt(empresaId.toString());
       const usuarioIdNumber = parseInt(usuarioId.toString());
@@ -94,14 +100,16 @@ export class FacturaService {
 
         for (const detalle of detalles) {
           const producto = productos.find((p) => p.id === detalle.productoId);
-          if (!producto) throw new Error(`Producto ID ${detalle.productoId} no encontrado`);
+          if (!producto) {
+            throw new Error(`No se encontró un producto con el ID ${detalle.productoId}. Verifique que el ID del producto sea correcto.`);
+          }
 
           const precioUnitario = parseFloat(producto.precio.toString());
           const cantidad = parseInt(detalle.cantidad.toString());
           const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
 
           if (producto.stock < cantidad) {
-            throw new Error(`Inventario insuficiente para el producto ${producto.nombre}`);
+            throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Stock disponible: ${producto.stock}, cantidad requerida: ${cantidad}.`);
           }
 
           const importe = cantidad * precioUnitario;
@@ -260,13 +268,23 @@ export class FacturaService {
             },
           }
         });
+        codigoFacturaMessage = facturaUpdated.codigo
         return facturaUpdated;
       });
 
-      return { success: true, data: factura };
+      return {
+        success: true,
+        data: factura,
+        message: `La factura se ha creado exitosamente. Número de factura: ${codigoFacturaMessage || 'N/A'}.`
+      };
     } catch (error: any) {
-      console.error('Error al crear la factura:', error);
-      return { success: false, error: `${error}` };
+      const errorMessage =
+        error.message
+          ? error.message
+          : 'Ocurrió un error inesperado al intentar crear la factura.';
+
+      console.error('Error al crear la factura:', errorMessage);
+      return { success: false, message: errorMessage };
     }
   }
 
@@ -275,12 +293,9 @@ export class FacturaService {
 
   async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number, codigo?: string }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
     const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago, codigo } = params;
-
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
     const pageNumber = Math.max(1, parseInt(page.toString()));
     const pageSizeNumber = Math.max(1, parseInt(pageSize.toString()));
-
-    console.log(params);
 
     try {
       const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
@@ -370,7 +385,17 @@ export class FacturaService {
         }
       };
     } catch (error: any) {
-      throw error;
+
+      const errorMessage =
+        error.message
+          ? error.message
+          : 'Ocurrió un error inesperado al intentar obtener las facturas.';
+
+      console.error(error.message || errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
   }
 
@@ -427,7 +452,15 @@ export class FacturaService {
       })
       return { success: true, data: factura }
     } catch (error: any) {
-      throw error;
+
+      const errorMessage =
+        error.message
+          ? error.message
+          : 'Ocurrió un error inesperado al intentar buscar la factura por su id.';
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
   }
 
@@ -519,7 +552,7 @@ export class FacturaService {
       console.error("Error al pagar la factura:", error);
 
       // Retorna una respuesta de error con el mensaje de error específico
-      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
+      return { success: false, message: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 

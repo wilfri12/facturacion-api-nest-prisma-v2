@@ -53,7 +53,7 @@ export class ProductoService {
           console.error('Error al crear producto:', error);
           return {
             success: false,
-            error: 'Error al crear el producto. Verifique los datos e intente nuevamente.',
+            message: 'Error al crear el producto. Verifique los datos e intente nuevamente.',
           };
         }
       }
@@ -113,7 +113,7 @@ export class ProductoService {
           };
         } catch (error) {
           console.error('Error al obtener productos:', error);
-          return { success: false, error: 'Error al obtener productos.' };
+          return { success: false, message: 'Error al obtener productos.' };
         }
       }
       
@@ -140,7 +140,7 @@ export class ProductoService {
           return { success: true, data: productos };
         } catch (error) {
           console.error('Error al buscar productos por código/nombre:', error);
-          return { success: false, error: 'Error al buscar productos.' };
+          return { success: false, message: 'Error al buscar productos.' };
         }
       }
 
@@ -189,7 +189,7 @@ export class ProductoService {
           const producto = await this.prisma.producto.findUnique({ where: { id } });
       
           if (!producto) {
-            return { success: false, error: `Producto con ID ${id} no encontrado.` };
+            return { success: false, message: `Producto con ID ${id} no encontrado.` };
           }
       
           const updatedProducto = await this.prisma.producto.update({
@@ -200,7 +200,7 @@ export class ProductoService {
           return { success: true, data: updatedProducto };
         } catch (error) {
           console.error('Error al actualizar producto:', error);
-          return { success: false, error: 'Error al actualizar el producto.' };
+          return { success: false, message: 'Error al actualizar el producto.' };
         }
       }
       

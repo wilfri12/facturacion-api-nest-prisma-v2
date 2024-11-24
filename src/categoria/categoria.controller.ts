@@ -27,7 +27,7 @@ export class CategoriaController {
       const categorias = await this.categoriaService.findAllCategoria();
       return categorias;
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   }
 }

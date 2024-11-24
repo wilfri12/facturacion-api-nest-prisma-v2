@@ -23,9 +23,16 @@ export class CategoriaService {
       const categorias = await this.prisma.categoria.createMany({
         data: categoriasData,
       });
-      return { success: true, data: categorias };
+      return {
+        success: true,
+        data: categorias,
+        message: `Se han creado ${categorias.count} categorías exitosamente.`,
+      };
     } catch (error: any) {
-      throw error;
+      return {
+        success: false,
+        message: `Error al crear categorías`,
+      };
     }
   }
 

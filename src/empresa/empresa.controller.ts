@@ -19,7 +19,7 @@ export class EmpresaController {
       return empresa;
 
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 
@@ -30,7 +30,7 @@ export class EmpresaController {
       const empresas = this.empresaService.findAllEmpresa();
       return empresas;
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, message: error.message }
     }
   }
 }
