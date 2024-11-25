@@ -53,12 +53,6 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
   try {
     const resultado = await this.cajaService.abrirCaja(datosApertura);
 
-    if (!resultado) {
-      throw new HttpException(
-         'Error al abrir la caja.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     return resultado;
   } catch (error) {
@@ -79,26 +73,14 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
   }
 
   @UseGuards(AuthGuard)
-  @Get('/estado/:usuarioId')
+  @Get('/abierta/:usuarioId')
   async findCajaAbierta(@Param('usuarioId') usuarioId: string) {
-    const caja = await this.cajaService.cajaAbierta(+usuarioId);
-
-    if (!caja) {
-      return {
-        success: false,
-        message: 'No hay caja abierta para este usuario.',
-        data: null,
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Caja abierta encontrada.',
-      data: caja,
-    };
+    const caja = await this.cajaService.verificarCajaAbierta(+usuarioId);
+    return caja;
+    
   }
 
-  // @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   @Patch('cerrar')
   async cerrarCaja(@Body() data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     try {

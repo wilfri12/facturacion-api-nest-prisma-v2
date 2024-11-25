@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCajaDto, AbrirCajaDTO, CreateMovimientosCajaDto } from './dto/create-caja.dto';
 import { ApiResponse } from 'src/interface';
-import { Caja, EstadoCaja, HistorialCaja, MovimientosCaja, tipoMovimientoCaja } from '@prisma/client';
+import { Caja, EstadoCaja, HistorialCaja, MovimientosCaja, Prisma, tipoMovimientoCaja } from '@prisma/client';
 import { GetLocalDate } from 'src/utility/getLocalDate';
 import { PrismaService } from 'src/prisma.service';
 import { UpdateCajaDto } from './dto/update-caja.dto';
@@ -75,42 +75,37 @@ export class CajaService {
 
     try {
       const cajaActualizada = await this.prisma.$transaction(async (prisma) => {
+
         // Verificar si la caja existe
         const cajaExistente = await prisma.caja.findUnique({
           where: { id: cajaId },
-          include: {
-            Usuario: {
-              select: { nombreUsuario: true },
-            },
-          },
+          include: { Usuario: { select: { nombreUsuario: true } } },
         });
 
         if (!cajaExistente) {
-          throw new Error(`No se encontró una caja con el ID ${cajaId}. Verifique el ID proporcionado.`);
+          throw (`No se encontró una caja con el ID ${cajaId}. Verifique el ID proporcionado.`);
         }
 
-        // Verificar si la caja ya está abierta
         if (cajaExistente.estado === EstadoCaja.ABIERTA) {
-          throw new Error(`La caja ya está abierta y está siendo utilizada por el usuario ${cajaExistente.Usuario?.nombreUsuario ?? 'desconocido'}.`);
+          throw (`Esta caja ya se encuentra abierta y asignada al usuario ${cajaExistente.Usuario.nombreUsuario}.`);
         }
 
-        // Crear el historial de apertura de la caja
-        const historialCaja = await prisma.historialCaja.create({ data: datosHistorialCaja });
+        // Verificar si el usuario ya tiene una caja abierta
+        const usuarioConCajaAbierta = await this.prisma.caja.findFirst({
+          where: { estado: EstadoCaja.ABIERTA, usuarioId },
+          include: { Usuario: { select: { nombreUsuario: true } } },
+        });
 
-        // Crear un movimiento inicial en la caja
-        const movimientoInicial: CreateMovimientosCajaDto = {
-          usuarioId,
-          descripcion: 'Apertura de caja',
-          historialCajaId: historialCaja.id,
-          monto: parseFloat(historialCaja.montoInicial.toString()),
-          tipo: tipoMovimientoCaja.INICIAL,
-          createdAt: GetLocalDate(),
-          updatedAt: GetLocalDate(),
-        };
+        console.log(usuarioConCajaAbierta);
 
-        await prisma.movimientosCaja.create({ data: movimientoInicial });
 
-        // Actualizar el estado de la caja a ABIERTA
+        if (usuarioConCajaAbierta) {
+          throw (`Actualmente tienes la  ${usuarioConCajaAbierta.nombre} abierta, debes cerrarla antes de abrir otra.`);
+        }
+        // Crear el historial y movimiento inicial
+        await this.crearHistorialYMovimiento(prisma, datosHistorialCaja, usuarioId);
+
+        // Actualizar el estado de la caja
         return await prisma.caja.update({
           where: { id: cajaId },
           data: {
@@ -134,25 +129,16 @@ export class CajaService {
       return {
         success: true,
         data: cajaActualizada,
-        message: `La caja "${cajaActualizada.nombre}" ha sido abierta exitosamente.`
+        message: `La caja "${cajaActualizada.nombre}" ha sido abierta exitosamente.`,
       };
     } catch (error) {
-      console.error('Error al intentar abrir la caja:', error.message);
-
-      // Mejora en el mensaje de error
-      const errorMessage =
-        error.message.includes('No se encontró una caja')
-          ? error.message
-          : error.message.includes('La caja ya está abierta')
-            ? error.message
-            : 'Ocurrió un error inesperado al intentar abrir la caja. Por favor, inténtelo nuevamente.';
-
       return {
         success: false,
-        message: errorMessage
+        message: error ?? 'Ocurrió un error inesperado al intentar abrir la caja.',
       };
     }
   }
+
 
 
   async finsHistorialCaja(): Promise<ApiResponse<HistorialCaja[]>> {
@@ -270,7 +256,7 @@ export class CajaService {
   }
 
 
-  async cajaAbierta(usuarioId: number): Promise<Caja | null> {
+  async verificarCajaAbierta(usuarioId: number): Promise<Caja | null> {
     try {
       return await this.prisma.caja.findFirst({
         where: {
@@ -283,6 +269,31 @@ export class CajaService {
       throw new Error('No se pudo obtener el estado de la caja.'); // Puedes lanzar un error específico
     }
   }
+
+
+
+
+  private async crearHistorialYMovimiento(
+    prisma: Prisma.TransactionClient,
+    datosHistorialCaja: any,
+    usuarioId: number
+  ): Promise<void> {
+    const historialCaja = await prisma.historialCaja.create({ data: datosHistorialCaja });
+
+    const movimientoInicial: CreateMovimientosCajaDto = {
+      usuarioId,
+      descripcion: 'Apertura de caja',
+      historialCajaId: historialCaja.id,
+      monto: parseFloat(datosHistorialCaja.montoInicial.toString()),
+      tipo: tipoMovimientoCaja.INICIAL,
+      createdAt: GetLocalDate(),
+      updatedAt: GetLocalDate(),
+    };
+
+    await prisma.movimientosCaja.create({ data: movimientoInicial });
+  }
+
+
 
 
 }
