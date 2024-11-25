@@ -6,6 +6,7 @@ CREATE TABLE `Contacto` (
     `whatsapp` VARCHAR(15) NULL,
     `instagram` VARCHAR(30) NULL,
     `direccion` VARCHAR(50) NOT NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `empresaId` INTEGER NULL,
@@ -19,6 +20,7 @@ CREATE TABLE `Empresa` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nombre` VARCHAR(50) NOT NULL,
     `descripcion` VARCHAR(100) NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -31,6 +33,7 @@ CREATE TABLE `Categoria` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nombre` VARCHAR(50) NOT NULL,
     `empresaId` INTEGER NOT NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -45,6 +48,7 @@ CREATE TABLE `SubCategoria` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nombre` VARCHAR(50) NOT NULL,
     `categoriaId` INTEGER NOT NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -66,6 +70,7 @@ CREATE TABLE `Producto` (
     `categoriaId` INTEGER NOT NULL,
     `subCategoriaId` INTEGER NULL,
     `empresaId` INTEGER NOT NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -84,6 +89,7 @@ CREATE TABLE `Usuario` (
     `genero` ENUM('MASCULINO', 'FEMENINO') NOT NULL,
     `empresaId` INTEGER NOT NULL,
     `estado` ENUM('HABILITADO', 'INHABILITADO', 'PENDIENTE') NOT NULL DEFAULT 'PENDIENTE',
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -124,6 +130,7 @@ CREATE TABLE `Factura` (
     `estado` ENUM('CANCELADA', 'PAGADA', 'PENDIENTE') NOT NULL DEFAULT 'PAGADA',
     `cajaId` INTEGER NULL,
     `moneda` ENUM('USD', 'DOP', 'EU') NOT NULL DEFAULT 'DOP',
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -143,6 +150,7 @@ CREATE TABLE `DetalleFactura` (
     `importe` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `itebis` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     `empresaId` INTEGER NOT NULL,
+    `delete` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `transaccionVentaId` INTEGER NULL,
@@ -194,9 +202,13 @@ CREATE TABLE `MovimientoInventario` (
     `descripcion` VARCHAR(100) NULL,
     `usuarioId` INTEGER NOT NULL,
     `empresaId` INTEGER NOT NULL,
+    `precioVenta` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    `precioCompra` DECIMAL(10, 2) NOT NULL DEFAULT 0,
     `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `delete` BOOLEAN NOT NULL DEFAULT false,
+    `compraId` INTEGER NULL,
+    `facturaId` INTEGER NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -388,6 +400,12 @@ ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_empresaI
 
 -- AddForeignKey
 ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MovimientoInventario` ADD CONSTRAINT `MovimientoInventario_facturaId_fkey` FOREIGN KEY (`facturaId`) REFERENCES `Factura`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `LoteProducto` ADD CONSTRAINT `LoteProducto_compraId_fkey` FOREIGN KEY (`compraId`) REFERENCES `Compra`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
