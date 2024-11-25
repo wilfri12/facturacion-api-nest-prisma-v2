@@ -5,10 +5,14 @@ import { PrismaService } from 'src/prisma.service';
 import { AuthPayLoadDTO } from './dto';
 import { EstadoUsuario } from '@prisma/client';
 import { ApiResponse } from 'src/interface';
+import { CajaService } from 'src/caja/caja.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) { }
+  constructor(private prisma: PrismaService,
+     private jwtService: JwtService,
+     private cajaService: CajaService
+    ) { }
 
   async validatedUser(authPayload: AuthPayLoadDTO): Promise<{
     access_token: string;
@@ -17,10 +21,9 @@ export class AuthService {
     statusCode: number;
   }> {
     const { nombreUsuario, password } = authPayload;
-
     // Buscar usuario
     const user = await this.prisma.usuario.findFirst({
-      where: { nombreUsuario, estado: EstadoUsuario.HABILITADO },
+      where: { nombreUsuario },
       include: {
         empresa: {
           select: {
@@ -30,27 +33,35 @@ export class AuthService {
       },
     });
 
+    if (!user) {
+      throw new UnauthorizedException('No se encontro ningun usuario');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('La contraseña es incorrecta');
+    }
+
     if (user?.estado !== EstadoUsuario.HABILITADO) {
-      throw new UnauthorizedException('El usuario está deshabilitado. Contacte al administrador.');
+      throw new UnauthorizedException('El usuario no está habilitado. Contacte al administrador.');
     }
     
-
-    if (!user) {
-      throw new UnauthorizedException('El usuario no está habilitado o no existe');
-    }
-
     // Validar usuario y contraseña
     if (user && (await bcrypt.compare(password, user.password))) {
+
+      const cajaAbierta = await this.cajaService.verificarCajaAbierta(user.id);
       // Generar payload del token
       const payload = {
         sub: user.id,
         username: user.nombreUsuario,
         userRole: user.role,
-        // Opcionalmente elimina datos sensibles
+        cajaAbierta: {
+          nombre: cajaAbierta?.nombre || null,
+          id: cajaAbierta?.id || null,
+          estado: cajaAbierta?.estado || null },
         empresa: { nombre: user.empresa.nombre, id: user.empresaId },
       };
 
-      console.log(payload);
 
 
       return {
@@ -61,10 +72,7 @@ export class AuthService {
       };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('La contraseña es incorrecta');
-    }
+    
   }
 
 }

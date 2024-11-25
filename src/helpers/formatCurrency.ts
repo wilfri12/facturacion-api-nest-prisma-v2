@@ -30,8 +30,3 @@ type FormatCurrencyOptions = {
       maximumFractionDigits,
     });
   };
-  
-  // Ejemplo de uso
-  //console.log(formatCurrency('12345.67')); // Resultado: RD$ 12,345.67
-  //console.log(formatCurrency(12345.67, { currency: 'USD', locale: 'en-US' })); // Resultado: $12,345.67
-  

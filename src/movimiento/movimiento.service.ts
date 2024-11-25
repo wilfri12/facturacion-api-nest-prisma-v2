@@ -26,9 +26,6 @@ export class MovimientoService {
 
       const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
       const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
-      console.log(startDateTime);
-      console.log(endDateTime);
-
 
       const [movimientos, totalRecords] = await Promise.all([
 
@@ -115,9 +112,6 @@ export class MovimientoService {
   
       const startDateTime = startDate ? new Date(new Date(startDate).setUTCHours(0, 0, 0, 0)) : undefined;
       const endDateTime = endDate ? new Date(new Date(endDate).setUTCHours(23, 59, 59, 999)) : undefined;
-  
-      console.log("Start Date:", startDateTime);
-      console.log("End Date:", endDateTime);
   
       const [movimientos, totalRecords] = await Promise.all([
         this.prisma.movimientoInventario.findMany({
