@@ -23,9 +23,6 @@ export class ContactoService {
       updatedAt: GetLocalDate(),
     };
 
-    console.log(contactoData);
-    
-
     try {
       const contacto = await this.prisma.contacto.create({
         data: contactoData,

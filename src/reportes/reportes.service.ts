@@ -55,7 +55,6 @@ export class ReportesService {
   // Servicio que compara ventas diarias de hoy y ayer
   async compararVentasDiarias(): Promise<ApiResponse<{ totalVentasHoy: number; cantidadVentasHoy: number; totalAyer: number; cantidadAyer: number; variacion: string }>> {
     const hoy = GetLocalDate();
-    console.log('Se ejecuto el service de comprar ventas diarias:', new Date(GetLocalDate().getTime()));
     hoy.setHours(0, 0, 0, 0);
     const ayer = new Date(hoy);
     ayer.setDate(hoy.getDate() - 1);
@@ -86,148 +85,11 @@ export class ReportesService {
     };
   }
 
-  // // Servicio que obtiene productos sin stock obtenerProductosSinStock
-  // async obtenerProductosSinStock(page: number = 1, limit: number = 10) {
-  //   const validatedPage = Math.max(1, page);
-  //   const validatedLimit = Math.max(1, limit);
-
-  //   try {
-  //     const [productos, totalRecords] = await Promise.all([
-  //       this.prisma.producto.findMany({
-  //         where: { stock: 0 },
-  //         select: {
-  //           codigo: true,
-  //           nombre: true,
-  //           stock: true,
-  //           categoria: { select: { nombre: true } },
-  //           subCategoria: { select: { nombre: true } },
-  //         },
-  //         skip: (validatedPage - 1) * validatedLimit,
-  //         take: validatedLimit,
-  //       }),
-  //       this.prisma.producto.count({ where: { stock: 0 } })
-  //     ]);
-
-  //     const totalPages = Math.max(1, Math.ceil(totalRecords / validatedLimit));
-  //     const hasNext = validatedPage < totalPages;
-
-  //     return {
-  //       success: true,
-  //       data: {
-  //         productos,
-  //         totalRecords,
-  //         limit: validatedLimit,
-  //         currentPage: validatedPage,
-  //         totalPages,
-  //         hasNext,
-  //       },
-  //       message: 'Consulta satisfactoria',
-  //     };
-  //   } catch (error) {
-  //     throw new Error(`Error al obtener productos sin stock: ${error.message}`);
-  //   }
-  // }
-
-  // // Servicio que obtiene productos con bajo stock 
-  // async obtenerProductosBajoStock(params: { umbral: number, page: number, limit: number }) {
-  //   const { umbral = 10, page = 1, limit = 10 } = params;
-  //   const validatedPage = Math.max(1, page);
-  //   const validatedLimit = Math.max(1, limit);
-  //   const validatedUmbral = Math.max(1, umbral);
-
-  //   console.log('Bajo stock', params);
-
-
-  //   try {
-  //     const [productos, totalRecords] = await Promise.all([
-  //       this.prisma.producto.findMany({
-  //         where: { stock: { lt: validatedUmbral, gt: 0 } },
-  //         select: {
-  //           codigo: true,
-  //           nombre: true,
-  //           stock: true,
-  //           categoria: { select: { nombre: true } },
-  //           subCategoria: { select: { nombre: true } },
-  //         },
-  //         skip: (validatedPage - 1) * validatedLimit,
-  //         take: validatedLimit,
-  //       }),
-  //       this.prisma.producto.count({ where: { stock: { lt: validatedUmbral, gt: 0 } } }),
-  //     ]);
-
-  //     const totalPages = Math.max(1, Math.ceil(totalRecords / validatedLimit));
-  //     const hasNext = validatedPage < totalPages;
-
-  //     return {
-  //       success: true,
-  //       data: {
-  //         productos,
-  //         totalRecords,
-  //         limit: validatedLimit,
-  //         currentPage: validatedPage,
-  //         totalPages,
-  //         hasNext,
-  //       },
-  //       message: 'Consulta satisfactoria',
-  //     };
-  //   } catch (error) {
-  //     throw new Error(`Error al obtener productos con bajo stock: ${error.message}`);
-  //   }
-  // }
-
-
-  // // Servicio que calcula el valor total del inventario
-  // async calcularValorInventarioTotal() {
-  //   try {
-
-  //     const productosInventory = await this.prisma.producto.findMany({
-  //       where: { stock: { gt: 0 } },
-  //       select: {
-  //         precio: true,
-  //         stock: true,
-  //       },
-  //     });
-
-  //     const valorTotal = productosInventory.reduce((acc, producto) => acc + Number(producto.precio) * producto.stock, 0);
-
-  //     const productos = await this.prisma.producto.findMany({
-  //       where: { stock: { gt: 0 } },
-  //       select: {
-  //         precio: true,
-  //         stock: true,
-  //         categoria: { select: { nombre: true } },
-  //       },
-  //     });
-
-  //     const valorPorCategoria = productos.reduce((acc, producto) => {
-  //       const categoria = producto.categoria.nombre;
-  //       const valor = Number(producto.precio) * producto.stock;
-  //       acc[categoria] = (acc[categoria] || 0) + valor;
-  //       return acc;
-  //     }, {} as Record<string, number>);
-
-  //     return {
-  //       success: true,
-  //       data: {
-  //         valorTotal,
-  //         valorPorCategoria,
-  //       },
-  //       message: 'Consulta satisfactoria',
-  //     };
-  //   } catch (error) {
-  //     throw new Error(`Error al obtener el valor de inventario por categoría: ${error.message}`);
-  //   }
-  // }
-
   // Servicio que calcula utilidad bruta en un periodo
   async calcularDatosDashboard(periodoInicio: Date, periodoFin: Date): Promise<{ success: boolean; data: DashboardData }> {
-    console.log("Iniciando cálculo del dashboard");
     
     const startDateTime = periodoInicio ? new Date(new Date(periodoInicio).setUTCHours(0, 0, 0, 0)) : undefined;
     const endDateTime = periodoFin ? new Date(new Date(periodoFin).setUTCHours(23, 59, 59, 999)) : undefined;
-    console.log("----------------------------------------------------");
-    console.log("Periodo de análisis:", { startDateTime, endDateTime });
-    console.log("----------------------------------------------------");
     
     // Obtener facturas
     const facturas = await this.prisma.factura.findMany({
@@ -246,11 +108,9 @@ export class ReportesService {
         },
       },
     });
-    console.log("Facturas obtenidas:", facturas.length);
   
     // Ventas totales calculadas desde facturas
     const ventasTotales = facturas.reduce((acc, factura) => acc + Number(factura.total), 0);
-    console.log("Ventas totales calculadas:", ventasTotales);
   
     let costoTotal = 0;
     const productosVendidos: Record<number, ProductoVendido> = {};
@@ -270,11 +130,9 @@ export class ReportesService {
         producto: { include: { categoria: true } },
       },
     });
-    console.log("Movimientos de inventario obtenidos:", movimientos.length);
   
     // Procesar movimientos
     for (const movimiento of movimientos) {
-      console.log("Procesando movimiento:", movimiento);
   
       const lote = await this.prisma.loteProducto.findFirst({
         where: { productoId: movimiento.productoId, estado: 'ACTIVO', delete: false, },
@@ -282,16 +140,13 @@ export class ReportesService {
       });
   
       if (!lote) {
-        console.warn("Lote no encontrado para producto:", movimiento.productoId);
         continue;
       }
   
       const costoUnitario = Number(lote.precioCompra);
-      console.log("Costo unitario calculado:", costoUnitario);
   
       // Actualizar costos y métricas de productos vendidos
       costoTotal += costoUnitario * movimiento.cantidad;
-      console.log("Costo total actualizado:", costoTotal);
   
       if (!productosVendidos[movimiento.productoId]) {
         productosVendidos[movimiento.productoId] = {
@@ -305,8 +160,6 @@ export class ReportesService {
       productosVendidos[movimiento.productoId].cantidadVendida += movimiento.cantidad;
       productosVendidos[movimiento.productoId].ingresosGenerados += movimiento.cantidad * Number(movimiento.producto.precio);
       productosVendidos[movimiento.productoId].costoTotal += costoUnitario * movimiento.cantidad;
-  
-      console.log("Producto vendido actualizado:", productosVendidos[movimiento.productoId]);
   
       const categoriaNombre = movimiento.producto.categoria?.nombre || "Sin Categoría";
       if (!categorias[categoriaNombre]) {
@@ -351,22 +204,18 @@ export class ReportesService {
     // Calcular ganancia bruta en tendencias
     Object.keys(tendencias).forEach(mes => {
       tendencias[mes].gananciaBruta = tendencias[mes].ventas - tendencias[mes].compras;
-      console.log("Tendencias actualizadas para mes:", mes, tendencias[mes]);
     });
   
     // KPIs
     const gananciaBruta = ventasTotales - costoTotal;
-    console.log("Ganancia bruta calculada:", gananciaBruta);
   
     const margenBruto: number = ventasTotales ? Number(((gananciaBruta / ventasTotales) * 100).toFixed(2)) : 0;
     const ticketPromedio: number = facturas ? Number((ventasTotales / facturas.length).toFixed(2)) : 0;
-    console.log("KPIs calculados:", { margenBruto, ticketPromedio });
   
     const productosBajoStock = await this.prisma.loteProducto.findMany({
       where: { cantidadRestante: { lte: 10 }, delete: false, },
       include: { producto: true },
     });
-    console.log("Productos bajo stock encontrados:", productosBajoStock.length);
   
     return {
       success: true,

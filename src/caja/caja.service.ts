@@ -15,7 +15,6 @@ export class CajaService {
     const { empresaId, nombre, ubicacion } = data;
 
     if (!empresaId || !nombre) {
-      console.log('Faltan datos requeridos para crear la caja.');
       return {
         success: false,
         message: 'El ID de la empresa y el nombre de la caja son obligatorios para proceder con la creación.'
@@ -95,9 +94,6 @@ export class CajaService {
           where: { estado: EstadoCaja.ABIERTA, usuarioId },
           include: { Usuario: { select: { nombreUsuario: true } } },
         });
-
-        console.log(usuarioConCajaAbierta);
-
 
         if (usuarioConCajaAbierta) {
           throw (`Actualmente tienes la  ${usuarioConCajaAbierta.nombre} abierta, debes cerrarla antes de abrir otra.`);

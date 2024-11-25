@@ -162,17 +162,10 @@ export class FacturaService {
             });
 
             _cantidadRestante -= cantidadARestar;
-            console.log('cantidadARestar', cantidadARestar);
           }
-
-          console.log('_cantidadRestante', _cantidadRestante);
-          console.log('cantidad de productos a restar', cantidad);
-
-
 
 
           const nuevoStock = producto.stock - cantidad;
-          console.log('nuevoStock', nuevoStock);
 
           const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
 
@@ -194,8 +187,6 @@ export class FacturaService {
         }
 
         for (const loteUpdate of loteUpdates) {
-          console.log('loteUpdate', loteUpdate);
-
           await prisma.loteProducto.update(loteUpdate);
         }
 

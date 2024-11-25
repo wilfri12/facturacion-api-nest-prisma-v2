@@ -258,7 +258,6 @@ export class CompraService {
             });
       
             if (!compra) {
-              console.log(`Compra con ID ${compraId} no encontrada`);
               throw new Error("Compra no encontrada");
             }
 
@@ -276,7 +275,6 @@ export class CompraService {
             }
       
             // 2. Marcar la transacción, compra y sus detalles como eliminados
-            console.log(`Marcando la transacción de compra, la compra y sus detalles como eliminados`);
             await prisma.transaccionCompra.update({
               where: { id: compraId },
               data: {
@@ -286,15 +284,11 @@ export class CompraService {
                 updatedAt: GetLocalDate(),
               },
             });
-            console.log(`Transacción con ID ${compraId} marcada como ANULADA`);
-      
             await prisma.compra.update({
               where: { id: compraId, delete: false},
               data: { delete: true, updatedAt: GetLocalDate() },
             });
 
-            console.log(`Compra con ID ${compraId} marcada como eliminada`);
-      
             await prisma.detalleCompra.updateMany({
               where: { compraId: compraId },
               data: { delete: true, updatedAt: GetLocalDate() },
@@ -305,9 +299,6 @@ export class CompraService {
               data: { delete: true, updatedAt: GetLocalDate() },
             });
 
-            console.log(`Detalles de compra para la compra ID ${compraId} marcados como eliminados`);
-      
-            console.log(`Proceso de "soft delete" completado para la transacción de compra con ID ${compraId}`);
           });
           
           return { success: true, message: 'La compra ha sido eliminada exitosamente' };

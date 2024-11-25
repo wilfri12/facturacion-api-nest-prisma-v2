@@ -58,20 +58,14 @@ export class CompraController {
     @Param('id') id: string
   ) {
     try {
-      console.log(`Iniciando proceso de eliminación suave para la compra con ID: ${id}`);
-      
       // Llamamos al servicio que maneja la lógica de eliminación suave
       const result = await this.compraService.delete(+id);
-
-      console.log(`Eliminación suave de compra con ID ${id} completada exitosamente`);
       return {
         success: true,
         messaje: `Compra con ID ${id} eliminada suavemente.`,
         response: result
       };
     } catch (error) {
-      console.error(`Error al eliminar la compra con ID ${id}:`, error);
-      
       // En caso de error, retornar una respuesta con código 500
       return {
         success: false,

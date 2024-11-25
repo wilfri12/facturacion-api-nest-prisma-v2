@@ -21,9 +21,6 @@ export class AuthService {
     statusCode: number;
   }> {
     const { nombreUsuario, password } = authPayload;
-    console.log('authPayload', authPayload);
-    
-
     // Buscar usuario
     const user = await this.prisma.usuario.findFirst({
       where: { nombreUsuario },
@@ -53,10 +50,6 @@ export class AuthService {
     if (user && (await bcrypt.compare(password, user.password))) {
 
       const cajaAbierta = await this.cajaService.verificarCajaAbierta(user.id);
-      console.log('cajaAbierta', cajaAbierta);
-      
-
-
       // Generar payload del token
       const payload = {
         sub: user.id,
