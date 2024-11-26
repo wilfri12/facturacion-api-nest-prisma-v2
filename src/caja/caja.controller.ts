@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, HttpException, HttpStatus, UseGuards, Query } from '@nestjs/common';
 import { CajaService } from './caja.service';
 import { CreateCajaDto, AbrirCajaDTO } from './dto/create-caja.dto';
 import { UpdateCajaDto } from './dto/update-caja.dto';
@@ -61,15 +61,26 @@ async abrirCaja(@Body() datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>>
 }
 
 @UseGuards(AuthGuard)
-  @Get()
-  findAll() {
-    return this.cajaService.findAllCajaCerrada();
+@Get()
+findAll(@Query('empresaId') empresaId: string) {
+  if (!empresaId || isNaN(+empresaId)) {
+    throw new Error('El parámetro empresaId es obligatorio y debe ser un número.');
   }
+  return this.cajaService.findAll(+empresaId);
+}
+
 
   @UseGuards(AuthGuard)
   @Get('/historial')
-  findOne() {
-    return this.cajaService.finsHistorialCaja();
+  findHistorialCaja(@Query('cajaId') cajaId: string){
+    try {
+      const data = this.cajaService.finsHistorialCaja(+cajaId);
+
+      return data
+    } catch (error) {
+      return {succes: false, message: error}
+    }
+    
   }
 
   @UseGuards(AuthGuard)

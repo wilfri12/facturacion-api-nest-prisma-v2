@@ -52,24 +52,26 @@ export class CajaService {
   }
 
 
-  async findAllCajaCerrada(): Promise<ApiResponse<Caja[]>> {
+  async findAll(empresaId: number): Promise<ApiResponse<Caja[]>> {
     try {
       const cajas = await this.prisma.caja.findMany({
-        include:{
+        where: { empresaId },
+        include: {
           Usuario: {
-            select:{
+            select: {
               id: true,
               nombreUsuario: true,
-            }
-          }
-        }
+            },
+          },
+        },
       });
-      return { success: true, data: cajas };
+
+      return { success: true, data: cajas, message: 'Cajas obtenidas correctamente' };
     } catch (error: any) {
-      throw error;
+      console.error('Error al obtener cajas cerradas:', error);
+      return { success: false, message: error || 'Error al obtener cajas cerradas' };
     }
   }
-
   async abrirCaja(datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>> {
     const { cajaId, montoInicial, usuarioId } = datosApertura;
 
@@ -144,17 +146,17 @@ export class CajaService {
     }
   }
 
-
-
-  async finsHistorialCaja(): Promise<ApiResponse<HistorialCaja[]>> {
+  async finsHistorialCaja(cajaId: number): Promise<ApiResponse<HistorialCaja[]>> {
     try {
       const historial = await this.prisma.historialCaja.findMany({
+        where: { cajaId },
         orderBy: {
           id: 'desc',
         }
       });
-      return { success: true, data: historial }
+      return { success: true, data: historial, message: 'Datos obtenidos correctamente' }
     } catch (error) {
+      return { success: false, message: error }
     }
   }
 
@@ -260,7 +262,6 @@ export class CajaService {
     }
   }
 
-
   async verificarCajaAbierta(usuarioId: number): Promise<Caja | null> {
     try {
       return await this.prisma.caja.findFirst({
@@ -274,9 +275,6 @@ export class CajaService {
       throw new Error('No se pudo obtener el estado de la caja.'); // Puedes lanzar un error específico
     }
   }
-
-
-
 
   private async crearHistorialYMovimiento(
     prisma: Prisma.TransactionClient,
@@ -297,8 +295,4 @@ export class CajaService {
 
     await prisma.movimientosCaja.create({ data: movimientoInicial });
   }
-
-
-
-
 }
