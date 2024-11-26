@@ -71,7 +71,7 @@ export class CompraService {
                         productoId: detalle.productoId,
                         tipo: 'ENTRADA',
                         cantidad: parsedCantidad,
-                        descripcion: `Compra de producto`,
+                        descripcion: `Compra de producto en compra #: ${compraCreated.id}`,
                         usuarioId: parsedUsuarioId,
                         empresaId: parsedEmpresaId,
                         compraId: compraCreated.id,

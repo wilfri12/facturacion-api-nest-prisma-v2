@@ -26,6 +26,12 @@ export class ProductoService {
             const secuencia = await prisma.secuencias.findUnique({
               where: { nombre: 'producto' },
             });
+
+            if (!secuencia) {
+              throw new Error(
+                "No se encontró un registro clave en la base de datos para generar el código del producto. Es necesario que exista una secuencia llamada 'producto' para continuar con la creación."
+              );
+            }
       
             const secuenciaProducto = (secuencia?.valor || 0) + 1;
       

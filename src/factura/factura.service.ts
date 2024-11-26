@@ -194,6 +194,12 @@ export class FacturaService {
       where: { nombre: 'factura' },
       data: { valor: secuenciaFactura },
     });
+
+    if (!secuencia) {
+      throw new Error(
+        "No se encontró un registro clave en la base de datos para generar el código del producto. Es necesario que exista una secuencia llamada 'producto' para continuar con la creación."
+      );
+    }
   
     return secuenciaFactura;
   }
