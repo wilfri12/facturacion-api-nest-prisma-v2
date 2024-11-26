@@ -2,12 +2,13 @@ import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { ApiResponse } from 'src/interface';
 import { FacturaDto } from './DTO/factura.dto';
-import { DetalleFactura, Estado, EstadoLote, EstadoProducto, EstadoTransaccion, Factura, MetodoPago } from '@prisma/client';
+import { DetalleFactura, Estado, EstadoLote, EstadoProducto, EstadoTransaccion, Factura, MetodoPago, Prisma, PrismaClient, tipoMovimientoCaja } from '@prisma/client';
 import { PrinterService } from 'src/printer/printer.service';
 import { facturaReport } from 'reports-pdf/imprimirFactura';
 import { FacturaInterface } from 'src/interface/factura.interface';
 import { GetLocalDate } from 'src/utility/getLocalDate';
 import { reporteFacturas } from 'reports-pdf/reporteFacturas';
+import { CreateMovimientosCajaDto } from 'src/caja/dto/create-caja.dto';
 
 @Injectable()
 export class FacturaService {
@@ -24,189 +25,86 @@ export class FacturaService {
  * @returns Una respuesta que indica si la factura se creó correctamente o si ocurrió un error.
  */
   async createFactura(
-    data: FacturaDto & { detalles: DetalleFactura[] },
+    data: FacturaDto & { detalles: DetalleFactura[] }
   ): Promise<ApiResponse<Factura>> {
     let codigoFacturaMessage = '';
+  
     try {
-      let subtotalTotal = 0;
-      let totalItebis = 0;
-
+      // Desestructuración de datos y validaciones iniciales
       const {
         detalles,
         empresaId,
         metodoPago,
-        moneda,
         usuarioId,
         clienteId,
         clienteNombre,
         cajaId,
       } = data;
-
+  
       if (!cajaId || !usuarioId || !empresaId) {
-        throw new Error('Faltan datos obligatorios para crear la factura. Asegúrese de proporcionar el ID de la caja, el ID del usuario y el ID de la empresa.');
+        throw new Error(
+          'Faltan datos obligatorios para crear la factura. Asegúrese de proporcionar el ID de la caja, el ID del usuario y el ID de la empresa.'
+        );
       }
-
-      if (!data || !detalles || detalles.length === 0) {
-        throw new Error('La factura no contiene información válida. Por favor, verifique que los datos principales de la factura y los detalles de los productos estén correctamente definidos.');
+  
+      if (!detalles || detalles.length === 0) {
+        throw new Error(
+          'La factura debe contener al menos un detalle de producto.'
+        );
       }
-
-
+  
+      // Conversión de datos
       const empresaIdNumber = parseInt(empresaId.toString());
       const usuarioIdNumber = parseInt(usuarioId.toString());
       const clienteIdNumber = clienteId ? parseInt(clienteId.toString()) : null;
-      const cajaIdNumber = cajaId ? cajaId : 1;
       const createdAt = GetLocalDate();
       const updatedAt = GetLocalDate();
-      const estadoFactura = metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
-
-      const facturaData = {
-        codigo: 'FACT-', // El código se completará después con el ID de la factura
-        empresaId: empresaIdNumber,
-        estado: estadoFactura,
-        itebisTotal: 0,
-        metodoPago,
-        moneda,
-        cajaId: cajaIdNumber,
-        subtotal: 0,
-        total: 0,
-        usuarioId: usuarioIdNumber,
-        clienteId: clienteIdNumber || null,
-        clienteNombre,
-        createdAt,
-        updatedAt,
-      };
-
+      const estadoFactura =
+        metodoPago === MetodoPago.CREDITO ? Estado.PENDIENTE : Estado.PAGADA;
+  
+      // Crear factura dentro de la transacción
       const factura = await this.prisma.$transaction(async (prisma) => {
-        const secuencia = await prisma.secuencias.findUnique({ where: { nombre: 'factura' } });
-        const secuenciaFactura = (secuencia?.valor || 0) + 1;
-        await prisma.secuencias.update({
-          where: { nombre: 'factura' },
-          data: { valor: secuenciaFactura },
-        });
-
+        // 1. Verificar caja activa
+        const historialCaja = await this.getCajaActiva(
+          prisma,
+          cajaId,
+          usuarioId
+        );
+  
+        // 2. Generar secuencia para factura
+        const secuenciaFactura = await this.generarSecuenciaFactura(prisma);
+  
+        // 3. Crear factura inicial
         const createdFactura = await prisma.factura.create({
-          data: facturaData,
-        });
-
-        const productoIds = detalles.map((detalle) => detalle.productoId);
-        const productos = await prisma.producto.findMany({
-          where: { id: { in: productoIds } },
-        });
-
-        const detalleFacturaData = [];
-        const movimientoInventarioData = [];
-        const productoUpdates = [];
-        const loteUpdates = [];
-
-        for (const detalle of detalles) {
-          const producto = productos.find((p) => p.id === detalle.productoId);
-          if (!producto) {
-            throw new Error(`No se encontró un producto con el ID ${detalle.productoId}. Verifique que el ID del producto sea correcto.`);
-          }
-
-          const precioUnitario = parseFloat(producto.precio.toString());
-          const cantidad = parseInt(detalle.cantidad.toString());
-          const itebisPorcentaje = parseFloat(detalle.itebis.toString()) / 100;
-
-          if (producto.stock < cantidad) {
-            throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Stock disponible: ${producto.stock}, cantidad requerida: ${cantidad}.`);
-          }
-
-          const importe = cantidad * precioUnitario;
-          const itebisCalculado = importe * itebisPorcentaje;
-
-          subtotalTotal += importe;
-          totalItebis += itebisCalculado;
-
-          detalleFacturaData.push({
-            facturaId: createdFactura.id,
-            productoId: detalle.productoId,
-            empresaId: empresaIdNumber,
-            cantidad,
-            precioUnitario,
-            itebis: itebisCalculado,
-            importe,
-            createdAt,
-            updatedAt,
-          });
-
-          movimientoInventarioData.push({
-            productoId: detalle.productoId,
-            tipo: 'SALIDA',
-            cantidad,
-            descripcion: `Venta en factura FACT-${createdFactura.id}`,
-            usuarioId: usuarioIdNumber,
-            empresaId: empresaIdNumber,
-            precioVenta: precioUnitario,
-            facturaId: createdFactura.id,
-            createdAt,
-            updatedAt,
-          });
-
-          // Obtener lotes del producto ordenados por fecha de vencimiento (FIFO)
-          const lotes = await prisma.loteProducto.findMany({
-            where: { productoId: detalle.productoId, cantidadRestante: { gt: 0 }, estado: EstadoLote.ACTIVO },
-            orderBy: { fechaEntrada: 'asc' },
-          });
-
-          let _cantidadRestante = cantidad;
-
-          // Restar cantidades de los lotes
-          for (const lote of lotes) {
-            if (_cantidadRestante <= 0) break;
-
-            const cantidadARestar = Math.min(lote.cantidadRestante, _cantidadRestante);
-            loteUpdates.push({
-              where: { id: lote.id },
-              data: { cantidadRestante: lote.cantidadRestante - cantidadARestar, updatedAt },
-            });
-
-            _cantidadRestante -= cantidadARestar;
-          }
-
-
-          const nuevoStock = producto.stock - cantidad;
-
-          const estadoProducto = nuevoStock <= 0 ? 'OUTOFSTOCK' : nuevoStock <= 10 ? 'LOWSTOCK' : 'INSTOCK';
-
-          productoUpdates.push({
-            where: { id: detalle.productoId },
-            data: {
-              stock: nuevoStock,
-              estado: estadoProducto,
-              updatedAt,
-            },
-          });
-        }
-
-        await prisma.detalleFactura.createMany({ data: detalleFacturaData });
-        await prisma.movimientoInventario.createMany({ data: movimientoInventarioData });
-
-        for (const update of productoUpdates) {
-          await prisma.producto.update(update);
-        }
-
-        for (const loteUpdate of loteUpdates) {
-          await prisma.loteProducto.update(loteUpdate);
-        }
-
-
-
-        const transaccionFacturaCreated = await prisma.transaccionVenta.create({
           data: {
-            facturaId: createdFactura.id,
-            usuarioId: usuarioIdNumber,
+            codigo: 'FACT-', // Código inicial, se actualiza luego
             empresaId: empresaIdNumber,
+            estado: estadoFactura,
+            itebisTotal: 0,
+            metodoPago,
+            subtotal: 0,
+            total: 0,
+            usuarioId: usuarioIdNumber,
+            clienteId: clienteIdNumber || null,
+            clienteNombre,
+            cajaId,
             createdAt,
             updatedAt,
           },
         });
-
-        await prisma.detalleFactura.updateMany({
-          where: { facturaId: createdFactura.id },
-          data: { transaccionVentaId: transaccionFacturaCreated.id },
-        });
-
+  
+        // 4. Procesar detalles de la factura
+        const { subtotalTotal, totalItebis } = await this.procesarDetalles(
+          prisma,
+          createdFactura.id,
+          detalles,
+          empresaIdNumber,
+          usuarioIdNumber,
+          createdAt,
+          updatedAt
+        );
+  
+        // 5. Actualizar totales en la factura
         const facturaUpdated = await prisma.factura.update({
           where: { id: createdFactura.id },
           data: {
@@ -228,56 +126,191 @@ export class FacturaService {
                     precio: true,
                     descripcion: true,
                     codigo: true,
-                    categoria: {
-                      select: {
-                        nombre: true,
-                      }
-                    }
-                  }
+                    categoria: { select: { nombre: true } },
+                  },
                 },
                 cantidad: true,
                 importe: true,
-              }
-            },
-            Caja: {
-              select: {
-                id: true,
-                nombre: true,
-              }
-            },
-            usuario: {
-              select: {
-                id: true,
-                nombreUsuario: true,
               },
             },
-            empresa: {
-              select: {
-                id: true,
-                nombre: true,
-              },
-            },
-          }
+            Caja: { select: { id: true, nombre: true } },
+            usuario: { select: { id: true, nombreUsuario: true } },
+            empresa: { select: { id: true, nombre: true } },
+          },
         });
-        codigoFacturaMessage = facturaUpdated.codigo
+  
+        // 6. Registrar movimiento en la caja
+        await prisma.movimientosCaja.create({
+          data: {
+            historialCajaId: historialCaja.id,
+            usuarioId: usuarioIdNumber,
+            monto: subtotalTotal + totalItebis,
+            tipo: tipoMovimientoCaja.INGRESO,
+            descripcion: `Ingreso por venta, factura: ${facturaUpdated.codigo}.`,
+            createdAt,
+            updatedAt,
+          },
+        });
+  
+        codigoFacturaMessage = facturaUpdated.codigo;
         return facturaUpdated;
       });
-
+  
+      // Respuesta exitosa
       return {
         success: true,
         data: factura,
-        message: `La factura se ha creado exitosamente. Número de factura: ${codigoFacturaMessage || 'N/A'}.`
+        message: `La factura se ha creado exitosamente. Número de factura: ${codigoFacturaMessage || 'N/A'}.`,
       };
     } catch (error: any) {
+      // Manejo de errores
       const errorMessage =
-        error.message
-          ? error.message
-          : 'Ocurrió un error inesperado al intentar crear la factura.';
-
+        error.message || 'Ocurrió un error inesperado al intentar crear la factura.';
       console.error('Error al crear la factura:', errorMessage);
+  
       return { success: false, message: errorMessage };
     }
   }
+
+  private async getCajaActiva(prisma: Prisma.TransactionClient, cajaId: number, usuarioId: number) {
+    const cajaActiva = await prisma.caja.findFirst({
+      where: { id: cajaId, usuarioId, estado: 'ABIERTA' },
+      include: { historialCajas: { where: { estado: 'ABIERTA' } } },
+    });
+  
+    if (!cajaActiva || !cajaActiva.historialCajas[0]) {
+      throw new Error('No tienes una caja activa para registrar esta venta.');
+    }
+  
+    return cajaActiva.historialCajas[0];
+  }
+
+  
+  private async generarSecuenciaFactura(prisma: Prisma.TransactionClient) {
+    const secuencia = await prisma.secuencias.findUnique({ where: { nombre: 'factura' } });
+    const secuenciaFactura = (secuencia?.valor || 0) + 1;
+  
+    await prisma.secuencias.update({
+      where: { nombre: 'factura' },
+      data: { valor: secuenciaFactura },
+    });
+  
+    return secuenciaFactura;
+  }
+
+  
+  private async procesarDetalles(
+    prisma: Prisma.TransactionClient,
+    facturaId: number,
+    detalles: DetalleFactura[],
+    empresaId: number,
+    usuarioId: number,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    let subtotalTotal = 0;
+    let totalItebis = 0;
+  
+    for (const detalle of detalles) {
+      const producto = await prisma.producto.findUnique({
+        where: { id: detalle.productoId },
+      });
+      if (!producto) {
+        throw new Error(`Producto no encontrado: ${detalle.productoId}`);
+      }
+  
+      if (producto.stock < detalle.cantidad) {
+        throw new Error(`Stock insuficiente para el producto: ${producto.nombre}`);
+      }
+  
+      const precioUnitario = producto.precio;
+      const cantidad = detalle.cantidad;
+      const importe = cantidad * Number(precioUnitario);
+      const itebis = (importe * Number(detalle.itebis)) / 100;
+  
+      subtotalTotal += importe;
+      totalItebis += itebis;
+  
+      // Crear detalle de factura
+      await prisma.detalleFactura.create({
+        data: {
+          facturaId,
+          productoId: detalle.productoId,
+          empresaId,
+          cantidad,
+          precioUnitario,
+          itebis,
+          importe,
+          createdAt,
+          updatedAt,
+        },
+      });
+  
+      // Manejar lotes (FIFO)
+      let cantidadRestante = cantidad;
+      const lotes = await prisma.loteProducto.findMany({
+        where: {
+          productoId: detalle.productoId,
+          cantidadRestante: { gt: 0 },
+          estado: EstadoLote.ACTIVO,
+        },
+        orderBy: { fechaEntrada: 'asc' },
+      });
+  
+      for (const lote of lotes) {
+        if (cantidadRestante <= 0) break;
+  
+        const cantidadARestar = Math.min(lote.cantidadRestante, cantidadRestante);
+        await prisma.loteProducto.update({
+          where: { id: lote.id },
+          data: {
+            cantidadRestante: lote.cantidadRestante - cantidadARestar,
+            updatedAt, // Registramos la fecha de actualización
+          },
+        });
+  
+        cantidadRestante -= cantidadARestar;
+      }
+  
+      if (cantidadRestante > 0) {
+        throw new Error(
+          `Stock insuficiente en los lotes del producto: ${producto.nombre}`
+        );
+      }
+  
+      // Crear movimiento de inventario
+      await prisma.movimientoInventario.create({
+        data: {
+          productoId: detalle.productoId,
+          tipo: 'SALIDA',
+          cantidad,
+          descripcion: `Venta en factura FACT-${facturaId}`,
+          usuarioId,
+          empresaId,
+          precioVenta: precioUnitario,
+          facturaId,
+          createdAt,
+          updatedAt, // Fecha de creación y actualización del movimiento
+        },
+      });
+  
+      // Actualizar producto
+      await prisma.producto.update({
+        where: { id: producto.id },
+        data: {
+          stock: producto.stock - cantidad,
+          updatedAt, // Registramos la fecha de actualización
+        },
+      });
+    }
+  
+    return { subtotalTotal, totalItebis };
+  }
+  
+  
+
+  
+
 
 
 
