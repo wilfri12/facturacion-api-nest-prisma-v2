@@ -69,12 +69,13 @@ findAll(@Query('empresaId') empresaId: string) {
   return this.cajaService.findAll(+empresaId);
 }
 
-
   @UseGuards(AuthGuard)
   @Get('/historial')
-  findHistorialCaja(@Query('cajaId') cajaId: string){
+  findHistorialCaja(
+    @Query('cajaId') cajaId: string,
+    @Query('fecha')  fecha: Date){
     try {
-      const data = this.cajaService.finsHistorialCaja(+cajaId);
+      const data = this.cajaService.findHistorialCaja(+cajaId, fecha);
 
       return data
     } catch (error) {

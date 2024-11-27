@@ -72,6 +72,8 @@ export class CajaService {
       return { success: false, message: error || 'Error al obtener cajas cerradas' };
     }
   }
+
+
   async abrirCaja(datosApertura: AbrirCajaDTO): Promise<ApiResponse<Caja>> {
     const { cajaId, montoInicial, usuarioId } = datosApertura;
 
@@ -146,19 +148,80 @@ export class CajaService {
     }
   }
 
-  async finsHistorialCaja(cajaId: number): Promise<ApiResponse<HistorialCaja[]>> {
+  async findHistorialCaja(cajaId: number, fecha: Date): Promise<ApiResponse<any>> {
+    if (!fecha) {
+      return { success: false, message: 'La fecha es requerida para realizar la búsqueda' };
+    }
+
+    console.log(fecha);
+    
+  
+    const startDateTime = fecha ? new Date(new Date(fecha).setUTCHours(0, 0, 0, 0)) : undefined;
+      const endDateTime = fecha ? new Date(new Date(fecha).setUTCHours(23, 59, 59, 999)) : undefined;
+  
     try {
-      const historial = await this.prisma.historialCaja.findMany({
-        where: { cajaId },
+      const historiales = await this.prisma.historialCaja.findMany({
+
+        where: {
+          cajaId: cajaId,
+          createdAt: {
+            gte: startDateTime,
+            lte: endDateTime,
+          },
+        },
+        include: {
+          movimientosCaja: true, // Incluir los movimientos relacionados
+        },
         orderBy: {
-          id: 'desc',
-        }
+          id: 'desc', // Ordenar por el ID en orden descendente
+        },
       });
-      return { success: true, data: historial, message: 'Datos obtenidos correctamente' }
-    } catch (error) {
-      return { success: false, message: error }
+  
+      // Crear detalles enriquecidos para cada historial
+      const detalles = historiales.map((historial) => {
+        const ingresos = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'INGRESO')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
+  
+        const egresos = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'EGRESO')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
+  
+        return {
+          id: historial.id,
+          cajaId: historial.cajaId,
+          montoInicial: historial.montoInicial,
+          montoFinal: historial.montoFinal,
+          estado: historial.estado,
+          fechaApertura: historial.fechaApertura,
+          fechaCierre: historial.fechaCierre,
+          ingresosTotales: ingresos,
+          egresosTotales: egresos,
+          saldoTotal: Number(historial.montoInicial) + ingresos - egresos,
+          movimientos: historial.movimientosCaja.map((mov) => ({
+            id: mov.id,
+            tipo: mov.tipo,
+            monto: mov.monto,
+            descripcion: mov.descripcion,
+            fecha: mov.createdAt,
+          })),
+        };
+      });
+  
+      return {
+        success: true,
+        data: detalles,
+        message: 'Datos obtenidos correctamente',
+      };
+    } catch (error: any) {
+      console.error('Error al obtener el historial de caja:', error);
+      return {
+        success: false,
+        message: 'Error al obtener el historial de caja. Por favor, intente de nuevo.',
+      };
     }
   }
+  
 
   async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     const { cajaId, montoFinal, usuarioId } = data;
@@ -281,7 +344,9 @@ export class CajaService {
     datosHistorialCaja: any,
     usuarioId: number
   ): Promise<void> {
-    const historialCaja = await prisma.historialCaja.create({ data: datosHistorialCaja });
+    const historialCaja = await prisma.historialCaja.create({
+       data: datosHistorialCaja 
+      });
 
     const movimientoInicial: CreateMovimientosCajaDto = {
       usuarioId,
@@ -295,4 +360,7 @@ export class CajaService {
 
     await prisma.movimientosCaja.create({ data: movimientoInicial });
   }
+
+
+  
 }
