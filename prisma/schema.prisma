@@ -148,6 +148,7 @@ model Factura {
   codigo                String                 @unique
   subtotal              Decimal                @default(0.00) @db.Decimal(10, 2)
   total                 Decimal                @default(0.00) @db.Decimal(10, 2)
+  montoPendiente        Decimal?               @default(0.00) @db.Decimal(10, 2)
   itebisTotal           Decimal                @default(0.00) @db.Decimal(10, 2)
   metodoPago            MetodoPago             @default(EFECTIVO)
   usuarioId             Int
@@ -457,6 +458,7 @@ enum tipoMovimientoCaja {
   INICIAL
   CIERRE
   VENTA_CREDITO
+  PAGO_CREDITO
 }
 
 // Enum para el estado de las transacciones

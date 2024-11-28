@@ -179,7 +179,7 @@ export class FacturaService {
     });
   
     if (!cajaActiva || !cajaActiva.historialCajas[0]) {
-      throw new Error('No tienes una caja activa para registrar esta venta.');
+      throw new Error('El registro no se puede crear, no tienes una caja activa.');
     }
   
     return cajaActiva.historialCajas[0];
@@ -314,13 +314,6 @@ export class FacturaService {
   }
   
   
-
-  
-
-
-
-
-
   async findAllFactura(params: { startDate?: Date, endDate?: Date, estado?: Estado, metodoPago?: MetodoPago, page?: number, pageSize?: number, codigo?: string }): Promise<ApiResponse<{ facturas: Factura[], totalRecords: number, currentPage: number, totalPages: number }>> {
     const { startDate, endDate, estado, page = 1, pageSize = 10, metodoPago, codigo } = params;
     // Validación: evita páginas negativas o tamaños de página demasiado pequeños
@@ -428,8 +421,6 @@ export class FacturaService {
       };
     }
   }
-
-
 
   async findFacturaById(idFactura: number): Promise<ApiResponse<Factura>> {
     try {
@@ -554,34 +545,55 @@ export class FacturaService {
   }
 
 
-  async pagarFactura(id: number): Promise<ApiResponse<Factura>> {
+  async pagarFactura(facturaId: number, usuarioId: number, montoPagado: number, cajaId: number): Promise<ApiResponse<Factura>> {
     try {
-      // Busca la factura por ID
-      const factura = await this.prisma.factura.findUnique({
-        where: { id }
-      });
-
-      // Verifica si la factura existe
-      if (!factura) {
-        throw new Error('Factura no encontrada');
+      // 1. Validar la existencia de la factura
+      const factura = await this.prisma.factura.findUnique({ where: { id: facturaId } });
+      if (!factura) throw new Error('Factura no encontrada');
+  
+      // 2. Verificar que el monto pagado no sea mayor que el monto pendiente
+      if (montoPagado > Number(factura.montoPendiente)) {
+        throw new Error('El monto pagado no puede ser mayor que el monto pendiente');
       }
+  
+      // 3. Obtener el historial de caja activo
+      
+      // 4. Crear la transacción para el pago
+      const facturaActualizada = await this.prisma.$transaction(async (prisma) => {
 
-      // Actualiza el estado de la factura a PAGADA y guarda la fecha de actualización
-      const facturaActualizada = await this.prisma.factura.update({
-        data: {
-          estado: Estado.PAGADA,
-          updatedAt: GetLocalDate()
-        },
-        where: { id }
+        const historialCaja = await this.getCajaActiva(prisma, cajaId, usuarioId);
+        // 4.1 Registrar el pago en la caja
+        await prisma.movimientosCaja.create({
+          data: {
+            historialCajaId: historialCaja.id,
+            usuarioId: usuarioId,
+            monto: montoPagado,
+            tipo: tipoMovimientoCaja.PAGO_CREDITO,
+            descripcion: `Ingreso por pago a credito, factura: ${factura.codigo}, cliente ${factura.clienteNombre}.`,
+            createdAt: GetLocalDate(),
+            updatedAt: GetLocalDate(),
+          },
+        });
+  
+        // 4.2 Actualizar la factura
+        const restante = Number(factura.montoPendiente) - montoPagado;
+        const facturaActualizada = await prisma.factura.update({
+          where: { id: facturaId },
+          data: {
+            montoPendiente: restante,
+            estado: restante <= 0 ? Estado.PAGADA : Estado.PENDIENTE,
+            updatedAt: GetLocalDate(),
+          },
+        });
+  
+        return facturaActualizada;
       });
-
-      // Retorna la respuesta de éxito junto con la factura actualizada
+  
+      // 5. Retornar la factura actualizada
       return { success: true, data: facturaActualizada };
-
-    } catch (error) {
+  
+    } catch (error: any) {
       console.error("Error al pagar la factura:", error);
-
-      // Retorna una respuesta de error con el mensaje de error específico
       return { success: false, message: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }

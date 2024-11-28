@@ -186,6 +186,10 @@ export class CajaService {
           const ventasCredito = historial.movimientosCaja
           .filter((mov) => mov.tipo === 'VENTA_CREDITO')
           .reduce((acc, mov) => acc + Number(mov.monto), 0);
+
+          const pagoCredito = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'PAGO_CREDITO')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
       
   
         return {
@@ -199,7 +203,7 @@ export class CajaService {
           ingresosTotales: ingresos,
           ventasCreditoTotales: ventasCredito, // Mostrar las ventas a crédito, pero no las sumamos como ingresos reales
           egresosTotales: egresos,
-          saldoTotal: Number(historial.montoInicial) + ingresos - egresos,
+          saldoTotal: Number(historial.montoInicial) + pagoCredito + ingresos - egresos,
           movimientos: historial.movimientosCaja.map((mov) => ({
             id: mov.id,
             tipo: mov.tipo,

@@ -81,9 +81,9 @@ export class FacturaController {
   async employmentLetterById(@Res() response: Response, @Param('id') id: string) {
     try {
       const pdfDoc = await this.facturaService.facturaReportById(+id);
-       response.setHeader('Content-Type', 'application/pdf');
-       pdfDoc.pipe(response);
-       pdfDoc.end();  // End the PDF document after piping
+      response.setHeader('Content-Type', 'application/pdf');
+      pdfDoc.pipe(response);
+      pdfDoc.end();  // End the PDF document after piping
       return pdfDoc;
     } catch (error) {
       console.error(error);
@@ -112,7 +112,7 @@ export class FacturaController {
         endDate: endDate ? new Date(endDate) : undefined,
         estado,
         metodoPago,
-        
+
       });
 
       // Configurar los encabezados para enviar el PDF
@@ -131,27 +131,43 @@ export class FacturaController {
     }
   }
 
-//@UseGuards(AuthGuard)
+  //@UseGuards(AuthGuard)
   @Patch('pagar/:id')
-  async pagarFactura(@Param('id') id: string) {
+  async pagarFactura(
+    @Param('id') id: string, // ID de la factura en la URL
+    @Body() body: { montoPagado: number; usuarioId: number; cajaId: number }, // Monto pagado, usuario y caja en el cuerpo de la solicitud
+  ) {
     try {
-      // Convierte el ID a número y llama al servicio para pagar la factura
-      const response: ApiResponse<Factura> = await this.facturaService.pagarFactura(Number(+id));
+      // Validamos que el monto pagado sea positivo
+      if (body.montoPagado <= 0) {
+        throw new HttpException('El monto pagado debe ser mayor que 0', HttpStatus.BAD_REQUEST);
+      }
+
+      // Llamamos al servicio de pago de factura
+      const response: ApiResponse<Factura> = await this.facturaService.pagarFactura(
+        +id, // Convertimos el ID de la factura a número
+        body.usuarioId, // ID del usuario que realiza el pago
+        body.montoPagado, // Monto pagado
+        body.cajaId, // ID de la caja
+      );
 
       if (response.success) {
-        // Retorna la factura actualizada en caso de éxito
+        // Si la respuesta es exitosa, retornamos la factura actualizada
         return {
           success: true,
-          message: 'Factura marcada como pagada exitosamente',
+          message: 'Pago realizado exitosamente',
           data: response.data,
         };
       } else {
-        // Lanza una excepción en caso de error
+        // Si hubo algún error en el servicio, lanzamos una excepción con el mensaje correspondiente
         throw new HttpException(response.message || 'Error al pagar la factura', HttpStatus.BAD_REQUEST);
       }
     } catch (error) {
-      // Captura errores inesperados y responde con estado 500
-      throw new HttpException(error.message || 'Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      // Capturamos cualquier error inesperado y respondemos con un error 500
+      throw new HttpException(
+        error.message || 'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
