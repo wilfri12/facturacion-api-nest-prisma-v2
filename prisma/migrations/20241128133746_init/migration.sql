@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `movimientoscaja` MODIFY `tipo` ENUM('INGRESO', 'EGRESO', 'VENTA', 'INICIAL', 'CIERRE', 'VENTA_CREDITO') NOT NULL;

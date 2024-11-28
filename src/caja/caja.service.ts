@@ -152,10 +152,6 @@ export class CajaService {
     if (!fecha) {
       return { success: false, message: 'La fecha es requerida para realizar la búsqueda' };
     }
-
-    console.log(fecha);
-    
-  
     const startDateTime = fecha ? new Date(new Date(fecha).setUTCHours(0, 0, 0, 0)) : undefined;
       const endDateTime = fecha ? new Date(new Date(fecha).setUTCHours(23, 59, 59, 999)) : undefined;
   
@@ -186,6 +182,11 @@ export class CajaService {
         const egresos = historial.movimientosCaja
           .filter((mov) => mov.tipo === 'EGRESO')
           .reduce((acc, mov) => acc + Number(mov.monto), 0);
+
+          const ventasCredito = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'VENTA_CREDITO')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
+      
   
         return {
           id: historial.id,
@@ -196,6 +197,7 @@ export class CajaService {
           fechaApertura: historial.fechaApertura,
           fechaCierre: historial.fechaCierre,
           ingresosTotales: ingresos,
+          ventasCreditoTotales: ventasCredito, // Mostrar las ventas a crédito, pero no las sumamos como ingresos reales
           egresosTotales: egresos,
           saldoTotal: Number(historial.montoInicial) + ingresos - egresos,
           movimientos: historial.movimientosCaja.map((mov) => ({
@@ -225,21 +227,21 @@ export class CajaService {
 
   async cerrarCaja(data: UpdateCajaDto): Promise<ApiResponse<Caja>> {
     const { cajaId, montoFinal, usuarioId } = data;
-
+  
     // Datos para actualizar la caja y su historial
     const cajaData = {
       estado: EstadoCaja.CERRADA,
       updatedAt: GetLocalDate(),
       usuarioId: null,
     };
-
+  
     const historialCajaData = {
       montoFinal: parseFloat(montoFinal.toString()),
       estado: EstadoCaja.CERRADA,
       fechaCierre: GetLocalDate(),
       updatedAt: GetLocalDate(),
     };
-
+  
     try {
       // Validación previa
       if (!cajaId || !montoFinal || !usuarioId) {
@@ -247,83 +249,103 @@ export class CajaService {
           'Los datos proporcionados son incompletos. Asegúrese de incluir el ID de la caja, el monto final y el ID del usuario.'
         );
       }
-
+  
       // Inicio de la transacción
       const response = await this.prisma.$transaction(async (prisma) => {
         // Validar la existencia de la caja
-        const cajaExistente = await prisma.caja.findUnique({ where: { id: cajaId } });
+        const cajaExistente = await prisma.caja.findUnique({
+          where: { id: cajaId, estado: 'ABIERTA', usuarioId },
+          include: {
+            historialCajas: {
+              where: { estado: 'ABIERTA' },
+              orderBy: { id: 'desc' }, // Suponiendo que 'fecha' es el campo temporal
+              take: 1, // Esto asegura que solo tomes el historial más reciente
+              include: {
+                movimientosCaja: true, // Incluir los movimientos relacionados
+              },
+            },
+          },
+        });
+  
         if (!cajaExistente) {
           throw new Error(`No se encontró una caja con el ID ${cajaId}.`);
         }
-
+  
         if (cajaExistente.estado === EstadoCaja.CERRADA) {
           throw new Error('La caja ya se encuentra cerrada.');
         }
-
+  
         // Buscar el historial de caja más reciente en estado abierto
-        const historial = await prisma.historialCaja.findFirst({
-          where: {
-            cajaId,
-            estado: EstadoCaja.ABIERTA,
-          },
-          orderBy: {
-            id: 'desc', // Ordenar por el registro más reciente
-          },
-        });
+        const historial = cajaExistente.historialCajas[0];
+  
+        // Calcular el cuadre de caja (sin incluir las ventas a crédito en los ingresos)
+        const ingresos = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'INGRESO' || mov.tipo === 'VENTA')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
+  
+        const egresos = historial.movimientosCaja
+          .filter((mov) => mov.tipo === 'EGRESO')
+          .reduce((acc, mov) => acc + Number(mov.monto), 0);
+  
+        // El saldo esperado es el monto inicial + los ingresos - los egresos
+        const saldoEsperado = Number(historial.montoInicial) + ingresos - egresos;
+  
+        // Verificar el cuadre de caja
+        const diferenciaCaja = montoFinal - saldoEsperado;
 
-        if (!historial) {
-          throw new Error(
-            `No se puede cerrar la caja porque no tiene un historial activo que
-             indique que está abierta. Verifique los registros y asegúrese de que
-             la caja esté correctamente abierta antes de intentar cerrarla.`
-          );
+        if (diferenciaCaja < 0) {
+          // Esto podría ser un error en el proceso de cierre, una alerta o mensaje de advertencia
+          throw new Error(`Advertencia: El monto final ingresado es menor que el saldo esperado. Diferencia: $${Math.abs(diferenciaCaja)}.`);
+          
         }
-
+        
+  
         // Actualizar el historial de caja con los datos de cierre
         await prisma.historialCaja.update({
           where: { id: historial.id },
           data: historialCajaData,
         });
-
+  
         // Crear el movimiento de caja para el cierre
         await prisma.movimientosCaja.create({
           data: {
             historialCajaId: historial.id,
             createdAt: GetLocalDate(),
             descripcion: 'Cierre de caja',
-            monto: parseFloat(montoFinal.toString()),
+            monto: parseFloat(montoFinal.toString()) + diferenciaCaja, // Incluir el ajuste en el monto final
             tipo: tipoMovimientoCaja.CIERRE,
             updatedAt: GetLocalDate(),
             usuarioId: parseInt(usuarioId.toString()),
           },
         });
-
+  
         // Actualizar el estado de la caja a CERRADA
         return await prisma.caja.update({
           where: { id: cajaId },
           data: cajaData,
         });
       });
-
+  
       return {
         success: true,
         data: response,
         message: `La caja "${response.nombre}" ha sido cerrada exitosamente.`,
       };
     } catch (error: any) {
-
       const errorMessage =
         error.message
           ? error.message
           : 'Ocurrió un error inesperado al intentar cerrar la caja.';
-
-      console.error('Error al cerrar la caja:', error.message || errorMessage);
+  
       return {
         success: false,
         message: errorMessage,
       };
     }
   }
+  
+  
+  
 
   async verificarCajaAbierta(usuarioId: number): Promise<Caja | null> {
     try {

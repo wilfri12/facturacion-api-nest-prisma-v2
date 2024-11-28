@@ -456,6 +456,7 @@ enum tipoMovimientoCaja {
   VENTA
   INICIAL
   CIERRE
+  VENTA_CREDITO
 }
 
 // Enum para el estado de las transacciones
