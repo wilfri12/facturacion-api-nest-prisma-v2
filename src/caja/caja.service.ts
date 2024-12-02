@@ -200,7 +200,7 @@ export class CajaService {
           estado: historial.estado,
           fechaApertura: historial.fechaApertura,
           fechaCierre: historial.fechaCierre,
-          ingresosTotales: ingresos,
+          ingresosTotales: ingresos + pagoCredito,
           ventasCreditoTotales: ventasCredito, // Mostrar las ventas a crédito, pero no las sumamos como ingresos reales
           egresosTotales: egresos,
           saldoTotal: Number(historial.montoInicial) + pagoCredito + ingresos - egresos,

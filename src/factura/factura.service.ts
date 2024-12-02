@@ -110,6 +110,7 @@ export class FacturaService {
           data: {
             subtotal: subtotalTotal,
             total: subtotalTotal + totalItebis,
+            montoPendiente: metodoPago === 'CREDITO' ? subtotalTotal + totalItebis :  0,
             itebisTotal: totalItebis,
             codigo: `FACT-${secuenciaFactura}`,
             estado: estadoFactura,
